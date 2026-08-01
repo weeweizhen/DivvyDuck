@@ -182,11 +182,29 @@ body {
 body {
   margin: 0;
   font-family: var(--font-ui);
-  background: var(--bg-subtle);
+  /* 品牌渐层氛围：复用 Logo 本身的三色（靛紫／琥珀金／天蓝），做成模糊的光晕铺在
+     底色上，整个 App 背景不再是一片死板单色。固定不跟着内容捲动（background-attachment:
+     fixed），氛围感维持稳定，不会捲动时露出色块边界 */
+  background:
+    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.14), transparent 60%),
+    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.09), transparent 60%),
+    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.05), transparent 65%),
+    var(--bg-subtle);
+  background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: background var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out);
+}
+
+[data-theme="dark"] body {
+  /* 深色模式背景本身够暗，光晕透明度可以拉高一点才看得出来，不然会几乎隐形 */
+  background:
+    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.22), transparent 60%),
+    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.14), transparent 60%),
+    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.09), transparent 65%),
+    var(--bg-subtle);
+  background-attachment: fixed;
 }
 
 /* Modal／侧边抽屉打开时，用这个 class 冻结背景页面（见 app.js 的 lockBodyScroll()）。
@@ -617,8 +635,8 @@ html {
    完全不碰 width/left/margin，避免触发浏览器重排（Reflow）。
    ------------------------------------------------------------ */
 .drawer-open {
-  display: none; /* 手机版不再用汉堡选单当导航入口（改成底部导览的「更多」），
-                     桌面版原本就没有这颗按钮（用固定侧栏），两边现在都是隐藏的 */
+  display: inline-flex; /* 手机/平板（<1024px）显示在右上角，取代旅程切换器；
+                            桌面版透过 @media (min-width: 1024px) 隐藏（用固定侧栏） */
 }
 
 .drawer-close {
@@ -651,23 +669,24 @@ html {
 .side-drawer {
   position: fixed;
   top: 0;
-  left: 0;
-  /* 理由同上：不用 bottom:0 让浏览器自己换算，改用 100dvh 直接撑到「现在看得到的
-     画面底部」，抽屉才会在手机版网址列还没收合时也贴齐底部，不露出缝隙 */
+  right: 0;
+  /* 原本是左侧窄面板（left:0 + max-width:84vw），现在改成从右侧滑入的全屏导览，
+     不再限制宽度，撑满整个视窗宽度 */
   height: 100vh;
   height: 100dvh;
-  width: var(--drawer-width);
-  max-width: 84vw;
+  width: 100%;
   display: flex;
   flex-direction: column;
   padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));
   background: var(--surface-glass-strong);
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
-  box-shadow: var(--shadow-lg), inset -1px 0 0 var(--glass-border-highlight);
+  box-shadow: var(--shadow-lg);
   z-index: 410;
-  /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层 */
-  transform: translateX(-100%) translateZ(0);
+  overflow: hidden;
+  /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层。
+     从右侧推入，所以关闭状态是往右边（正值）位移，不是原本左侧面板的负值位移 */
+  transform: translateX(100%) translateZ(0);
   will-change: transform;
   transition: transform var(--duration-micro) var(--ease-out);
 }
@@ -676,14 +695,112 @@ html {
   transform: translateX(0) translateZ(0);
 }
 
-.side-drawer .sidebar-brand {
-  padding: var(--space-2) var(--space-2) var(--space-5);
+/* 品牌渐层氛围背景：复用 Logo 本身的三色（靛紫／琥珀金／天蓝），做成两团模糊的
+   光晕，让原本「一片死板灰白」的全屏导览有点深度跟质感，不是另外发明新配色。
+   放在 ::before（z-index 低于内容），玻璃模糊效果盖在上面，光晕会透出朦胧的色彩，
+   不会抢过文字的可读性 */
+.side-drawer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 480px 380px at 88% -8%, rgba(129, 140, 248, 0.32), transparent 60%),
+    radial-gradient(ellipse 420px 340px at -10% 78%, rgba(245, 158, 11, 0.22), transparent 60%),
+    radial-gradient(ellipse 520px 420px at 50% 45%, rgba(56, 189, 248, 0.12), transparent 65%);
 }
 
-.drawer-nav {
+[data-theme="dark"] .side-drawer::before {
+  background:
+    radial-gradient(ellipse 480px 380px at 88% -8%, rgba(129, 140, 248, 0.4), transparent 60%),
+    radial-gradient(ellipse 420px 340px at -10% 78%, rgba(245, 158, 11, 0.26), transparent 60%),
+    radial-gradient(ellipse 520px 420px at 50% 45%, rgba(56, 189, 248, 0.16), transparent 65%);
+}
+
+.side-drawer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.side-drawer .sidebar-brand {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-2) var(--space-2) var(--space-6);
+}
+
+.side-drawer .sidebar-brand-text {
+  align-items: center;
+  flex: none;
+}
+
+/* 关闭按钮从原本「品牌列最右边」的位置，改成整个抽屉右上角的绝对定位——
+   品牌区块改成上下置中的排版之後，不再有一整条「列」可以把它推到最右边了 */
+.side-drawer .drawer-close {
+  position: absolute;
+  top: calc(var(--space-5) + env(safe-area-inset-top));
+  right: var(--space-4);
+  margin-left: 0;
+}
+
+/* 主导览：改成在剩余空间里垂直＋水平置中（原本是靠左、由上往下排的清单），
+   flex:1 让它撑满「品牌列」跟「底部功能列」中间剩下的所有空间，
+   justify-content/align-items:center 让整组选项在这个空间正中央 */
+/* 主导览：改成绝对定位、相对「整个屏幕」正中央置中——不是相对「品牌区块跟底部
+   功能列之间剩下的空间」置中。後者的问题是品牌区块（Logo+名称+slogan）比底部
+   功能列（语言/深色模式/登出三行）矮很多，剩下空间的中点会比整个屏幕的正中央
+   偏上，导览看起来就会「没有真的在正中间」 */
+.side-drawer .drawer-nav {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.side-drawer .drawer-footer {
+  /* 原本是靠 .drawer-nav 的 flex:1 把底部功能列自然挤到最下面，现在 .drawer-nav
+     改成绝对定位、脱离了排版流，底部功能列改用 margin-top:auto 自己顶到底部
+     （父层 .side-drawer 还是 flex-direction:column，auto margin 一样有效） */
+  margin-top: auto;
+}
+
+.side-drawer .drawer-nav .nav-item {
+  height: 56px;
+  width: auto;
+  min-width: 220px;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-full);
+  font-size: 17px;
+  font-weight: 600;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.side-drawer .drawer-nav .nav-item:hover {
+  background: var(--bg-elevated);
+}
+
+.side-drawer .drawer-nav .nav-item:active {
+  transform: scale(0.98);
+}
+
+/* 底部功能列（语言／深色模式／登出）也跟主导览一样改成置中，不是原本贴齐左边、
+   撑满整排宽度的清单样式 */
+.side-drawer .drawer-footer {
+  align-items: center;
+}
+
+.side-drawer .drawer-footer .theme-toggle,
+.side-drawer .drawer-footer .nav-item {
+  width: auto;
+  min-width: 220px;
+  justify-content: center;
 }
 
 .drawer-nav .nav-item {
@@ -768,10 +885,10 @@ html {
 }
 
 .app-header .trip-switcher {
-  display: flex;
-  /* 手机/平板（<1024px）也直接在 Header 露出精简版旅程切换器，不用再绕去
-     「设置」页才能切换——那边的 #settingsTripSwitcherPanel 功能更完整
-     （含新增旅程），继续保留给需要的人用，这里只解决「常态切换」的高频需求 */
+  /* 手机/平板（<1024px）改成隐藏——原本露出的精简版旅程切换器让出右上角空间给
+     汉堡按钮，旅程切换搬去「设置」页的 #settingsTripSwitcherPanel（功能更完整，
+     含新增旅程）。桌面版透过下面 @media (min-width: 1024px) 恢复显示 */
+  display: none;
 }
 
 .app-header .trip-switcher .icon-btn {
@@ -958,38 +1075,10 @@ html {
   display: block;
 }
 
-/* 按钮打勾确认状态——新增/编辑成功后直接在按钮上显示，取代额外跳出的 Toast */
-.btn.is-success {
-  background: var(--success);
-  border-color: transparent;
-  color: #fff;
-}
-
-.btn.is-success:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
-.btn.is-success .btn-spinner {
-  display: none;
-}
-
 .btn-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.btn-success-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  animation: btnSuccessPop 320ms var(--ease-spring, ease);
-}
-
-@keyframes btnSuccessPop {
-  from { opacity: 0; transform: scale(0.4); }
-  to   { opacity: 1; transform: scale(1); }
 }
 
 .btn-secondary.is-loading .btn-spinner,
@@ -1355,6 +1444,39 @@ html {
 }
 
 .chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* 新增消费表单的「分类」pill 选择器——跟 .chip 视觉语言一致，但用 flex-wrap
+   让按钮自然换行铺满，不是像分类筛选栏那样横向捲动（表单里一次看到全部选项，
+   点一下就选好，比横向捲动找选项快） */
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.category-pill {
+  height: 34px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 550;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.category-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.category-pill.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--text-on-accent);
@@ -4313,6 +4435,57 @@ body {
   display: none;
 }
 
+/* 22.3b 尚无旅程时的全屏欢迎画面：logo + slogan + 引导句 + 建立旅程按钮，
+   置中在可视区域内；Dashboard / 账目 / 结算 / 同行四个分页共用同一套样式，
+   取代原本散落在各面板里的空状态区块（见各分页的 xxxEmptyHero / xxxNormalContent） */
+.page-empty-hero {
+  min-height: calc(100vh - var(--header-height) - var(--tabbar-height) - var(--space-12));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) var(--space-5);
+}
+
+.page-empty-hero.is-hidden {
+  display: none;
+}
+
+.page-empty-hero-mark {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--space-6);
+}
+
+.page-empty-hero-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.page-empty-hero-slogan {
+  font-size: 20px;
+  font-weight: 590;
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-body);
+  margin: 0 0 var(--space-2);
+}
+
+.page-empty-hero-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 320px;
+  margin: 0 0 var(--space-8);
+}
+
+.page-empty-hero-btn {
+  min-width: 160px;
+}
+
 .dash-header {
   display: flex;
   align-items: flex-start;
@@ -4852,6 +5025,23 @@ body {
   #headerActionBtn[data-open-modal="addExpenseModal"] {
     display: none !important;
   }
+
+  /* 已付金额／个人消费／已收金额这三项，结算页面「每人收支」现在也看得到
+     （见 .balance-row-breakdown），手机屏幕窄、Hero Card 又要显示吉祥物+净额，
+     三项明细放上去卡片会拉得太高，占掉太多第一屏空间，直接隐藏 */
+  .hero-breakdown,
+  .hero-breakdown-divider {
+    display: none;
+  }
+
+  /* 隐藏上面那三项之後，卡片本来该跟着变矮——但 .dash-card-slider .hero-card
+     那条 min-height: 300px 是为了「容纳三项明细＋跟金库卡片对齐高度」设的固定值，
+     手机版不显示那三项了，卡片没必要还撑到 300px 这么高，这里针对手机版单独调低。
+     （金库卡片如果比这个矮，syncDashCardHeights() 还是会用 JS inline style 把两张卡
+     动态对齐到同一高度，这条只是把「没有金库卡片、或金库卡片也很矮」时的下限调整） */
+  .dash-card-slider .hero-card {
+    min-height: 180px;
+  }
 }
 
 /* 23.4 桌面版（>=1024px）：右上角「记一笔」／「新增成员」改成右下角悬浮圆形按钮，
@@ -5125,11 +5315,6 @@ body {
 @media (max-width: 480px) {
   .auth-gate-card {
     padding: var(--space-6) var(--space-4);
-  }
-
-  /* 已垫付/个人消费/已还款三项在窄屏上间距缩小，避免挤到换行 */
-  .hero-breakdown {
-    gap: var(--space-3);
   }
 }
 /* ------------------------------------------------------------

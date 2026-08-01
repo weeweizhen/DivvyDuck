@@ -27,7 +27,7 @@
     }
   })();
 </script>
-<link rel="stylesheet" href="style.css?v=20260801b">
+<link rel="stylesheet" href="style.css?v=20260801k">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -430,9 +430,6 @@
   <!-- ---------------- Header ---------------- -->
   <header class="app-header">
     <div class="header-left">
-      <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
       <div class="header-left-text">
         <h1 class="page-title" id="pageTitle">总览</h1>
         <p class="page-subtitle" id="pageSubtitle">大家的消费，一目了然</p>
@@ -448,6 +445,11 @@
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
         </button>
       </div>
+      <!-- 汉堡按钮：手机/平板（<1024px）显示在右上角，取代旅程切换器（旅程切换搬到
+           这个全屏导览选单里，或去设置页的旅程切换面板）；桌面版一律隐藏，用固定侧栏 -->
+      <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
   </header>
 
@@ -487,6 +489,42 @@
 
     <!-- ========== Dashboard 页 ========== -->
     <section class="page" id="page-dashboard" data-page-section="dashboard">
+
+      <!-- 尚无任何旅程时的全屏欢迎画面：logo + slogan + 一句引导句 + 建立旅程按钮，
+           取代原本散落在各个面板里的一堆小型空状态区块。见 renderNoTripState() -->
+      <div class="page-empty-hero is-hidden" id="dashEmptyHero">
+        <span class="page-empty-hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ddPurpleEmptyHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1E1B4B"/>
+                <stop offset="100%" stop-color="#0F172A"/>
+              </linearGradient>
+              <linearGradient id="ddBeakEmptyHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FBBF24"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </linearGradient>
+              <linearGradient id="ddBarEmptyHero" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="100%" stop-color="#818CF8"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleEmptyHero)"/>
+            <g transform="rotate(-12, 50, 50)">
+              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakEmptyHero)"/>
+              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarEmptyHero)"/>
+              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+            </g>
+          </svg>
+        </span>
+        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
+        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
+        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+      </div>
+
+      <div class="page-normal-content" id="dashNormalContent">
 
       <!-- 欢迎词：用登入帐号的显示名称打招呼，让「你是谁」一进来就看得到 -->
       <p class="dash-welcome" id="dashWelcomeText"></p>
@@ -634,10 +672,45 @@
           </div>
         </div>
       </div>
+
+      </div>
     </section>
 
     <!-- ========== Expenses 页 ========== -->
     <section class="page is-hidden" id="page-expenses" data-page-section="expenses">
+      <div class="page-empty-hero is-hidden" id="expensesEmptyHero">
+        <span class="page-empty-hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ddPurpleExpensesHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1E1B4B"/>
+                <stop offset="100%" stop-color="#0F172A"/>
+              </linearGradient>
+              <linearGradient id="ddBeakExpensesHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FBBF24"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </linearGradient>
+              <linearGradient id="ddBarExpensesHero" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="100%" stop-color="#818CF8"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleExpensesHero)"/>
+            <g transform="rotate(-12, 50, 50)">
+              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakExpensesHero)"/>
+              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarExpensesHero)"/>
+              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+            </g>
+          </svg>
+        </span>
+        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
+        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
+        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+      </div>
+
+      <div class="page-normal-content" id="expensesNormalContent">
       <div class="search-box" id="expensesSearchBox">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="M20 20L16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         <input type="text" id="expenseSearchInput" placeholder="搜寻消费纪录…" aria-label="搜寻消费纪录" data-i18n-placeholder="header.searchPlaceholder">
@@ -662,11 +735,44 @@
           <!-- 消费列表由 app.js 动态产生 -->
         </div>
       </div>
+      </div>
     </section>
 
     <!-- ========== Summary 页 ========== -->
     <section class="page is-hidden" id="page-summary" data-page-section="summary">
+      <div class="page-empty-hero is-hidden" id="summaryEmptyHero">
+        <span class="page-empty-hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ddPurpleSummaryHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1E1B4B"/>
+                <stop offset="100%" stop-color="#0F172A"/>
+              </linearGradient>
+              <linearGradient id="ddBeakSummaryHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FBBF24"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </linearGradient>
+              <linearGradient id="ddBarSummaryHero" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="100%" stop-color="#818CF8"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleSummaryHero)"/>
+            <g transform="rotate(-12, 50, 50)">
+              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakSummaryHero)"/>
+              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarSummaryHero)"/>
+              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+            </g>
+          </svg>
+        </span>
+        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
+        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
+        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+      </div>
 
+      <div class="page-normal-content" id="summaryNormalContent">
       <div class="toolbar">
         <p class="panel-hint" style="font-size: 13px;" data-i18n="summary.exportHint">汇出完整报告，包含总开销与每位成员的消费明细</p>
         <button class="btn btn-secondary btn-sm" id="exportPdfBtn" type="button">
@@ -678,7 +784,6 @@
       <div class="glass-card panel">
         <div class="panel-header">
           <h2 data-i18n="summary.balancePanel">每人收支</h2>
-          <p class="panel-hint" data-i18n="summary.balanceHint">Paid（已付）· Should Pay（应付）· Balance（余额）</p>
         </div>
         <div class="panel-body" id="balanceList">
           <div class="empty-state">
@@ -726,10 +831,44 @@
           </div>
         </div>
       </div>
+      </div>
     </section>
 
     <!-- ========== Members 页 ========== -->
     <section class="page is-hidden" id="page-members" data-page-section="members">
+      <div class="page-empty-hero is-hidden" id="membersEmptyHero">
+        <span class="page-empty-hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ddPurpleMembersHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1E1B4B"/>
+                <stop offset="100%" stop-color="#0F172A"/>
+              </linearGradient>
+              <linearGradient id="ddBeakMembersHero" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FBBF24"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </linearGradient>
+              <linearGradient id="ddBarMembersHero" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38BDF8"/>
+                <stop offset="100%" stop-color="#818CF8"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleMembersHero)"/>
+            <g transform="rotate(-12, 50, 50)">
+              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakMembersHero)"/>
+              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarMembersHero)"/>
+              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+            </g>
+          </svg>
+        </span>
+        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
+        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
+        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+      </div>
+
+      <div class="page-normal-content" id="membersNormalContent">
       <div class="members-toolbar">
         <button class="btn btn-primary btn-sm" type="button" data-open-modal="addMemberModal" data-i18n="members.addBtn">新增成员</button>
       </div>
@@ -743,6 +882,7 @@
           <p data-i18n="empty.noMembers.desc">添加同行者，开始记录开销。</p>
           <button class="btn btn-primary btn-sm" type="button" data-open-modal="addMemberModal" data-i18n="members.addBtn">新增成员</button>
         </div>
+      </div>
       </div>
     </section>
 
@@ -989,6 +1129,12 @@
         <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分帐方式结算。</p>
       </div>
 
+      <div class="form-field form-field-full">
+        <label data-i18n="expense.categoryLabel">分类</label>
+        <div class="category-pills" id="expenseCategoryPills"></div>
+        <input type="hidden" id="expenseCategory">
+      </div>
+
       <div class="form-field" id="expensePayerField">
         <label for="expensePayer" id="expensePayerLabel" data-i18n="expense.payerLabel">谁先垫付了这笔巨款？</label>
         <select class="select-control" id="expensePayer" required>
@@ -1005,21 +1151,14 @@
         </div>
       </div>
 
-      <div class="form-field">
-        <label for="expenseCategory" data-i18n="expense.categoryLabel">分类</label>
-        <select class="select-control" id="expenseCategory" required>
-          <option value="" disabled selected data-i18n="expense.categoryPlaceholder">选择分类</option>
-        </select>
+      <div class="form-field form-field-full">
+        <label for="expenseDescription" data-i18n="expense.descriptionLabel">说明</label>
+        <input type="text" id="expenseDescription" class="text-input" placeholder="例如：晚餐、油钱、酒店订金…" data-i18n-placeholder="expense.descriptionPlaceholder">
       </div>
 
       <div class="form-field">
         <label for="expenseDate" data-i18n="expense.dateLabel">日期</label>
-        <input type="date" id="expenseDate" class="text-input">
-      </div>
-
-      <div class="form-field form-field-full">
-        <label for="expenseDescription" data-i18n="expense.descriptionLabel">说明</label>
-        <input type="text" id="expenseDescription" class="text-input" placeholder="例如：晚餐、油钱、酒店订金…" data-i18n-placeholder="expense.descriptionPlaceholder">
+        <input type="date" id="expenseDate" class="text-input" lang="en-GB">
       </div>
 
       <div class="form-field form-field-full" id="expenseSplitSection">
@@ -1547,7 +1686,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260801o"></script>
+<script src="app.js?v=20260801s"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

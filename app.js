@@ -636,6 +636,7 @@ const STRINGS = {
     'toast.currencySaved': '货币设定已储存',
     'toast.pleaseSelectTrip': '请先选择旅程',
     'toast.pleaseSelectPayer': '请选择付款人',
+    'toast.pleaseSelectCategory': '请选择分类',
     'toast.amountMustBePositive': '金额必须大于 0',
     'toast.needAtLeastOneParticipant': '至少需要 1 位参与人',
     'toast.saveFailed': '储存失败',
@@ -1275,6 +1276,7 @@ const STRINGS = {
     'toast.currencySaved': 'Currency saved',
     'toast.pleaseSelectTrip': 'Select a trip first',
     'toast.pleaseSelectPayer': 'Select a payer',
+    'toast.pleaseSelectCategory': 'Select a category',
     'toast.amountMustBePositive': 'Amount must be greater than 0',
     'toast.needAtLeastOneParticipant': 'At least 1 participant is required',
     'toast.saveFailed': 'Save failed',
@@ -2889,7 +2891,6 @@ async function handleTripFormSubmit() {
     if (poolToggle) poolToggle.checked = false;
     if (poolAmountInput) poolAmountInput.value = '';
     onPoolToggleChange({ checked: false });
-    await flashButtonSuccess(submitBtn, t('toast.tripAdded'));
     closeActiveModal();
 
     // Modal 关了之後才做的这几步（重新拉旅程清单、切换到新旅程、整批载入资料）
@@ -3030,7 +3031,6 @@ async function handleJoinTripFormSubmit() {
     codeInput.value = '';
     if (claimSelect) claimSelect.innerHTML = '';
     if (claimField) claimField.classList.add('is-hidden');
-    await flashButtonSuccess(submitBtn, t('joinTrip.successTitle'));
     closeActiveModal();
 
     renderDashboardSkeleton();
@@ -3127,7 +3127,6 @@ function initAccountPanel() {
           emailDisplayEl.textContent = email || t('account.emailNotSet');
         }
 
-        await flashButtonSuccess(saveEmailBtn, t('account.emailSavedTitle'));
         showToast('info', t('account.emailSavedTitle'), '请前往新邮箱点击确认连结，完成后邮箱才会真的更新');
         closeAccountEditForm('accountEmailRow', 'accountEmailForm');
       } catch (error) {
@@ -3167,7 +3166,6 @@ function initAccountPanel() {
         }
 
         renderWelcomeBanner();
-        await flashButtonSuccess(saveDisplayNameBtn, t('account.displayNameSavedTitle'));
         closeAccountEditForm('accountDisplayNameRow', 'accountDisplayNameForm');
 
         // 现在这趟旅程的成员名单里，我方的显示名字也变了，重新整理一次名单相关画面
@@ -3215,7 +3213,6 @@ function initAccountPanel() {
 
         currentPasswordInput.value = '';
         newPasswordInput.value = '';
-        await flashButtonSuccess(changePasswordBtn, t('account.passwordChangedTitle'));
         closeAccountEditForm('accountPasswordRow', 'accountPasswordForm');
       } catch (error) {
         showToast('error', t('account.passwordChangeFailedTitle'), error.message);
@@ -4386,22 +4383,46 @@ function renderEverything() {
 }
 
 /**
- * 已连上 API，但目前完全没有任何旅程时的提示状态
+ * 已连上 API，但目前完全没有任何旅程时的提示状态：
+ * Dashboard 页面整个换成置中的欢迎画面（logo + slogan + 引导句 + 建立旅程按钮），
+ * 不再是原本一堆面板各自塞一个小型空状态区块；其他分页（结算/账目/成员）
+ * 还是可能被直接点进来，各自面板维持原本的空状态引导
+ */
+/**
+ * 切换「某分页的全屏欢迎画面」与「该分页原本内容」的显示——两者互斥，
+ * 每个分页各自的一对 id 组合见 PAGE_EMPTY_HERO_MAP
+ * @param {string} heroId 欢迎画面容器 id
+ * @param {string} normalId 该分页原本内容容器 id
+ * @param {boolean} showHero true＝显示欢迎画面（隐藏原本内容），false＝反过来
+ */
+function togglePageEmptyHero_(heroId, normalId, showHero) {
+  const hero = document.getElementById(heroId);
+  const normal = document.getElementById(normalId);
+  if (hero) hero.classList.toggle('is-hidden', !showHero);
+  if (normal) normal.classList.toggle('is-hidden', showHero);
+}
+
+// Dashboard / 账目 / 结算 / 同行，每个分页各自的「欢迎画面」与「原本内容」容器 id 配对
+const PAGE_EMPTY_HERO_MAP = [
+  ['dashEmptyHero', 'dashNormalContent'],
+  ['expensesEmptyHero', 'expensesNormalContent'],
+  ['summaryEmptyHero', 'summaryNormalContent'],
+  ['membersEmptyHero', 'membersNormalContent']
+];
+
+/**
+ * 已连上 API，但目前完全没有任何旅程时的提示状态：
+ * Dashboard / 账目 / 结算 / 同行四个分页整个换成置中的欢迎画面
+ * （logo + slogan + 引导句 + 建立旅程按钮），不再是原本一堆面板各自塞一个
+ * 小型空状态区块——不管从哪个分页点进来，看到的都是同一句引导、同一颗按钮
  */
 function renderNoTripState() {
-  const title = t('dashboard.emptyTrip.title');
-  const message = t('system.noTripMsg');
-  renderEmptyBlock('recentActivityList', t('dashboard.emptyTrip.title'), t('dashboard.emptyTrip.desc'), 'addTripModal', t('tripModal.title'));
-  renderEmptyBlock('balanceMatrixList', title, message);
-  hideBalanceMatrixToggle();
-  renderEmptyBlock('balanceList', title, message);
-  renderEmptyBlock('settlementList', title, message);
-  renderEmptyBlock('repaymentList', title, message);
-  renderEmptyBlock('expensesList', title, message);
-  renderEmptyBlock('memberGrid', title, message, 'addTripModal', t('tripModal.title'));
+  PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => togglePageEmptyHero_(heroId, normalId, true));
 }
 
 function renderApiErrorState(message) {
+  PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => togglePageEmptyHero_(heroId, normalId, false));
+
   const title = t('system.loadFailed');
   renderEmptyBlock('recentActivityList', title, message);
   renderEmptyBlock('balanceMatrixList', title, message);
@@ -4481,7 +4502,7 @@ function closeDrawer() {
  * 下拉刷新则维持「跟手」的即时视觉回馈，因为这个手势的重点本来就是过程中的反馈。
  */
 function initTouchGestures() {
-  const EDGE_ZONE_PX = 10; // 只有从最左边 10px 内按下去，才算「边缘」滑动的候选
+  const EDGE_ZONE_PX = 10; // 只有从最右边 10px 内按下去，才算「边缘」滑动的候选（原本是最左边）
   const DIRECTION_LOCK_PX = 10; // 移动超过这个距离才判断方向，避免手抖误判
   const DRAWER_OPEN_THRESHOLD_PX = 70;
   const PTR_THRESHOLD_PX = 64;
@@ -4524,7 +4545,9 @@ function initTouchGestures() {
       lastX: t.clientX,
       lastY: t.clientY,
       mode: null,
-      canEdgeSwipe: t.clientX <= EDGE_ZONE_PX,
+      // 导览选单现在改从右边滑入（配合汉堡按钮搬到右上角），边缘侦测跟着从
+      // 「最左边 10px」改成「最右边 10px」
+      canEdgeSwipe: t.clientX >= window.innerWidth - EDGE_ZONE_PX,
       canPullToRefresh: window.scrollY <= 0
     };
     drawerOpenedByGesture = false;
@@ -4543,7 +4566,8 @@ function initTouchGestures() {
       if (Math.abs(dx) < DIRECTION_LOCK_PX && Math.abs(dy) < DIRECTION_LOCK_PX) {
         return; // 移动还太小，先不判断方向
       }
-      if (touch.canEdgeSwipe && dx > 0 && dx > Math.abs(dy)) {
+      // 原本是「从左边缘往右滑」（dx > 0），现在改成「从右边缘往左滑」（dx < 0）
+      if (touch.canEdgeSwipe && dx < 0 && Math.abs(dx) > Math.abs(dy)) {
         touch.mode = 'drawer';
       } else if (touch.canPullToRefresh && dy > 0 && dy > Math.abs(dx)) {
         touch.mode = 'ptr';
@@ -4555,7 +4579,7 @@ function initTouchGestures() {
 
     if (touch.mode === 'drawer') {
       event.preventDefault();
-      if (!drawerOpenedByGesture && dx >= DRAWER_OPEN_THRESHOLD_PX) {
+      if (!drawerOpenedByGesture && dx <= -DRAWER_OPEN_THRESHOLD_PX) {
         openDrawer();
         drawerOpenedByGesture = true;
       }
@@ -5238,6 +5262,7 @@ function resetExpenseForm() {
 
   document.getElementById('expenseForm').reset();
   document.getElementById('expenseCurrency').value = appState.tripCurrency.baseCurrency || 'MYR';
+  setExpenseCategoryValue_('');
   setDefaultExpenseDate();
   setSplitTypeControl('equal');
   renderParticipantList();
@@ -5289,7 +5314,7 @@ function openExpenseFormForEdit(expenseId) {
   document.getElementById('expensePayer').value = expense.Payer;
   document.getElementById('expenseAmount').value = expense.Amount;
   document.getElementById('expenseCurrency').value = expense.Currency || 'MYR';
-  document.getElementById('expenseCategory').value = expense.Category;
+  setExpenseCategoryValue_(expense.Category);
   document.getElementById('expenseDescription').value = expense.Description || '';
   document.getElementById('expenseReceipt').value = expense.Receipt || '';
   document.getElementById('expenseRemark').value = expense.Remark || '';
@@ -5369,6 +5394,10 @@ async function handleExpenseFormSubmitInner_() {
     showToast('error', t('toast.pleaseSelectPayer'), '');
     return;
   }
+  if (!category) {
+    showToast('error', t('toast.pleaseSelectCategory'), '');
+    return;
+  }
   if (!amount || amount <= 0) {
     showToast('error', t('toast.amountMustBePositive'), '');
     return;
@@ -5443,7 +5472,6 @@ async function handleExpenseFormSubmitInner_() {
 
         rememberLastSplitForPayer(payer, currentSplitType, participants);
         clearExpenseDraft();
-        await flashButtonSuccess(submitBtn, t('toast.expenseUpdated'));
         closeActiveModal();
         await refreshAfterExpenseSave(savedExpense, false);
       } else {
@@ -5459,7 +5487,6 @@ async function handleExpenseFormSubmitInner_() {
 
           rememberLastSplitForPayer(payer, currentSplitType, participants);
           clearExpenseDraft();
-          await flashButtonSuccess(submitBtn, t('toast.expenseAdded'));
           closeActiveModal();
           await refreshAfterExpenseSave(savedExpense, true);
         } catch (addError) {
@@ -5571,7 +5598,6 @@ async function handlePoolFundedExpenseSubmit_() {
     appState.pool = await fetchPoolStatus_();
 
     clearExpenseDraft();
-    await flashButtonSuccess(submitBtn, t('pool.expense.deductSuccess'));
     closeActiveModal();
 
     // 这笔钱同时也写进了 expenses 表（split_type='pool'，见 pool_deduct 数据库函数），
@@ -5891,7 +5917,7 @@ function restoreExpenseDraftIfAny() {
   if (draft.payer) document.getElementById('expensePayer').value = draft.payer;
   if (draft.amount) document.getElementById('expenseAmount').value = draft.amount;
   if (draft.currency) document.getElementById('expenseCurrency').value = draft.currency;
-  if (draft.category) document.getElementById('expenseCategory').value = draft.category;
+  if (draft.category) setExpenseCategoryValue_(draft.category);
   if (draft.description) document.getElementById('expenseDescription').value = draft.description;
   if (draft.remark) document.getElementById('expenseRemark').value = draft.remark;
   if (draft.date) document.getElementById('expenseDate').value = draft.date;
@@ -5940,7 +5966,6 @@ async function handleMemberFormSubmit() {
     if (error) throw error;
 
     nameInput.value = '';
-    await flashButtonSuccess(submitBtn, t('toast.memberAdded'));
     closeActiveModal();
     await refreshMembers();
   } catch (error) {
@@ -6264,7 +6289,6 @@ async function handleRepaymentFormSubmit() {
     document.getElementById('repaymentForm').reset();
     setDefaultRepaymentDate();
     renderRepaymentFromList();
-    await flashButtonSuccess(submitBtn, t('toast.repaymentAdded'));
     closeActiveModal();
     await refreshRepayments();
   } catch (error) {
@@ -6349,6 +6373,8 @@ function handleDeleteRepaymentClick(repaymentId, label) {
    ------------------------------------------------------------ */
 
 function renderDashboard() {
+  togglePageEmptyHero_('dashEmptyHero', 'dashNormalContent', false);
+
   renderWelcomeBanner();
   renderDashboardHeader();
   renderHeroCard();
@@ -6583,10 +6609,15 @@ function hideBalanceMatrixToggle() {
  * 的第一人称说法，其他人之间的欠款则显示「A 需要转给 B」
  */
 function renderBalanceMatrix() {
-  const settlements = (appState.summary && appState.summary.settlements) || [];
+  const allSettlements = (appState.summary && appState.summary.settlements) || [];
   const container = document.getElementById('balanceMatrixList');
   const toggleBtn = document.getElementById('balanceMatrixToggleBtn');
   if (!container) return;
+
+  // 只显示跟登入帐号有关的那几笔（自己该付给谁、该跟谁收），不是「所有人跟所有人」
+  // 的还款建议——理由跟结算页面的「谁欠谁」清单一样，见 renderSummaryPage 的说明
+  const viewerName = getViewerName();
+  const settlements = allSettlements.filter((item) => item.from === viewerName || item.to === viewerName);
 
   if (settlements.length === 0) {
     renderEmptyBlock('balanceMatrixList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
@@ -6594,7 +6625,6 @@ function renderBalanceMatrix() {
     return;
   }
 
-  const viewerName = getViewerName();
   const MAX_COLLAPSED = 3;
   const isLong = settlements.length > MAX_COLLAPSED;
   const collapsedList = isLong ? settlements.slice(0, MAX_COLLAPSED) : settlements;
@@ -7164,12 +7194,7 @@ async function handlePoolSettle() {
     }));
 
     appState.pool = await fetchPoolStatus_();
-
-    if (btn) {
-      await flashButtonSuccess(btn, t('pool.settle.successTitle'));
-    } else {
-      showToast('success', t('pool.settle.successTitle'));
-    }
+    setButtonLoading(btn, false);
 
     // 金库退款不会写入 repayments 表、也不是 expenses（不影响应收/应付、也不会
     // 出现在账目页），但 Hero Card 的「已收金额」小格子、金库设定页要跟着更新
@@ -7505,13 +7530,8 @@ async function handlePoolTopupSubmit() {
     if (topupError) throw topupError;
     appState.pool = await fetchPoolStatus_();
 
-    if (btn) {
-      await flashButtonSuccess(btn, t('pool.settings.topupSuccess'));
-    } else {
-      showToast('success', t('pool.settings.topupSuccess'));
-    }
-    // 动画播完後才重新渲染——表单会自然清空、金库卡片/余额、Hero Card 的
-    // 「已付金额」小格子同步更新
+    setButtonLoading(btn, false);
+    // 表单会自然清空、金库卡片/余额、Hero Card 的「已付金额」小格子同步更新
     renderEverything();
   } catch (error) {
     showToast('error', t('pool.topup.failedTitle'), error.message);
@@ -7625,11 +7645,6 @@ async function handlePoolTopupEditSubmit(topupId) {
     if (updateError) throw updateError;
     appState.pool = await fetchPoolStatus_();
 
-    if (btn) {
-      await flashButtonSuccess(btn, t('pool.settings.editTopupSuccess'));
-    } else {
-      showToast('success', t('pool.settings.editTopupSuccess'));
-    }
     closeActiveModal();
     renderEverything(); // Hero Card 的「已付金额」也可能因为改了金额/币种而跟着变
   } catch (error) {
@@ -7851,6 +7866,8 @@ function buildExpenseRowHtml(expense) {
  *   会传 false，改成往下补渲染下一批，不重画已经在畫面上的那些行
  */
 function renderExpensesTable(resetPage = true) {
+  togglePageEmptyHero_('expensesEmptyHero', 'expensesNormalContent', false);
+
   if (resetPage) {
     expensesListRenderedCount = EXPENSES_LIST_PAGE_SIZE;
   }
@@ -8003,6 +8020,8 @@ function openExpenseDetailModal(expenseId) {
    ------------------------------------------------------------ */
 
 function renderSummaryPage() {
+  togglePageEmptyHero_('summaryEmptyHero', 'summaryNormalContent', false);
+
   const balances = appState.summary.balances || [];
   const settlements = appState.summary.settlements || [];
 
@@ -8015,18 +8034,25 @@ function renderSummaryPage() {
   if (balances.length === 0) {
     renderEmptyBlock('balanceList', t('empty.noBalance.title'), t('empty.noBalance.desc'));
   } else {
+    const baseCurrency = (appState.tripCurrency && appState.tripCurrency.baseCurrency) || 'MYR';
     const container = document.getElementById('balanceList');
     container.innerHTML = balances.map((item) => {
       const balanceClass = item.balance > AMOUNT_TOLERANCE ? 'is-positive' : (item.balance < -AMOUNT_TOLERANCE ? 'is-negative' : 'is-zero');
       const balanceLabel = item.balance > AMOUNT_TOLERANCE ? t('memberStats.receivable') : (item.balance < -AMOUNT_TOLERANCE ? t('memberStats.payable') : t('memberStats.settled'));
-      const repaidNote = item.repaid > AMOUNT_TOLERANCE ? t('memberDetail.repaidNote', { repaid: formatMoney(item.repaid) }) : '';
+
+      // 已付金额／个人消费／已收金额，统一跟 Hero Card／PDF 报告用同一套算法
+      // （见 computeMemberPoolShares_ 的说明），这样不管在哪个画面看到的数字都一致
+      const poolShares = computeMemberPoolShares_(item.name);
+      const frontedBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.paid + (item.repaid || 0), poolShares.topupBreakdown);
+      const personalBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.shouldPay, poolShares.consumptionBreakdown);
+      const receivedBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.received, poolShares.refundBreakdown);
 
       return `
         <div class="balance-row">
           <div class="avatar">${escapeHtml(getInitials(item.name))}</div>
           <div class="balance-info">
             <p class="balance-name">${escapeHtml(item.name)}</p>
-            <p class="balance-sub">${escapeHtml(t('summary.paidShouldPay', { paid: formatMoney(item.paid), shouldPay: formatMoney(item.shouldPay) }))}${repaidNote}</p>
+            <p class="balance-sub">${escapeHtml(t('hero.frontedLabel'))} ${escapeHtml(formatCurrencyBreakdownText(frontedBreakdown))} · ${escapeHtml(t('hero.personalLabel'))} ${escapeHtml(formatCurrencyBreakdownText(personalBreakdown))} · ${escapeHtml(t('hero.receivedLabel'))} ${escapeHtml(formatCurrencyBreakdownText(receivedBreakdown))}</p>
           </div>
           <div>
             <p class="balance-amount mono ${balanceClass}">${formatMoney(Math.abs(item.balance))}</p>
@@ -8037,6 +8063,9 @@ function renderSummaryPage() {
     }).join('');
   }
 
+  // 结算页面的「建议还款」显示完整清单（所有人跟所有人），不像 Dashboard 首页的
+  // 「谁欠谁」那样只筛跟自己有关的——这里是给管理这趟旅程的人看全貌用的，
+  // Dashboard 首页那个才是给个人快速看「我该处理什么」用的，两处用途不同
   if (settlements.length === 0) {
     renderEmptyBlock('settlementList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
   } else {
@@ -8192,7 +8221,6 @@ async function handleEditRepaymentFormSubmit() {
     const row = translateRepaymentPayloadForWrite_({ fromMember, toMember, amount, date, remark, isNew: false });
     const { error } = await supabaseClient.from('repayments').update(row).eq('id', repaymentId);
     if (error) throw error;
-    await flashButtonSuccess(submitBtn, t('toast.repaymentUpdated'));
     closeActiveModal();
     await refreshRepayments();
   } catch (error) {
@@ -8228,6 +8256,8 @@ function getMemberStatusBadge(name) {
 }
 
 function renderMembersPage() {
+  togglePageEmptyHero_('membersEmptyHero', 'membersNormalContent', false);
+
   renderDuplicateMemberBanner();
 
   const members = appState.members;
@@ -8788,20 +8818,51 @@ function renderPayerSelectOptions() {
   }
 }
 
-function renderCategorySelectOptions() {
-  const select = document.getElementById('expenseCategory');
-  const currentValue = select.value;
-  select.innerHTML = `<option value="" disabled selected>${escapeHtml(t('expense.categoryPlaceholder'))}</option>`;
+/**
+ * 设定「分类」栏位的值——统一透过这个函式，不要直接对 #expenseCategory 赋值，
+ * 不然 pill 按钮的选中样式（.is-active）会跟实际的值不同步
+ * @param {string} category
+ */
+function setExpenseCategoryValue_(category) {
+  const hiddenInput = document.getElementById('expenseCategory');
+  if (hiddenInput) hiddenInput.value = category || '';
 
+  const container = document.getElementById('expenseCategoryPills');
+  if (container) {
+    container.querySelectorAll('.category-pill').forEach((pill) => {
+      pill.classList.toggle('is-active', pill.getAttribute('data-category') === category);
+    });
+  }
+}
+
+/**
+ * 渲染「分类」的快速选择 pill 按钮——用一整排可以直接点的圆角按钮取代下拉选单，
+ * 选好之後金额通常也已经填了，分类是最後一个还没决定的东西，放在第一排最先看到、
+ * 一点就选好，比还要点开下拉选单快很多
+ */
+function renderCategorySelectOptions() {
+  const container = document.getElementById('expenseCategoryPills');
+  const hiddenInput = document.getElementById('expenseCategory');
+  const currentValue = hiddenInput ? hiddenInput.value : '';
+
+  container.innerHTML = '';
   appState.categories.forEach((category) => {
-    const option = document.createElement('option');
-    option.value = category;
-    option.textContent = translateCategory(category);
-    select.appendChild(option);
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'category-pill';
+    pill.setAttribute('data-category', category);
+    pill.textContent = translateCategory(category);
+    container.appendChild(pill);
+  });
+
+  container.querySelectorAll('.category-pill').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      setExpenseCategoryValue_(pill.getAttribute('data-category'));
+    });
   });
 
   if (appState.categories.includes(currentValue)) {
-    select.value = currentValue;
+    setExpenseCategoryValue_(currentValue);
   }
 }
 
@@ -9162,8 +9223,6 @@ async function handleSaveCurrencySettings() {
 
   try {
     await saveExchangeRates_({ baseCurrency, rates: ratesObject });
-
-    await flashButtonSuccess(submitBtn, t('toast.currencySaved'));
 
     // 基准货币或汇率改变，会影响所有跟结算相关的数字，整趟旅程资料重新载入一次最保险
     await loadTripData();
@@ -10552,41 +10611,6 @@ function setButtonLoading(button, isLoading) {
   button.classList.toggle('is-loading', isLoading);
   button.disabled = isLoading;
 }
-
-/**
- * 新增／编辑类操作成功後，直接在原本的送出／储存按钮上短暂显示打勾＋文字确认，
- * 不再另外跳一个 Toast 弹窗——按钮本身就在使用者刚点下去的视线焦点上，用它做
- * 回馈比额外飘一个 popup 更直接、也不打断操作节奏。
- * 兼容两种按钮结构：内含 .btn-label 的（Modal 送出按钮），或纯文字按钮（设置页储存按钮）。
- * @param {HTMLElement} button 要显示确认状态的按钮
- * @param {string} message 打勾旁边要显示的短文字，例如「已储存」（建议用 Toast 标题，不要用较长的说明文字，按钮宽度放不下）
- * @param {number} [holdMs=650] 打勾状态要停留多久才还原
- * @return {Promise<void>} 停留时间结束、按钮还原後才 resolve，方便呼叫端接着做关闭 Modal 等後续动作
- */
-function flashButtonSuccess(button, message, holdMs = 650) {
-  return new Promise((resolve) => {
-    if (!button) {
-      resolve();
-      return;
-    }
-
-    const labelEl = button.querySelector('.btn-label') || button;
-    const originalHTML = labelEl.innerHTML;
-
-    button.classList.remove('is-loading');
-    button.classList.add('is-success');
-    button.disabled = true;
-    labelEl.innerHTML = `<svg class="btn-success-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5L9.5 17L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${escapeHtml(message)}</span>`;
-
-    window.setTimeout(() => {
-      labelEl.innerHTML = originalHTML;
-      button.classList.remove('is-success');
-      button.disabled = false;
-      resolve();
-    }, holdMs);
-  });
-}
-
 
 /* ------------------------------------------------------------
    19. 共用小型渲染工具
