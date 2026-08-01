@@ -1,0 +1,6001 @@
+/* ============================================================
+   分帐 App · style.css
+   设计参考：Apple / Linear / Notion / Raycast
+   原则：白色背景、大量留白、Glass Card、16px 圆角、极淡阴影
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. 设计 Tokens（浅色 / 深色模式）
+   ------------------------------------------------------------ */
+:root {
+  /* 字体 */
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* 颜色：基础 —— 暖灰黑阶（Claude.ai 式），比冷 Slate 更沉稳厚实，
+     浅色模式同步转暖，保持深浅色同一色温 */
+  --bg: #faf9f6;
+  --bg-subtle: #f0eee8;
+  --bg-elevated: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.72);
+  --surface-glass-strong: rgba(255, 255, 255, 0.88);
+  --border: rgba(35, 32, 28, 0.09);
+  --border-strong: rgba(35, 32, 28, 0.15);
+
+  /* 颜色：文字 —— 暖炭黑文字，明度梯队清晰、克制 */
+  --text-primary: #201e1b;
+  --text-secondary: #6b655c;
+  /* #726c62 对 --bg 约 4.9:1，达 WCAG AA 正文标准（4.5:1），
+     仍比 --text-secondary 浅一阶，保留「次要 < 三级」的视觉层级 */
+  --text-tertiary: #726c62;
+  --text-on-accent: #ffffff;
+
+  /* 颜色：品牌与语意 —— 呼应搭伙金库卡片的青绿色调（跟 --pool-teal 同一色相），
+     浅色模式用较深的青绿（teal-700 级），确保按钮白字仍维持 WCAG AA 对比度；
+     语意色统一降低到 AA 可读的明度，不用高饱和霓虹色 */
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: rgba(15, 118, 110, 0.08);
+  --success: #1f9d55;
+  --success-soft: rgba(31, 157, 85, 0.08);
+  --danger: #d70015;
+  --danger-soft: rgba(215, 0, 21, 0.08);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.10);
+
+  /* 阴影（柔和弥散，Apple 式极淡投影） */
+  --shadow-xs: 0 1px 2px rgba(20, 20, 30, 0.03);
+  --shadow-sm: 0 2px 8px rgba(20, 20, 30, 0.05);
+  --shadow-md: 0 8px 24px rgba(20, 20, 30, 0.07);
+  --shadow-lg: 0 20px 48px rgba(20, 20, 30, 0.10);
+
+  /* 圆角 */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --radius-full: 999px;
+
+  /* 间距刻度 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* 版面尺寸 */
+  --sidebar-width: 248px;
+  --header-height: 88px;
+  --tabbar-height: 68px;
+
+  /* 动画 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+  --duration-micro: 280ms; /* 侧边栏滑出、弹窗显隐等微交互，统一控制在 250-300ms */
+
+  /* 玻璃拟态 (Glassmorphism) */
+  --glass-blur: 20px;
+  --glass-blur-strong: 28px;
+  --glass-border-highlight: rgba(255, 255, 255, 0.6);
+  --glass-saturate: 180%;
+
+  /* 移动版侧滑抽屉 */
+  --drawer-width: 280px;
+}
+
+/* 深色模式 tokens —— 暖灰黑基底（参考 Claude.ai 深色模式），比冷调 Slate 更沉稳，
+   与浅色模式同一色温，改用搭伙金库卡片同款的青绿做点缀，避免「脏水泥板」式的纯灰/纯黑 */
+[data-theme="dark"] {
+  --bg: #1f1e1c;
+  --bg-subtle: #262523;
+  --bg-elevated: #2d2c29;
+  --surface-glass: rgba(45, 44, 41, 0.68);
+  --surface-glass-strong: rgba(45, 44, 41, 0.9);
+  --border: rgba(250, 249, 245, 0.08);
+  --border-strong: rgba(250, 249, 245, 0.15);
+
+  --text-primary: #f5f4ef;
+  --text-secondary: #a49e93;
+  /* #8c8579 对 --bg 约 4.6:1，通过 WCAG AA，保留「次要 < 三级」层级 */
+  --text-tertiary: #8c8579;
+
+  /* 跟 --pool-teal 用同一个色值，卡片跟按钮/导览指示点是同一种青绿，视觉上是同一套色系 */
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-soft: rgba(45, 212, 191, 0.18);
+  /* 强调色本身偏亮，白字对比不够；改用深青墨色，比纯白字更有高级感，
+     也呼应搭伙金库卡片的深靛蓝底色 */
+  --text-on-accent: #0b2e2b;
+  --success: #30d158;
+  --success-soft: rgba(48, 209, 88, 0.16);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.16);
+  --warning: #ff9f0a;
+  --warning-soft: rgba(255, 159, 10, 0.18);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 10px 28px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.5);
+
+  /* 玻璃拟态：暗色模式下边框高光调暗、降低透明度，避免糊成一片 */
+  --glass-border-highlight: rgba(255, 255, 255, 0.08);
+}
+
+
+/* ------------------------------------------------------------
+   2. Reset & 基础
+   ------------------------------------------------------------ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  /* 手机版视口 meta 已经用 user-scalable=no 关掉双指缩放，但 iOS Safari 有时候
+     基於无障碍考量会忽略这个设定；双击快速点两下造成的「双击缩放」更是完全独立於
+     viewport meta 之外的另一套机制，只能靠这个 CSS 属性关掉——两者加起来才能确保
+     整个 App 摸起来跟原生 App 一样「点不放大」，符合手机版 PWA 的介面质感 */
+  touch-action: manipulation;
+  /* 关掉「拉到底/拉过头」时那种网页特有的橡皮筋回弹——原生 App 通常整个画面
+     是固定不动的容器，只有内容本身会滚动，拉到底不会看到画面整个被拖走、
+     底下露出一截空白再弹回来的效果，这个正是「看起来像网页」最明显的破绽之一 */
+  overscroll-behavior: none;
+  /* 安全网：整个 App 只应该上下滑，不该有任何左右滑动的空间——语言切换成英文後，
+     很多原本设计给中文短字数塞的单行元件（例如首页三颗快速动作按钮、Hero Card
+     的三栏统计数字）文字一变长，若没被下面各自元件的修正顾到，最坏情况就是把
+     整个版面撑宽、逼出一个可以左右滑动的页面。这里从最外层直接锁死，
+     不管漏了哪个元件没顾到，都只会讓那个元件内部换行/挤压，不会讓整个
+     页面出现横向捲动。
+     注意：用 overflow-x:clip 而不是 overflow-x:hidden——CSS 有一条冷知识规则，
+     只要 overflow-x 不是 visible，浏览器会强制把没设定的 overflow-y 也变成 auto；
+     html/body 两层都符合这个条件（都有 height:100%），结果两层各自变成一个
+     跟 viewport 等高、却各自独立的捲动容器，不再是浏览器原生「文件本身捲动」的
+     那个 viewport。桌面版 .sidebar 的 position:sticky 因此变成相对 body 这个
+     被钉死高度的盒子在算位置，跟 .app-shell 用 100dvh（会随地址列收合动态变化）
+     撑出来的实际内容高度对不齐，才会出现「往下滑侧边栏就消失」；同一个原因也让
+     body 的固定高度常常比 .app-shell 实际内容还高，多出来的差距在手机版就变成
+     内容跟底部导览列之间那截明显的空白。overflow-x:clip 一样能挡住左右误捲动，
+     但不在「visible / hidden / scroll / auto」这组会互相配对的值之列，
+     不会连带把 overflow-y 逼成 auto，html/body 就不会各自独立出一个捲动容器，
+     浏览器原生的 viewport 捲动才能维持正常，sticky 才能真正相对 viewport 吸顶 */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+* {
+  /* 拿掉手机版点击任何元素时那闪一下的灰色半透明色块（原生 App 完全没有这个东西，
+     这个高亮预设是浏览器专属的「我知道你点到了」提示，有了它整个介面马上显得很网页感）；
+     视觉回馈改靠各元素自己的 :active 状态（例如 .btn 的 transform: scale(0.97/0.98)）
+     去表现「有点到」，比这层死板的灰色块更细腻也更像原生 App 的触感 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out);
+}
+
+/* Modal／侧边抽屉打开时，用这个 class 冻结背景页面（见 app.js 的 lockBodyScroll()）。
+   用 position:fixed 而不是单纯 overflow:hidden——只设 overflow:hidden 的话，很多
+   浏览器会在那一刻顺手把捲动位置重置成 0，背景页面会像是「自己跳回顶端」。
+   position:fixed 配合 JS 算好、写在 inline style 上的负值 top，能把 body 精准
+   冻结在使用者原本看到的那个画面，关闭 Modal 後再解锁、把捲动位置还原回去，
+   全程不会有任何视觉跳动 */
+.body-scroll-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, p {
+  margin: 0;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  /* 长按按钮时，iOS 预设会跳出「拷贝／分享」这种选取气泡菜单——原生 App 的按钮
+     长按只会有点击回馈，不会有文字选取行为，这里连同下面的 user-select 一起关掉，
+     长按体验才会跟原生一致；.nav-item/.tab-item 这类可点击但不是 <button> 标签
+     的元素也要一併处理，见下方 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.nav-item,
+.tab-item,
+.chip,
+.icon-btn,
+.checkbox-box,
+.segmented-item,
+.app-header-brand,
+.brand-name {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+a {
+  color: var(--accent);
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* 通用工具类：JS 动态显示 / 隐藏元素用 */
+.is-hidden {
+  display: none !important;
+}
+
+/* 键盘可视焦点 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* 卷轴样式 —— 同时提供 Webkit 专属规则（Chrome/Edge/Safari）和标准 scrollbar-color
+   （Firefox，新版 Chromium 也支援）。没有 scrollbar-color 的话，Firefox 会退回系统/
+   浏览器默认卷轴配色，很多系统预设就是紫蓝色，跟我们的设计脱节 */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ------------------------------------------------------------
+   3. App Shell 版面（Mobile First）
+   ------------------------------------------------------------ */
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr;
+  /* 手机/平板版让 Header 那一行自动贴合内容高度，不再写死 --header-height；
+     内容（44px 的汉堡按钮）+ 上下留白就是实际高度，不会像固定数字那样
+     留出一截用不到的空白，遇到瀏海/灵动岛需要的安全区留白也会自动跟着长高，
+     不会裁切内容。桌面版（≥1024px）在下面的 media query 里还是维持原本
+     固定的 var(--header-height)，不受这里影响 */
+  grid-template-areas:
+    "header"
+    "main";
+  min-height: 100vh; /* 向後相容：不支援 dvh 的旧浏览器会用这个值 */
+  min-height: 100dvh; /* iOS Safari 网址列／工具列会随捲动展开收合，100vh 是「工具列
+                          收起时的最大值」，收合前会比实际可见画面高一截；100dvh
+                          （dynamic viewport height）会跟着工具列即时调整，才是
+                          真正「现在看得到的这块画面」的高度，不支援的浏览器
+                          会直接忽略这行、退回上面那行 100vh */
+  /* 注意：这里刻意不加 overflow-x:hidden——html/body 那层已经有同样的安全网了，
+     在这里再加一次会触发 CSS 一个冷知识规则：只要 overflow-x 不是 visible，
+     浏览器会自动把 overflow-y 也悄悄变成 auto，讓 .app-shell 意外变成自己
+     独立的捲动容器，跟真正在捲动的 body 不是同一个，桌面版侧边栏的
+     position:sticky 就是相对这个「意外产生」的捲动容器在算位置，
+     跟网页实际捲动的方向对不上，才会出现「往下滑侧边栏就不见」的状况 */
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out), filter 0.45s var(--ease-out);
+}
+
+.app-shell.is-logging-out {
+  opacity: 0;
+  transform: scale(0.96);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.app-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  padding-top: calc(var(--space-2) + env(safe-area-inset-top));
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border-bottom: 1px solid var(--border);
+  /* 手机版把这个 App 加到主画面（apple-mobile-web-app-capable，见 index.html）时，
+     iOS 的状态列是「悬浮透明」盖在网页内容上面（black-translucent），不是把内容往下推——
+     不补 env(safe-area-inset-top) 这段留白的话，汉堡选单按钮／页面标题会直接躲到状态列
+     底下，看得到但点不到。
+     一开始这里只把 padding-top 设成 env(safe-area-inset-top)、padding-bottom 维持 0，
+     结果内容整个贴着下边框、上面留一大块空白，看起来很不对称——因为原本这个 header
+     本来就没有自己的上下留白（完全靠内容本身的高度撑开），状态列净空直接取代掉
+     「本来就是 0」的留白，两侧份量当然不一样。改成先给一个正常、对称的基本留白
+     （var(--space-2) 上下都有），状态列净空只加在上面那一侧、叠加在这个基本留白之上，
+     header 本身的内容才会保持左右／上下都均衡，视觉不对称的状态列净空则整个显现在
+     header 外面那一截 */
+}
+
+.app-main {
+  grid-area: main;
+  /* 底部 padding 不额外加 env(safe-area-inset-bottom)，理由同 .mobile-tabbar */
+  padding: var(--space-5) var(--space-5) calc(var(--tabbar-height) + var(--space-8));
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  /* 真正的病根在这里：.app-shell 是 display:grid，网格项目（grid item）预设的
+     min-width 是 auto，意思是「至少要撑到内容本身最窄能缩到多窄」，不是「可以
+     一路缩到 0」。只要页面里任何一个角落——不管哪一页、不管中文英文——有任何
+     一小段无法再换行的内容（一串数字、一个 icon 排列、一个徽章），网格容器就会
+     整个被那一小段内容撑宽，宽度超出手机屏幕，而且是「每一页都用同一个 .app-main
+     容器」，所以每一页都会遇到同样幅度的裁切，语言长短反而只是巧合、不是根因。
+     加上 min-width:0 明确告诉网格「不需要保留内容的最小宽度，缩到跟视口一样窄
+     也没关系」，才能真正杜绝这个问题，而不是在个别元件上一个个补 */
+  min-width: 0;
+}
+
+/* 下拉刷新指示器——见 index.html #ptrIndicator，手势逻辑在 initTouchGestures() */
+.ptr-indicator {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: height 0.25s var(--ease-out);
+}
+
+.ptr-indicator.is-dragging {
+  /* 手指还按著、正在即时跟手的时候不要有过渡动画，不然会一直「追」手指、感觉黏黏的 */
+  transition: none;
+}
+
+.ptr-indicator-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.ptr-arrow {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.15s var(--ease-out);
+}
+
+.ptr-arrow.is-hidden {
+  display: none;
+}
+
+/* 离线状态横幅——见 index.html #offlineBanner */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.offline-banner svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.offline-banner.is-syncing {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ------------------------------------------------------------
+   4. Sidebar（桌面版，移动版隐藏）
+   ------------------------------------------------------------ */
+.sidebar {
+  display: none;
+}
+
+/* ------------------------------------------------------------
+   4B. Sidebar / Drawer 共用样式
+   ------------------------------------------------------------
+   这些样式同时被「桌面版 Sidebar」与「移动版侧滑抽屉 #sideMenu」使用，
+   刻意放在响应式断点之外，确保两种版面都能拿到一致的导航外观。
+   ------------------------------------------------------------ */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-6);
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Logo 黑白反转：深色模式下把方块底色换成白色、白色细线换成黑色，蓝色维持不变 */
+[data-theme="dark"] .brand-mark .logo-bg {
+  fill: #ffffff;
+}
+
+[data-theme="dark"] .brand-mark .logo-hi {
+  fill: #0a0a0c;
+}
+
+.brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.brand-slogan {
+  font-size: 10.5px;
+  font-weight: 550;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  transform: translateY(0);
+  transition: transform var(--duration-micro) var(--ease-out);
+  will-change: transform;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.nav-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: color var(--duration-fast) var(--ease-out);
+  text-align: left;
+}
+
+.nav-item svg {
+  width: 19px;
+  height: 19px;
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+}
+
+.nav-item.is-active {
+  color: var(--accent);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 手机版侧滑抽屉底部：跟桌面版侧栏一样放语言切换（点击直接换下一个语言）、
+   深色模式切换、登出，堆叠排列 */
+.drawer-footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: 42px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.theme-toggle:hover {
+  background: var(--bg-subtle);
+}
+
+.theme-icon {
+  width: 19px;
+  height: 19px;
+  display: flex;
+}
+
+.theme-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 图示跟文字标签用同一套「显示点了会切到哪个模式」逻辑：
+   浅色模式下显示月亮（代表点了会切到深色），深色模式下显示太阳（代表点了会切到浅色）——
+   不是「显示目前是哪个模式」，避免跟旁边动态更新的文字标签（浅色模式／深色模式）对不上 */
+.theme-icon-light { display: none; }
+[data-theme="dark"] .theme-icon-dark { display: none; }
+[data-theme="dark"] .theme-icon-light { display: flex; }
+
+/* ------------------------------------------------------------
+   4C. 移动版侧滑抽屉 (#sideMenu) + 汉堡按钮
+   ------------------------------------------------------------
+   动画性能考量：只用 transform: translateX(...) 做滑出/收起，
+   完全不碰 width/left/margin，避免触发浏览器重排（Reflow）。
+   ------------------------------------------------------------ */
+.drawer-open {
+  display: none; /* 手机版不再用汉堡选单当导航入口（改成底部导览的「更多」），
+                     桌面版原本就没有这颗按钮（用固定侧栏），两边现在都是隐藏的 */
+}
+
+.drawer-close {
+  margin-left: auto;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-splash：改用 100dvh 直接量「现在看得到的画面高度」，不靠 inset:0
+     的 bottom:0 去对齐，避免手机版网址列还没收合时底部露出缝隙 */
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(10, 10, 14, 0.42);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-micro) var(--ease-out);
+  z-index: 400;
+}
+
+.drawer-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* 理由同上：不用 bottom:0 让浏览器自己换算，改用 100dvh 直接撑到「现在看得到的
+     画面底部」，抽屉才会在手机版网址列还没收合时也贴齐底部，不露出缝隙 */
+  height: 100vh;
+  height: 100dvh;
+  width: var(--drawer-width);
+  max-width: 84vw;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-lg), inset -1px 0 0 var(--glass-border-highlight);
+  z-index: 410;
+  /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层 */
+  transform: translateX(-100%) translateZ(0);
+  will-change: transform;
+  transition: transform var(--duration-micro) var(--ease-out);
+}
+
+.side-drawer.is-open {
+  transform: translateX(0) translateZ(0);
+}
+
+.side-drawer .sidebar-brand {
+  padding: var(--space-2) var(--space-2) var(--space-5);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-nav .nav-item {
+  height: 46px;
+}
+
+
+/* ------------------------------------------------------------
+   5. Header 内容
+   ------------------------------------------------------------ */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.header-left-text {
+  min-width: 0;
+  flex: 1;
+  /* 原本手机版这里是 display:none、改显示右边绝对置中的 .app-header-brand 品牌字；
+     现在手机版也要看到「目前在哪一页」，改成跟桌面版共用同一份样式，一律显示。
+     .page-title 本身已经有 white-space:nowrap + ellipsis，配合这里的 flex:1，
+     标题过长（尤其英文版 "Optimal Settlement" 这类）会自动裁切，不会撑爆版面
+     或跟右侧的旅程切换器打架 */
+  display: block;
+}
+
+.app-header-brand {
+  /* 现在不管哪个尺寸，Header 左侧一律显示当前页标题（见 .header-left-text），
+     这个纯品牌字样不再需要显示，但留着这份定位样式以防之后其他地方要重新启用 */
+  display: none;
+  position: absolute;
+  left: 50%;
+  /* 不能用 top:50%去抓「整个 header box」的正中央——.app-header 的
+     padding-top 比 padding-bottom 多了一截 env(safe-area-inset-top)（不对称），
+     50% 抓的是整个 box 的中点，会比「实际内容那一行」真正的视觉中心偏高，
+     偏高的量正好是安全区高度的一半，安全区愈大（例如灵动岛机种）Logo 就愈
+     往上贴、贴进状态列／灵动岛里。
+     这里不去猜 header 实际渲染高度（Grid 固定行高遇到内容撑高时不一定準），
+     改成让这个绝对定位的框本身，上下边界直接对齐 .app-header 自己用的
+     padding-top / padding-bottom（同一组数值），框出来的范围正好等於
+     「扣掉安全区後剩下的实际内容列」，再用 flex 置中，不管哪款 iPhone
+     安全区多高，都会跟左右两侧的按钮/图示对在同一条水平线上 */
+  top: calc(var(--space-3) + env(safe-area-inset-top));
+  bottom: var(--space-3);
+  transform: translateX(-50%);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  pointer-events: none; /* 纯品牌字样，不需要接收点击，避免挡到旁边元素的点击热区 */
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-subtitle {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: none;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.trip-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-header .trip-switcher {
+  display: flex;
+  /* 手机/平板（<1024px）也直接在 Header 露出精简版旅程切换器，不用再绕去
+     「设置」页才能切换——那边的 #settingsTripSwitcherPanel 功能更完整
+     （含新增旅程），继续保留给需要的人用，这里只解决「常态切换」的高频需求 */
+}
+
+.app-header .trip-switcher .icon-btn {
+  /* 「新增旅程」这颗 + 按钮在窄屏幕先隐藏，Header 只留「切换」这个高频动作；
+     新增旅程在设置页的旅程切换面板还是找得到，不算功能遗失 */
+  display: none;
+}
+
+.app-header .trip-switcher .select-control {
+  max-width: 104px;
+}
+
+.trip-switcher .select-control {
+  max-width: 132px;
+}
+
+.trip-switcher-settings {
+  width: 100%;
+}
+
+.trip-switcher-settings .select-control {
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .trip-switcher .select-control {
+    max-width: 200px;
+  }
+}
+
+.select-all-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
+  width: 100%;
+  margin-bottom: var(--space-4);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.search-box:focus-within {
+  border-color: var(--accent);
+  color: var(--text-secondary);
+}
+
+.search-box svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.search-box input {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 14px;
+  width: 100%;
+  color: var(--text-primary);
+}
+
+.search-box input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ------------------------------------------------------------
+   6. 按钮
+   ------------------------------------------------------------ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+  position: relative;
+}
+
+.btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-sm), 0 0 0 6px var(--accent-soft);
+}
+
+.btn-primary:active {
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-subtle);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  filter: brightness(1.05);
+}
+
+.btn-sm {
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 13px;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn.is-loading .btn-label {
+  visibility: hidden;
+}
+
+.btn-spinner {
+  display: none;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+.btn.is-loading .btn-spinner {
+  display: block;
+}
+
+/* 按钮打勾确认状态——新增/编辑成功后直接在按钮上显示，取代额外跳出的 Toast */
+.btn.is-success {
+  background: var(--success);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn.is-success:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.btn.is-success .btn-spinner {
+  display: none;
+}
+
+.btn-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-success-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  animation: btnSuccessPop 320ms var(--ease-spring, ease);
+}
+
+@keyframes btnSuccessPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.btn-secondary.is-loading .btn-spinner,
+.btn-ghost.is-loading .btn-spinner {
+  border-color: var(--border-strong);
+  border-top-color: var(--text-primary);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.icon-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.link-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.link-btn:hover {
+  color: var(--accent-hover);
+}
+
+/* ------------------------------------------------------------
+   7. Glass Card / Panel
+   ------------------------------------------------------------ */
+.glass-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-border-highlight);
+  transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+.glass-card-hoverable:hover {
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight);
+  transform: translateY(-1px);
+}
+
+.page {
+  animation: fadeSlideIn var(--duration-slow) var(--ease-out);
+}
+
+.page.is-hidden {
+  display: none;
+}
+
+.panel {
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.panel-flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.panel-header h2 {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.panel-hint {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+/* ------------------------------------------------------------
+   8. Dashboard：统计卡片
+   ------------------------------------------------------------ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.stat-card {
+  padding: var(--space-5);
+  transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card-clickable {
+  cursor: pointer;
+}
+
+.stat-card-clickable:hover {
+  border-color: var(--accent);
+}
+
+/* 成员消费总览 Modal 内的个人卡片 */
+.member-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 640px) {
+  .member-stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.member-stat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+}
+
+.member-stat-card-clickable {
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.member-stat-card-clickable:hover {
+  border-color: var(--accent);
+  background: var(--bg-subtle);
+}
+
+.member-stat-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.member-stat-name {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.member-stat-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.member-stat-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.member-stat-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+.member-stat-total-label {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.member-stat-total-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.member-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.member-stat-row-label {
+  color: var(--text-secondary);
+}
+
+.member-stat-row-value {
+  font-weight: 650;
+}
+
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.stat-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.stat-icon-accent { background: var(--accent-soft); color: var(--accent); }
+.stat-icon-success { background: var(--success-soft); color: var(--success); }
+.stat-icon-warning { background: var(--warning-soft); color: var(--warning); }
+.stat-icon-danger { background: var(--danger-soft); color: var(--danger); }
+
+.stat-label {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.stat-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+/* 防止 Grid 子项目被内容撑破：Grid 项目预设 min-width 是 auto（跟着内容的
+   最小宽度走），一长串不能换行的文字/数字就可能把整个网格track、连带页面
+   撑宽出视口——统一归零，让子项目老实待在网格分配给它的宽度内 */
+.dashboard-grid > *,
+.form-grid > *,
+.member-grid > * {
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------
+   9. Empty State
+   ------------------------------------------------------------ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-10) var(--space-5);
+  gap: var(--space-2);
+}
+
+.empty-state-compact {
+  padding: var(--space-6) var(--space-4);
+}
+
+.empty-illustration {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+}
+
+.empty-illustration svg {
+  width: 28px;
+  height: 28px;
+}
+
+.empty-state h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  max-width: 280px;
+}
+
+.empty-state .btn {
+  margin-top: var(--space-3);
+}
+
+/* ------------------------------------------------------------
+   10. Toolbar / Chips / Select（Expenses 页筛选）
+   ------------------------------------------------------------ */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.members-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  /* 类别多的时候（尤其手机版）改成一行内横向滑动，不要越叠越多行、把下面
+     的内容往下挤；滑动手感比较像原生 App 的标签列，而不是文字换行 */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.chip-group::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}
+
+.chip {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 550;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+  flex-shrink: 0; /* 讓每个标签维持自己原本的宽度，用横向捲动而不是被压缩变形 */
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.select-control {
+  height: 38px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-primary);
+  -webkit-appearance: none; /* iOS Safari 光靠不带前缀的 appearance:none 不一定能完全关掉原生
+                                <select> 的默认外观（某些版本还是会留一点原生阴影/边框效果），
+                                导致这个方框看起来比 CSS 设定的高度多凸出一点、盖到旁边的分隔线上 */
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9L12 15L18 9' stroke='%239c9ca6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+/* ------------------------------------------------------------
+   11. 消费列表（Expenses）—— 单栏卡片式列表，手机/桌面共用同一套排版，
+   不再用宽表格＋横向捲动，小屏幕也能舒服地一行看完重点资讯
+   ------------------------------------------------------------ */
+.expense-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 账目列表分页：「载入更多」按钮 */
+.expense-list-load-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.expense-list-load-more .btn {
+  width: 100%;
+  max-width: 320px;
+}
+
+/* 离线暂存、还没同步到後端的消费列——视觉上稍微淡化、不能点开；徽章沿用既有 .badge-warning 配色 */
+.expense-row.is-pending-sync {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.expense-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 0.5px solid var(--hairline);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.expense-row:last-child {
+  border-bottom: none;
+}
+
+.expense-row:hover {
+  background: var(--bg-subtle);
+}
+
+.expense-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-row-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-row-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-row-amount {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.expense-row-chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+}
+
+.align-right {
+  text-align: right;
+}
+
+/* 消费明细 Modal */
+.expense-detail-hero {
+  text-align: center;
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.expense-detail-amount {
+  font-size: 32px;
+  font-weight: 750;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.expense-detail-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.expense-detail-remark {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin: 0 0 var(--space-2);
+}
+
+
+/* 分类 / 分帐方式标签 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.badge-accent { background: var(--accent-soft); color: var(--accent); }
+.badge-success { background: var(--success-soft); color: var(--success); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); }
+.badge-info { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+
+/* ------------------------------------------------------------
+   12. 表单元件
+   ------------------------------------------------------------ */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.text-input,
+.select-control.text-input {
+  height: 42px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.text-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.text-input:focus,
+.select-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* 日期欄位：加大整体高度与日历图示，方便手机点按 */
+input[type="date"].text-input {
+  height: 48px;
+  font-size: 16px;
+  padding-right: var(--space-2);
+}
+
+input[type="date"].text-input::-webkit-calendar-picker-indicator {
+  padding: 8px;
+  margin-left: 4px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transform: scale(1.4);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
+  background: var(--bg-subtle);
+}
+
+[data-theme="dark"] input[type="date"].text-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+.form-field .select-control {
+  height: 42px;
+  width: 100%;
+}
+
+.input-with-suffix {
+  display: flex;
+  align-items: stretch;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  overflow: hidden;
+  background: var(--bg-elevated);
+  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.input-with-suffix:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.input-with-suffix .text-input {
+  border: none;
+  flex: 1;
+  box-shadow: none !important;
+}
+
+.suffix-select {
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--bg-subtle);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* 加入旅程／注册时填了已经加入过的邀请码：这个栏位只显示提示文字，
+   不显示「你是哪一位」的下拉选单（没什么好选的，选了送出也只会被拒绝） */
+.form-field.is-already-member label,
+.form-field.is-already-member select {
+  display: none;
+}
+
+.claim-member-already-notice {
+  color: var(--warning);
+}
+
+.form-total {
+  font-size: 13px;
+  font-weight: 650;
+  font-family: var(--font-mono);
+}
+
+/* Dashboard 多币别宣传提示 */
+.multi-currency-note {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+/* 自订分帐工具列：提示文字 + 一键均分按钮 并排显示 */
+.custom-split-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.form-total.is-balanced { color: var(--success); }
+.form-total.is-unbalanced { color: var(--danger); }
+
+/* 分段控制（Equal / Custom） */
+.segmented-control {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.segmented-item {
+  flex: 1;
+  text-align: center;
+  height: 36px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.segmented-item.is-active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+/* 四选项分段控制（拆账模式：均分/精确金额/百分比/份额），字体略缩小以容纳四个选项 */
+.segmented-control-4 {
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.segmented-control-4 .segmented-item {
+  flex: 1 1 45%;
+  font-size: 12px;
+  padding: 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 420px) {
+  .segmented-control-4 .segmented-item {
+    flex: 1 1 auto;
+    font-size: 12.5px;
+  }
+}
+
+/* 参与人清单 */
+.participant-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.participant-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.participant-row:hover {
+  background: var(--bg-subtle);
+}
+
+/* 把「checkbox 视觉方块」跟「姓名文字」包在同一个 <label> 里：原生 <label> 点击行为是
+   点击范围内任一处都会触发内层 input，不用额外写 JS 去扩大热区，姓名文字这段原本
+   点了没反应的空间现在也点得到，整条可点的宽度／高度远大于原本 20x20px 的方块 */
+.participant-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.checkbox {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.checkbox input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.checkbox-box {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  border: 1.6px solid var(--border-strong);
+  background: var(--bg-elevated);
+  transition: all var(--duration-fast) var(--ease-out);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-box svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all var(--duration-fast) var(--ease-out);
+  color: #fff;
+}
+
+.checkbox input:checked ~ .checkbox-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox input:checked ~ .checkbox-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.participant-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.participant-amount-input {
+  width: 110px;
+  height: 34px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+}
+
+.participant-amount-input:disabled {
+  color: var(--text-tertiary);
+  background: var(--bg-subtle);
+}
+
+.participant-input-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.participant-input-group .participant-amount-input {
+  width: 90px;
+}
+
+.participant-input-suffix {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+/* 开关（深色模式） */
+.switch {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch-track {
+  width: 46px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  position: relative;
+  transition: background var(--duration-base) var(--ease-out);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.switch input:checked ~ .switch-track {
+  background: var(--accent);
+}
+
+.switch input:checked ~ .switch-track .switch-thumb {
+  transform: translateX(18px);
+}
+
+/* ------------------------------------------------------------
+   13. Summary 页：余额卡片 / 结算建议
+   ------------------------------------------------------------ */
+.balance-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.balance-row:last-child {
+  border-bottom: none;
+}
+
+.member-detail-total-row {
+  border-top: 2px solid var(--border-strong);
+  margin-top: 4px;
+  padding-top: var(--space-3);
+}
+
+.member-detail-total-row .balance-name {
+  font-weight: 700;
+}
+
+.member-detail-total-row .balance-amount {
+  font-size: 16px;
+}
+
+.member-detail-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-2) var(--space-2) var(--space-1);
+}
+
+.member-detail-section-label-spaced {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.balance-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.balance-name {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.balance-sub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.balance-amount {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: normal;
+  max-width: 150px;
+}
+
+.balance-amount.mono {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.balance-amount.is-positive { color: var(--success); }
+.balance-amount.is-negative { color: var(--danger); }
+.balance-amount.is-zero { color: var(--text-tertiary); }
+
+.member-stat-row-value.is-positive { color: var(--success); }
+.member-stat-row-value.is-negative { color: var(--danger); }
+.member-stat-row-value.is-zero { color: var(--text-tertiary); }
+
+.settlement-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.settlement-row:last-child {
+  border-bottom: none;
+}
+
+.settlement-repay-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.settlement-flow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.settlement-flow svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.settlement-amount {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------
+   14. Members 页：成员卡片
+   ------------------------------------------------------------ */
+.duplicate-member-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--warning-soft);
+  border-color: var(--warning-soft);
+}
+
+.duplicate-member-banner-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--warning);
+}
+
+.duplicate-member-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.duplicate-member-banner-text h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.duplicate-member-banner-text p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.member-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.member-card-clickable {
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.member-card-clickable:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.member-card .avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 16px;
+}
+
+.member-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-card-name {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.member-card-meta {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* ------------------------------------------------------------
+   15. Settings 页
+   ------------------------------------------------------------ */
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.settings-row-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-row-desc {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.settings-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* 语言选择 Modal 里的选项清单——见 index.html #languagePickerList / app.js renderLanguagePickerList() */
+.language-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+
+.language-option:hover {
+  background: var(--bg-subtle);
+}
+
+.language-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.language-option-check {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.language-option.is-active .language-option-check {
+  opacity: 1;
+}
+
+.about-text {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.about-version {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* ------------------------------------------------------------
+   15B. 收据照片上传元件
+   ------------------------------------------------------------ */
+.receipt-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.receipt-upload-box {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--border-strong);
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
+}
+
+.receipt-upload-box:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.receipt-upload-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.receipt-upload-icon.is-hidden {
+  display: none;
+}
+
+.receipt-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.receipt-preview-img.is-hidden {
+  display: none;
+}
+
+/* 实际的 file input 盖在整个方框上、完全透明——点方框任何一处都会跳出
+   系统原生的选择器（拍照／相簿／档案），不用另外写 JS 去代理点击 */
+.receipt-upload-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.receipt-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  background: rgba(10, 10, 14, 0.65);
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.receipt-remove-btn:hover {
+  background: rgba(10, 10, 14, 0.85);
+}
+
+.receipt-remove-btn.is-hidden {
+  display: none;
+}
+
+.receipt-upload-progress {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ------------------------------------------------------------
+   15C. 分类消费长条图（无第三方图表库，纯 CSS 呈现）
+   ------------------------------------------------------------ */
+.category-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.category-bar-row:hover {
+  background: var(--bg-subtle);
+}
+
+.category-bar-row:hover .category-bar-fill {
+  background: var(--accent-hover);
+}
+
+.category-bar-label {
+  width: 76px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.category-bar-track {
+  flex: 1;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.category-bar-value {
+  width: 96px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.category-bar-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-1);
+  margin-top: var(--space-1);
+  border-top: 0.5px solid var(--hairline-strong);
+}
+
+.category-bar-total-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.category-bar-total-value {
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------
+   15D. 「删除目前旅程」按钮 + 「关于」页脚
+   ------------------------------------------------------------ */
+.danger-zone-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) 0 var(--space-4);
+}
+
+.about-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3) 0 var(--space-6);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------
+   15E. 货币与汇率设置
+   ------------------------------------------------------------ */
+.exchange-rate-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.exchange-rate-row-label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.exchange-rate-row .text-input {
+  flex: 1;
+}
+
+.currency-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.currency-warning svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.exchange-rate-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.exchange-rate-toolbar .form-hint {
+  margin: 0;
+  flex: 1;
+  min-width: 180px;
+}
+
+.rate-fetch-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: var(--accent-soft);
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+}
+
+.rate-fetch-btn:hover {
+  transform: rotate(45deg);
+}
+
+.rate-fetch-btn:disabled {
+  opacity: 0.5;
+  transform: none;
+}
+
+.rate-fetch-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rate-fetch-btn.is-loading svg {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Dashboard 总消费金额：多币别时改用较小字级分行显示 */
+.stat-value-multi {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* 分类消费：每种货币各自一组小标题 + 长条图 */
+.currency-group-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.currency-group-label:first-child {
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------------
+   16. Modal
+   ------------------------------------------------------------ */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-splash / .drawer-backdrop：改用 100dvh 直接量「现在看得到的画面高度」，
+     不靠 inset:0 的 bottom:0 去对齐，避免手机版网址列还没收合时底部露出缝隙 */
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(10, 10, 14, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+  transition: opacity var(--duration-micro) var(--ease-out);
+  z-index: 40;
+}
+
+.modal-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 68vh;
+  transform: translate(-50%, 24px) translateZ(0);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+  transition: transform var(--duration-micro) var(--ease-out),
+              opacity var(--duration-micro) var(--ease-out),
+              filter var(--duration-micro) var(--ease-out);
+}
+
+.modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) translateZ(0);
+}
+
+/* Modal Stack Manager：堆叠中不是最上层的 Modal 会变暗、稍微降低不透明度，
+   营造景深堆叠感；只用 filter/opacity，不影响版面位置，纯 GPU 合成 */
+.modal.is-open.modal-dimmed {
+  filter: brightness(0.9) saturate(0.92);
+  opacity: 0.88;
+  pointer-events: none;
+}
+
+.modal-sm {
+  max-width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.modal-body {
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.confirm-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------
+   17. Toast
+   ------------------------------------------------------------ */
+.toast-container {
+  position: fixed;
+  top: calc(var(--space-4) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* 通知一定要浮在所有东西最上面：登入/注册的 auth-gate（z-index 200）、手机版侧边抽屉
+     （z-index 410），还有 Modal——Modal 是用 JS 动态设 inline z-index（MODAL_BASE_Z_INDEX
+     500 起，每多叠一层 +20，见 app.js 的 openModal），inline style 的优先权本来就高过这里
+     的 class 规则，所以这个数字必须明显盖过「Modal 叠到很深」的极端情况，才不会在弹窗开着
+     的时候（例如新增消费填精确金额算错）把错误提示压在 Modal 底下、完全看不到 */
+  z-index: 9999;
+  width: calc(100% - 32px);
+  max-width: 380px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight);
+  pointer-events: auto;
+  will-change: transform, opacity;
+  animation: toastIn var(--duration-micro) var(--ease-out);
+}
+
+.toast.is-leaving {
+  animation: toastOut var(--duration-micro) var(--ease-out) forwards;
+}
+
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toast-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.toast-success .toast-icon { color: var(--success); }
+.toast-error .toast-icon { color: var(--danger); }
+.toast-info .toast-icon { color: var(--accent); }
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.toast-message {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.toast-close {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.toast-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ------------------------------------------------------------
+   18. Loading（全域 Overlay + 按钮 Spinner）
+   ------------------------------------------------------------ */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.28);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.loading-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+
+.loading-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 550;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* Skeleton（预留：资料载入中的骨架屏） */
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--border) 37%, var(--bg-subtle) 63%);
+  background-size: 400% 100%;
+  animation: skeletonShine 1.4s ease infinite;
+}
+
+/* ------------------------------------------------------------
+   19. 移动版底部导航
+   ------------------------------------------------------------ */
+.mobile-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 底部导览列固定用一般高度，不额外加 env(safe-area-inset-bottom) 净空——
+     实测後确认加上安全区反而在部分机型上造成底部多出一截不必要的留白，
+     拿掉後底部导览列贴齐屏幕底部，视觉更乾净 */
+  height: var(--tabbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border-top: 1px solid var(--border);
+  z-index: 30;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.tab-item svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tab-item.is-active {
+  color: var(--accent);
+}
+
+.tab-item-fab {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-14px);
+}
+
+.tab-item-fab svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tab-item-fab:hover {
+  background: var(--accent-hover);
+}
+
+/* ------------------------------------------------------------
+   20. 动画关键帧
+   ------------------------------------------------------------ */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.96); }
+}
+
+@keyframes skeletonShine {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* ------------------------------------------------------------
+   21. 响应式：平板 ≥ 720px
+   ------------------------------------------------------------ */
+@media (min-width: 720px) {
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .page-subtitle {
+    display: block;
+  }
+
+  .search-box {
+    display: flex;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .member-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal {
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, calc(-50% + 16px)) translateZ(0);
+    border-radius: var(--radius-lg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal.is-open {
+    transform: translate(-50%, -50%) translateZ(0);
+  }
+}
+
+/* ------------------------------------------------------------
+   22B. PDF 汇出报告（平常隐藏，只有列印 / 汇出 PDF 时显示）
+   ------------------------------------------------------------
+   设计语言：审计级极简主义 (Audit-Grade Minimalism)
+   单色阶 + 单一强调色、无边框现代表格、A4 印刷边距、克制留白
+   ------------------------------------------------------------ */
+
+/* 报表专属色阶／字体 tokens，刻意跟 App 介面的品牌色分开，
+   确保列印出来是「财务文件」的观感，而不是「App 截图」 */
+:root {
+  --report-ink: #111827;        /* 主文字：深炭灰，标题与核心数据 */
+  --report-secondary: #4B5563;  /* 次级文字：标签、说明 */
+  --report-tertiary: #6B7280;   /* 三级文字：表头、辅助资讯 */
+  --report-divider: #E5E7EB;    /* 极淡分隔线 */
+  --report-header-bg: #F9FAFB;  /* 表头微染背景 */
+  --report-accent: #2563EB;     /* 唯一强调色：用于净结算的关键状态 */
+  --report-positive: #2E8B57;   /* 应收（绿）：对齐参考版色号 */
+  --report-negative: #D93838;   /* 应付（红）：对齐参考版色号 */
+  --report-radius: 8px;
+  --report-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Microsoft JhengHei", Helvetica, Arial, sans-serif;
+
+  /* 报表字级 tokens：结算总览（.report-*）与单人／同行报告（.pr-*）
+     共用同一份字级，避免两边各自写死数字、日后改一处却漏改另一处
+     （2026-07 整批缩小约 10%，标题/内文/表格等比例一起缩，彼此相对大小不变） */
+  --report-fs-eyebrow: 11px;      /* 品牌小字 "DivvyDuck" */
+  --report-fs-title: 16px;      /* 报表主标题（旅程名 / 成员姓名） */
+  --report-fs-section: 11px;    /* 区段标题（h2 / section-title） */
+  --report-fs-meta-label: 9px;  /* 元数据标签（大写小字） */
+  --report-fs-meta-value: 11px; /* 元数据数值 / 摘要表格内文 */
+  --report-fs-accent: 16px;       /* 最醒目的净结算金额 */
+  --report-fs-body: 11px;       /* 报表整体内文 */
+  --report-fs-footer: 9px;      /* 页脚说明文字 */
+}
+
+#printReport {
+  display: none;
+}
+
+/* A4 纵向、上下 24mm／左右 20mm 的统一留白 */
+@page {
+  size: A4 portrait;
+  margin: 24mm 20mm;
+}
+
+@media print {
+  /* html/body 最近为了「手机版不能左右滑」这个修正，加了 overflow-x:hidden／
+     overscroll-behavior:none 这两条基础规则（不在任何 media query 里，所以
+     列印/汇出 PDF 时也会一直生效，@media print 只是「追加」打印专用规则，
+     不会自动帮你清掉外层的基础规则）。Safari 的打印／汇出 PDF 引擎在计算
+     分页宽度、要不要产生额外空白页的时候，很可能就是照着被 overflow-x:hidden
+     影响过的版面尺寸去算的，这里在列印情境下把这两条都还原回正常值，
+     确保汇出 PDF 时的版面计算跟这两条手机适配规则完全无关 */
+  html,
+  body {
+    overflow-x: visible !important;
+    overscroll-behavior: auto !important;
+  }
+
+  /* 「成员消费明细」Modal 打开时会把 body 冻结成 position:fixed（见
+     .body-scroll-locked，防止背景被误滚动），汇出单人 PDF 的按钮就在这个
+     Modal 里——按下时 Modal 还开着，body 还是 fixed 状态。列印引擎在这个
+     状态下会把「可列印区域」锁死在目前萤幕看到的这一屏，超出这一屏的内容
+     全部被裁掉，这正是「个人 PDF 只有一页、内容被硬生生截断」的真正原因。
+     这里在列印情境下强制解除，不管当下有没有 Modal 开着，列印一律照完整
+     内容的实际高度分页，不会受目前画面滚动状态、有没有锁背景影响 */
+  body.body-scroll-locked {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: auto !important;
+    overflow: visible !important;
+  }
+
+  /* html/body 的背景色是跟着深色/浅色模式走的（body { background: var(--bg-subtle) }），
+     平常在网页里完全没问题，但列印/汇出 PDF 时，如果最后一页的内容没有完整填满一整页
+     （例如「还款纪录」这个章节内容比较短），剩下的空白区域会透出这个背景色——手机版
+     Safari 的「打印」／汇出 PDF 引擎会把这块空白也画上底色，桌面版的打印引擎则不会
+     （或裁切得比较精准），所以才会出现「深色模式变成黑色板块、浅色模式变成米色板块，
+     只有手机版才看得到」的落差。这里强制 html/body 在列印时一律纯白，从源头把这个
+     会透出来的背景色拿掉，不管哪个引擎、哪一页有没有留白，都不会再看到色块 */
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* 列印时只显示报告本身：直接隐藏其他顶层画面元素，
+     不再用 visibility + position:absolute 的组合硬叠加——
+     那个组合是 Chrome 列印引擎跟「强制换页」互相打架的常见根源，
+     改成 display:none 让 #printReport 保持在正常文件流中，
+     换页规则才能被正确计算 */
+  .app-shell,
+  .mobile-tabbar,
+  .modal-backdrop,
+  .modal,
+  .toast-container,
+  .loading-overlay {
+    display: none !important;
+  }
+
+  #printReport {
+    display: block;
+    background: #ffffff;
+    color: var(--report-ink);
+  }
+
+  /* 每个 report-section 都是独立的一个区块：预设强制从新的一页开始，
+     避免不同段落的内容混在同一页
+     注意：这里刻意不设 page-break-inside: avoid——
+     部分区块（例如包含多张表格的个人消费明细）内容可能超过一页，
+     若同时要求「不能切开」又「塞不下」，会跟浏览器的分页引擎打架，
+     反而导致强制换页失效。内部的分页交给更细颗粒度的规则处理
+     （表格列不被切断、表头重复、标题不能是该页最后一行）。
+     同时提供新旧两种 CSS 属性名（page-break-* 与 break-*），
+     确保不同版本的浏览器列印引擎都能正确辨识。 */
+  .report-section {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* 第一个区块（报表标题 + Executive Summary）留在第一页，不需要额外分页 */
+  .report-section.report-section-first {
+    page-break-before: avoid;
+    break-before: auto;
+  }
+
+  /* 例外：这个区块刻意不强制换页，让它自然接在上一个区块后面
+     （例如「建议还款」接在「每人结算总览」后面，两者通常都不长，
+     没必要为了这条铁律浪费一整页） */
+  .report-section.report-section-no-break {
+    page-break-before: auto;
+    break-before: auto;
+  }
+
+  /* 保险机制：明确标记「一定要另起新页」的区块（例如个人消费明细章节的第一位成员），
+     用 !important 确保不会被其他分页规则的优先顺序影响 */
+  .report-page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* 标题永远不能是该页最后一行：强制标题后面至少要接着一起换页，
+     避免出现「标题留在上一页、内容被挤到下一页」的情况 */
+  .report-section h2,
+  .report-section h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* 表格本身允许跨页延伸（内容太长时），但每一「列」不能被从中间切断，
+     且表头会在每一页重复出现，方便阅读 */
+  .report-table {
+    page-break-inside: auto;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  /* <tfoot>（合计列所在的位置）浏览器预设是 table-footer-group，表格跨页时
+     会被当成「每一页都要重复出现的表尾」，逻辑上比照 thead 每页重复表头——
+     但合计只该出现一次，不是每页都要印。改成 table-row-group，让它被当成
+     普通内容列，只会照实际内容在表格的位置出现一次（在真正的最后一列後面），
+     不会在跨页时被硬塞进每一页的底部重复一次 */
+  .report-table tfoot {
+    display: table-row-group;
+  }
+
+  .report-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+#printReport {
+  font-family: var(--report-font);
+  color: var(--report-ink);
+  font-size: var(--report-fs-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 元数据表头 (Metadata Header) ---------- */
+.report-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--report-divider);
+}
+
+.report-header-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.report-title {
+  font-size: var(--report-fs-title);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--report-ink);
+  margin-top: 4px;
+}
+
+.report-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 24px;
+  margin-top: 16px;
+}
+
+.report-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.report-meta-label {
+  font-size: var(--report-fs-meta-label);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--report-tertiary);
+}
+
+.report-meta-value {
+  font-size: var(--report-fs-meta-value);
+  font-weight: 600;
+  color: var(--report-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- 成员名单这一格：内容长度会随旅程人数增加（不像其他 meta 栏位
+   永远是短字串），必须允许换行，否则一长串用顿号连起来的姓名会把整个表头
+   撑到超过版面宽度，连带让打印引擎把整份报告等比例缩小去塞进纸张——这正是
+   之前「Harbin 报告字体明显变小」的真正原因，不是消费明细表格 ---------- */
+.report-meta-item-wide {
+  grid-column: 1 / -1;
+}
+
+.report-meta-value-wrap {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* ---------- Executive Summary 大数字区块 ---------- */
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 20px 0 24px;
+}
+
+.report-summary-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.report-summary-grid-4 .report-summary-card {
+  padding: 12px 14px;
+}
+
+.report-summary-grid-4 .report-summary-card-value {
+  font-size: 15.5px;
+}
+
+.report-summary-card {
+  border: 1px solid var(--report-divider);
+  border-radius: var(--report-radius);
+  padding: 14px 16px;
+}
+
+.report-summary-card-label {
+  font-size: var(--report-fs-meta-label);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--report-tertiary);
+  margin-bottom: 6px;
+}
+
+.report-summary-card-value {
+  font-size: var(--report-fs-accent);
+  font-weight: 700;
+  color: var(--report-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.report-summary-card-value.is-accent {
+  color: var(--report-accent);
+}
+
+.report-summary-card-note {
+  font-size: 9px;
+  color: var(--report-tertiary);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.report-asterisk {
+  color: var(--report-accent);
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+.report-amount-positive {
+  color: var(--report-positive);
+  font-weight: 600;
+}
+
+.report-amount-negative {
+  color: var(--report-negative);
+  font-weight: 600;
+}
+
+/* ---------- 区块标题 ---------- */
+.report-section {
+  margin-bottom: 24px;
+}
+
+.report-section h2 {
+  font-size: var(--report-fs-section);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--report-ink);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--report-ink);
+}
+
+.report-section h3 {
+  font-size: var(--report-fs-section);
+  font-weight: 700;
+  color: var(--report-ink);
+  margin: 18px 0 8px;
+}
+
+/* ---------- 无边框现代表格 (Borderless Modern Tables) ---------- */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  margin-bottom: 16px;
+}
+
+.report-table th,
+.report-table td {
+  border: none;
+  border-bottom: 1px solid var(--report-divider);
+  padding: 8px 10px;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  /* 防换行铁律：日期、状态标签、分类、人名、金额一律不允许断行；
+     唯一例外是显式标记 .report-cell-wrap 的说明／备注栏位 */
+  white-space: nowrap;
+}
+
+.report-table td.report-cell-wrap {
+  white-space: normal;
+}
+
+.report-table thead th {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--report-tertiary);
+  background: var(--report-header-bg);
+  border-bottom: 1px solid var(--report-divider);
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom: 1px solid var(--report-divider);
+}
+
+.report-table-total-row td {
+  font-weight: 700;
+  color: var(--report-ink);
+  border-top: 1px solid var(--report-ink);
+  border-bottom: none;
+}
+
+.report-table td.align-right,
+.report-table th.align-right {
+  text-align: right;
+}
+
+/* 消费明细 / 支付明细 / 收款明细：三张各自独立的 <table>，原本用 auto 版面配置，
+   每张表的栏宽会各自依自己的内容决定，导致堆叠显示时表头文字（日期/项目/类型/金额）
+   彼此对不上一直线。这里统一改成 table-layout: fixed，栏宽只订在 thead（table-layout:
+   fixed 本来就是照第一列/表头栏宽来决定每栏宽度），tbody／tfoot 的儲存格不需要重复设定，
+   「合计」列改用 colspan 独立跨栏呈现（见下方 .pr-total-row-inner），就不会被这组固定栏宽卡住 */
+.report-table.pr-detail-table {
+  table-layout: fixed;
+}
+
+.report-table.pr-detail-table thead th:nth-child(1) {
+  width: 15%;
+}
+
+.report-table.pr-detail-table thead th:nth-child(2) {
+  width: 41%;
+}
+
+.report-table.pr-detail-table thead th:nth-child(3) {
+  width: 23%;
+}
+
+.report-table.pr-detail-table thead th:nth-child(4) {
+  width: 21%;
+}
+
+/* 搭伙鸭金库章节：充值明细／支出明细／退余明细，三张各自独立的 <table> 紧接着堆叠显示，
+   跟上面 .pr-detail-table 是同一种问题——原本用 auto 版面配置，各表栏宽各自依内容决定，
+   堆叠起来表头文字（日期/类型/金额……）彼此对不上一直线。三张表虽然栏位意义不同
+   （例如充值明细第 2 栏是「人均金额」、支出明细第 2 栏是「类型」），但只要四栏宽度
+   固定、且三张表用同一组比例，堆叠时的视觉分隔线就会对齐——四栏平均分配最简单，
+   也不用为了迁就个别栏位内容再去调整比例 */
+.report-table.pool-detail-table {
+  table-layout: fixed;
+}
+
+.report-table.pool-detail-table thead th {
+  width: 25%;
+}
+
+/* 原始金额／换算成基准货币金额：两行堆叠呈现（原始在上，换算在下），取代原本
+   「CNY 200.00 → MYR 120.92」的单行箭头写法——单行在窄栏位（例如 PDF 报告表格）
+   容易被挤到自动换行、断在不好看的地方，改成两行各自都不换行，版面更稳定。
+   这组 class 不只用在 PDF 报告，Dashboard 上其他显示金额换算的地方也共用同一套 */
+.pr-amount-original,
+.pr-amount-converted {
+  display: block;
+  white-space: nowrap;
+}
+
+.pr-amount-converted {
+  font-size: 0.85em;
+  color: var(--report-tertiary, var(--text-tertiary, #6b7280));
+  margin-top: 2px;
+}
+
+/* 消费明细 / 支付明细 / 收款明细的「合计」列：不再跟资料列的四栏栏宽对齐——
+   金库多币种并列的总额文字（例如「MYR 1,000.00 + CNY 500.00」）常常比一般资料列
+   的单一货币金额长很多，硬塞进跟资料列一样窄的金额栏会被截断/挤出去。改成单一儲存格
+   （colspan 跨满整列）内部用 flex 左右排版：标签靠左、金额靠右，金额有整行的宽度可以用，
+   同时维持不换行、单行呈现 */
+.pr-total-row-cell {
+  padding: 0 !important;
+}
+
+.pr-total-row-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 10px;
+}
+
+.pr-total-row-inner .pr-total-row-amount {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---------- 说明性文字列（取代旧的条列 summary-row，改用标签+数值排版） ---------- */
+.report-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--report-secondary);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--report-divider);
+}
+
+.report-summary-row:last-child {
+  border-bottom: none;
+}
+
+.report-summary-row strong {
+  font-weight: 600;
+  color: var(--report-ink);
+  min-width: auto;
+}
+
+/* ---------- 结算建议：动线式呈现，明确与消费金额区隔 ---------- */
+.report-settlement-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--report-ink);
+  white-space: nowrap;
+}
+
+.report-settlement-flow .report-arrow {
+  color: var(--report-tertiary);
+  font-weight: 400;
+}
+
+.report-settlement-amount {
+  font-weight: 700;
+  color: var(--report-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 分帐方式徽章（取代彩色 badge，改用极简描边） ---------- */
+.report-split-tag {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--report-tertiary);
+  border: 1px solid var(--report-divider);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* 消费明细项目名後面的金库图示——极简线条钱币叠，标记这一行是金库支出
+   （全员均摊），不用额外加栏位。颜色跟着报告的三级灰阶走（跟 .report-split-tag
+   同一色），空心线条不填色，风格上是同一套「审计级极简」语言，不是彩色 emoji */
+.report-pool-icon {
+  color: var(--report-tertiary);
+  vertical-align: -1px;
+  flex-shrink: 0;
+}
+
+/* 金库图示的图例说明——刻意不套用 .report-summary-row（那个 class 是
+   display:flex + justify-content:space-between，专门给「标签 ... 数值」
+   这种左右两端对齐的行用；图示＋文字这种单纯依序排列的内容套上去，
+   flex 会把 SVG 跟後面的文字拆成两个各自靠左右端点的元素，中间空出一大截）。
+   这里改成一般区块＋行内排列，图示与文字自然并排靠左 */
+.report-pool-legend {
+  font-size: 10px;
+  color: var(--report-tertiary);
+  padding: 6px 0 0;
+  text-align: left;
+}
+
+/* ---------- 页脚：汇率换算声明 ---------- */
+.report-footer-note {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--report-divider);
+  font-size: var(--report-fs-footer);
+  color: var(--report-tertiary);
+  line-height: 1.7;
+}
+
+/* ============================================================
+   22C. 个人消费结算报表 (Personal Expense Report)
+   ------------------------------------------------------------
+   表格化呈现：沿用全站共用的 .report-table 无边框现代表格样式，
+   保持跟整份旅程报告一致的排版语言；唯一的品牌色是净结算金额
+   与红绿语意色（应收绿、应付红），其余维持单色调。
+   ============================================================ */
+
+.pr-report {
+  font-family: var(--report-font);
+  color: var(--report-ink);
+}
+
+/* ---------- Header：封面页，姓名用字重拉开层级（Logo 改放每页重复的 running header） ---------- */
+.pr-header {
+  padding: 0 0 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--report-divider);
+}
+
+.pr-header-name {
+  font-size: var(--report-fs-title);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--report-ink);
+  margin: 0 0 3px;
+}
+
+.pr-header-trip {
+  font-size: var(--report-fs-meta-value);
+  font-weight: 400;
+  color: var(--report-tertiary);
+  margin: 0;
+}
+
+/* ---------- 已结清 / 无还款纪录提示 ---------- */
+.pr-settled-note {
+  font-size: 11.5px;
+  font-weight: 300;
+  color: var(--report-secondary);
+  margin-bottom: 12px;
+}
+
+/* ---------- 个人结算摘要小表格：不显示表头，纯标签＋数字两栏 ---------- */
+.pr-summary-table {
+  margin-bottom: 10px;
+}
+
+.pr-summary-table td {
+  font-size: var(--report-fs-meta-value);
+}
+
+.pr-summary-table td:first-child {
+  color: var(--report-secondary);
+}
+
+.pr-summary-table td:last-child {
+  font-weight: 600;
+  color: var(--report-ink);
+}
+
+/* ---------- 净结算金额：整份报告最醒目的一行，用字级与红绿色凸显 ---------- */
+.pr-net-line {
+  font-size: var(--report-fs-accent);
+  font-weight: 700;
+  color: var(--report-ink);
+  margin: 0 0 20px;
+}
+
+.pr-net-line.is-receive {
+  color: var(--report-positive);
+}
+
+.pr-net-line.is-owe {
+  color: var(--report-negative);
+}
+
+/* ---------- 明细区段标题：小型大写字，纯靠字重与字距分层 ---------- */
+.pr-section-title {
+  font-size: var(--report-fs-section);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--report-ink);
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--report-ink);
+  padding-bottom: 5px;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+.pr-section-title:not(:first-of-type) {
+  margin-top: 20px;
+}
+
+/* ---------- 表格内的红绿金额（谁欠你钱／你需要支付给）---------- */
+.pr-amount-receive {
+  color: var(--report-positive);
+  font-weight: 600;
+}
+
+.pr-amount-owe {
+  color: var(--report-negative);
+  font-weight: 600;
+}
+
+/* ---------- 代付明细的「参与分摊人员」栏位：允许换行，避免长名单被切掉
+   注意：这里必须用较高优先权（加大选择器 + !important）覆盖掉
+   .report-table td 的全域 nowrap 规则，否则长名单会被挤出页面边界、
+   看起来像是「写到一半消失」，其实是被 nowrap 推到不可见的地方去了 ---------- */
+.report-table td.pr-beneficiary-cell {
+  font-size: 9.5px;
+  color: var(--report-tertiary);
+  white-space: normal !important;
+  word-break: break-word;
+  max-width: 180px;
+  line-height: 1.5;
+}
+
+/* ---------- 消费明细区块：允许另起新的一页 ---------- */
+.pr-page-break-before {
+  page-break-before: always;
+  break-before: page;
+}
+
+/* ---------- 每页重复的 Logo／页尾：外层 table 的 <thead>/<tfoot> ----------
+   打印分页时，表格的 <thead>/<tfoot> 会在「每一页」都重新渲染一次——这是浏览器
+   打印引擎里支援度最完整、最不容易出包的重复表头/表尾做法，手机版 Safari 汇出
+   PDF 也认。（原本用 position: fixed 做，理论上符合规范，但手机版 Safari 的
+   汇出 PDF 引擎实测不会重复渲染，只出现一次，所以改用这个更保险的实作。）
+   结算总览、同行个人两份 PDF 共用这一套：.pr-page-frame 是纯粹用来撑起
+   重复表头/表尾的外层容器，不是真的资料表格，所以不用 .report-table 那套样式 ---------- */
+.pr-page-frame {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pr-page-frame > tbody > tr > td {
+  padding: 0;
+}
+
+.pr-page-frame-head {
+  padding-bottom: 6mm;
+  text-align: center;
+}
+
+.pr-running-logo {
+  display: inline-block;
+  width: 45mm;
+  line-height: 0;
+}
+
+.pr-running-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pr-page-frame-foot {
+  padding-top: 6px;
+}
+
+.pr-running-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--report-divider);
+  font-size: var(--report-fs-footer);
+  font-weight: 400;
+  color: var(--report-tertiary);
+  letter-spacing: 0.02em;
+}
+
+@media print {
+  /* thead/tfoot 本来就只在表格换页时才需要重复出现的逻辑交给浏览器处理，
+     这里只需要确保 <thead> 底下这一列不会被单独判定成「独立的一页」内容 */
+  .pr-page-frame thead,
+  .pr-page-frame tfoot {
+    display: table-header-group;
+  }
+
+  .pr-page-frame tfoot {
+    display: table-footer-group;
+  }
+}
+
+/* ---------- 区段容器：把「标题＋表格」当成一个不可切分的整体，
+   塞不下这一页就整块移到下一页，不会切开只留孤立一两行在前一页。
+   只适合内容量固定、通常一定塞得下一页的小区块（例如「谁欠你钱」这种
+   顶多几行的小表格）---------- */
+.pr-section-block {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* ---------- 区段容器（可跨页版）：消费明细／支付明细／收款明细这几个区块，
+   笔数会随记录越记越多、完全没有上限，绝对不能套用「不可切分」——
+   笔数一多，这个区块本身就会比一整页还高，「塞不下就整块移到下一页」
+   这个条件永远无法达成，浏览器的打印引擎在这种情况下不会乖乖分页，
+   而是直接把整块内容跳过或裁掉（原本「收款明细整个不见」就是这样来的）。
+   分页交给更细颗粒度的规则处理：标题不能是页尾孤例（.pr-section-title 那条
+   page-break-after: avoid）、表格列不会被从中间切断（.report-table tr 那条
+   page-break-inside: avoid），这样就能在一大长串明细里正确、干净地分页 */
+.pr-section-block-flexible {
+  page-break-inside: auto;
+  break-inside: auto;
+}
+
+
+
+
+/* ------------------------------------------------------------
+   22. 响应式：桌面 ≥ 1024px（启用 Sidebar 版面）
+   ------------------------------------------------------------ */
+@media (min-width: 1024px) {
+  .app-shell {
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    grid-template-areas:
+      "sidebar header"
+      "sidebar main";
+  }
+
+  .sidebar {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-5) var(--space-4);
+    border-right: 1px solid var(--border);
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+    box-shadow: inset -1px 0 0 var(--glass-border-highlight);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .app-header {
+    padding: 0 var(--space-8);
+  }
+
+  .app-header .trip-switcher {
+    display: flex;
+  }
+
+  .app-header .trip-switcher .icon-btn {
+    /* 桌面版空间够，「新增旅程」+ 按钮恢复显示（手机版为了省空间才隐藏，见基础规则） */
+    display: inline-flex;
+  }
+
+  .app-header .trip-switcher .select-control {
+    /* 桌面版恢复完整宽度，不用像手机版那样挤成 104px */
+    max-width: 200px;
+  }
+
+  .app-main {
+    padding: var(--space-8);
+  }
+
+  .mobile-tabbar {
+    display: none;
+  }
+
+  .drawer-open {
+    display: none;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+
+  .member-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ============================================================
+   19. Apple Premium Enhancement Layer
+   风格参考：Apple 官方发布会 Keynote / macOS & iOS HIG
+   本层只做「视觉与动效覆写」，不改动既有版面结构与 JS 行为，
+   可安全追加在既有样式表最末端，靠 CSS 层叠顺序自然生效。
+   ============================================================ */
+
+/* 19.1 精修设计 Token —— 色彩更克制、圆角更大、阴影分层、弹性缓动 --------- */
+:root {
+  /* 品牌色：呼应搭伙金库卡片的青绿，与顶层 --accent 保持同一色值，避免层叠顺序造成割裂 */
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-active: #134e4a;
+  --accent-soft: rgba(15, 118, 110, 0.10);
+  --accent-glow: rgba(15, 118, 110, 0.28);
+
+  /* 语意色：贴近系统色板，去除过度饱和；与顶层 tokens 保持一致 */
+  --success: #1f9d55;
+  --success-soft: rgba(31, 157, 85, 0.10);
+  --danger: #d70015;
+  --danger-soft: rgba(215, 0, 21, 0.08);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+
+  /* 发丝级描边：比 1px 更细腻，取代生硬的实色边框；暖灰中性色调，跟深色模式同一色温 */
+  --hairline: rgba(35, 32, 28, 0.09);
+  --hairline-strong: rgba(35, 32, 28, 0.15);
+  --specular: rgba(255, 255, 255, 0.55);
+
+  /* 分层阴影：环境光 + 关键光叠加，营造真实浮起感而非单层黑影 */
+  --shadow-card:
+    0 1px 1px rgba(16, 16, 20, 0.02),
+    0 4px 12px rgba(16, 16, 20, 0.045),
+    0 18px 40px rgba(16, 16, 20, 0.06);
+  --shadow-card-hover:
+    0 2px 4px rgba(16, 16, 20, 0.03),
+    0 14px 30px rgba(16, 16, 20, 0.07),
+    0 30px 64px rgba(16, 16, 20, 0.09);
+  --shadow-float:
+    0 2px 6px rgba(16, 16, 20, 0.05),
+    0 28px 68px rgba(16, 16, 20, 0.14);
+
+  /* 圆角：统一放大，呼应「留白即设计」的柔和质感 */
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
+
+  /* 物理弹性曲线：所有微交互统一使用，取代生硬的线性/ease-out */
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* 字阶字距 */
+  --tracking-display: -0.022em;
+  --tracking-title: -0.015em;
+  --tracking-body: -0.006em;
+}
+
+[data-theme="dark"] {
+  /* 暖灰黑基底（Claude.ai 式），与浅色模式同一色温，层级靠面板亮度区分 */
+  --bg: #1f1e1c;
+  --bg-subtle: #262523;
+  --bg-elevated: #2d2c29;
+  --surface-glass: rgba(45, 44, 41, 0.6);
+  --surface-glass-strong: rgba(45, 44, 41, 0.82);
+
+  --hairline: rgba(250, 249, 245, 0.08);
+  --hairline-strong: rgba(250, 249, 245, 0.15);
+  --specular: rgba(255, 255, 255, 0.1);
+
+  /* 品牌强调色：搭伙金库卡片同款亮青绿，跟浅色模式的 --accent 同一色相不同明度 */
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-active: #14b8a6;
+  --accent-soft: rgba(45, 212, 191, 0.18);
+  --accent-glow: rgba(45, 212, 191, 0.35);
+  --text-on-accent: #0b2e2b;
+
+  --success: #30d158;
+  --success-soft: rgba(48, 209, 88, 0.16);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.16);
+  --warning: #ff9f0a;
+  --warning-soft: rgba(255, 159, 10, 0.18);
+
+  --shadow-card:
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 8px 20px rgba(0, 0, 0, 0.35),
+    0 26px 56px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover:
+    0 2px 4px rgba(0, 0, 0, 0.35),
+    0 16px 36px rgba(0, 0, 0, 0.45),
+    0 34px 72px rgba(0, 0, 0, 0.5);
+  --shadow-float:
+    0 4px 10px rgba(0, 0, 0, 0.4),
+    0 34px 76px rgba(0, 0, 0, 0.55);
+}
+
+/* 19.2 字阶排版 —— 标题克制紧致，正文舒展易读 ----------------------------- */
+body {
+  line-height: 1.55;
+  letter-spacing: var(--tracking-body);
+}
+
+.page-title {
+  letter-spacing: var(--tracking-title);
+  font-weight: 680;
+}
+
+.brand-name,
+.panel-header h2,
+.modal-header h2,
+.member-card-name {
+  letter-spacing: var(--tracking-title);
+}
+
+/* 19.3 Navbar / Sidebar / Tabbar —— 更通透的玻璃材质，取消生硬硬边框 ------ */
+.app-header,
+.sidebar,
+.side-drawer,
+.mobile-tabbar {
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border-color: transparent;
+}
+
+.app-header {
+  box-shadow: 0 0.5px 0 var(--hairline-strong), 0 1px 32px rgba(16, 16, 20, 0.03);
+}
+
+[data-theme="dark"] .app-header {
+  box-shadow: 0 0.5px 0 var(--hairline-strong), 0 1px 32px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar {
+  border-right: none;
+  box-shadow: inset -0.5px 0 0 var(--hairline-strong);
+}
+
+.side-drawer {
+  box-shadow: var(--shadow-float), inset -0.5px 0 0 var(--hairline-strong);
+}
+
+.mobile-tabbar {
+  border-top: none;
+  box-shadow: inset 0 0.5px 0 var(--hairline-strong), 0 -12px 32px rgba(16, 16, 20, 0.04);
+}
+
+.nav-indicator {
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 0.5px var(--accent-glow);
+}
+
+.nav-item,
+.tab-item,
+.theme-toggle {
+  transition: color 0.3s var(--ease-spring), background 0.3s var(--ease-spring);
+}
+
+.nav-item.is-active {
+  font-weight: 660;
+}
+
+/* 19.4 卡片 —— 大圆角、分层阴影、克制浮起，取代死板实线边框 --------------- */
+.glass-card,
+.stat-card,
+.member-stat-card,
+.member-card,
+.loading-card {
+  border: 0.5px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), inset 0 1px 0 var(--specular);
+  transition: transform 0.5s var(--ease-spring),
+              box-shadow 0.5s var(--ease-spring),
+              border-color 0.3s var(--ease-spring),
+              background 0.3s var(--ease-spring);
+}
+
+.member-stat-card {
+  border-radius: var(--radius);
+}
+
+.stat-card:hover,
+.stat-card-clickable:hover,
+.member-stat-card-clickable:hover,
+.member-card-clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover), inset 0 1px 0 var(--specular);
+  border-color: var(--hairline-strong);
+}
+
+.stat-card-clickable:active,
+.member-card-clickable:active,
+.member-stat-card-clickable:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* 19.5 Modal —— 弹窗更强玻璃质感，弹出更柔和有惯性 ------------------------- */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.modal {
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  border: 0.5px solid var(--hairline-strong);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-float), inset 0 1px 0 var(--specular);
+  transition: transform 0.5s var(--ease-spring), opacity 0.35s var(--ease-spring), filter 0.35s var(--ease-spring);
+}
+
+@media (min-width: 720px) {
+  .modal {
+    bottom: auto;
+    top: 50%;
+    border-radius: var(--radius-lg);
+    transform: translate(-50%, calc(-50% + 16px)) scale(0.96) translateZ(0);
+  }
+
+  .modal.is-open {
+    transform: translate(-50%, -50%) scale(1) translateZ(0);
+  }
+
+  .modal.is-open.modal-dimmed {
+    transform: translate(-50%, -50%) scale(0.97) translateZ(0);
+  }
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--hairline);
+}
+
+/* 19.6 按钮 —— 移除廉价边框，改用内发光高光 + 柔和投影 --------------------- */
+.btn {
+  transition: transform 0.35s var(--ease-spring),
+              background 0.3s var(--ease-spring),
+              box-shadow 0.3s var(--ease-spring),
+              filter 0.3s var(--ease-spring);
+}
+
+.btn:active {
+  transform: scale(0.965);
+}
+
+.btn-primary {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 46%),
+    var(--accent);
+  box-shadow: inset 0 1px 0 var(--specular),
+              0 1px 2px rgba(16, 16, 20, 0.06),
+              0 6px 16px rgba(16, 16, 20, 0.08);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.04);
+  box-shadow: inset 0 1px 0 var(--specular),
+              0 2px 4px rgba(16, 16, 20, 0.08),
+              0 8px 20px rgba(16, 16, 20, 0.10);
+}
+
+.btn-secondary {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid var(--hairline-strong);
+  box-shadow: inset 0 1px 0 var(--specular), 0 1px 2px rgba(16, 16, 20, 0.03);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-soft);
+}
+
+.btn-danger {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 48%),
+    var(--danger);
+  box-shadow: inset 0 1px 0 var(--specular), 0 10px 24px rgba(255, 59, 48, 0.26);
+}
+
+.icon-btn,
+.link-btn {
+  transition: background 0.3s var(--ease-spring), color 0.3s var(--ease-spring), transform 0.3s var(--ease-spring);
+}
+
+.icon-btn:active,
+.link-btn:active {
+  transform: scale(0.92);
+}
+
+.tab-item-fab {
+  box-shadow: inset 0 1px 0 var(--specular), 0 10px 22px rgba(16, 16, 20, 0.16);
+  transition: transform 0.35s var(--ease-spring), background 0.3s var(--ease-spring);
+}
+
+.tab-item-fab:active {
+  transform: translateY(-14px) scale(0.92);
+}
+
+/* 19.7 Badge —— 取消实色硬边，改用内发光细描边，质感更轻盈 ------------------ */
+.badge {
+  box-shadow: inset 0 0 0 0.5px var(--hairline);
+  font-weight: 590;
+}
+
+.badge-accent { box-shadow: inset 0 0 0 0.5px var(--accent-glow, rgba(15, 118, 110, 0.28)); }
+.badge-success { box-shadow: inset 0 0 0 0.5px rgba(48, 183, 103, 0.3); }
+.badge-warning { box-shadow: inset 0 0 0 0.5px rgba(255, 159, 10, 0.3); }
+.badge-info { box-shadow: inset 0 0 0 0.5px rgba(14, 165, 233, 0.3); }
+
+/* 19.8 表单元件 —— 发丝级描边 + 柔和聚焦光晕，取代粗边框 -------------------- */
+.text-input,
+.select-control.text-input,
+.input-with-suffix,
+.search-box {
+  border-color: var(--hairline-strong);
+  transition: border-color 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-spring), background 0.3s var(--ease-spring);
+}
+
+.text-input:focus,
+.select-control:focus,
+.input-with-suffix:focus-within,
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.segmented-control {
+  border-color: var(--hairline);
+}
+
+.segmented-item {
+  transition: background 0.3s var(--ease-spring), color 0.3s var(--ease-spring);
+}
+
+.segmented-item.is-active {
+  box-shadow: var(--shadow-card);
+}
+
+/* 19.9 页面切换 —— 更有惯性的入场动效，取代生硬淡入 ------------------------- */
+.page {
+  animation: appleFadeSlideIn 0.5s var(--ease-spring);
+}
+
+@keyframes appleFadeSlideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   20. 文案系统配套样式 —— 同行页状态徽章 / 品牌标语排版
+   ============================================================ */
+
+/* 20.1 品牌标语：从「一行小字」升级为有呼吸感的短句 slogan */
+.brand-slogan {
+  font-weight: 590;
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-body);
+}
+
+/* 20.2 同行卡片：财务状态徽章（已结清 / 待清算），克制的色点 + 细字 */
+.member-card-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+
+.member-card-status-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px currentColor;
+  opacity: 0.35;
+}
+
+.member-card-status.is-settled {
+  color: var(--success);
+}
+
+.member-card-status.is-pending {
+  color: var(--warning);
+}
+
+.member-card-status.is-settled .member-card-status-dot,
+.member-card-status.is-pending .member-card-status-dot {
+  background: currentColor;
+}
+
+/* 「待清算」的点用柔和的呼吸式脉动提醒还有帐没结清；已结清的维持静止，不需要抓视线 */
+.member-card-status.is-pending .member-card-status-dot {
+  animation: memberStatusPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes memberStatusPulse {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-card-status.is-pending .member-card-status-dot {
+    animation: none;
+  }
+}
+
+/* ============================================================
+   21. Linear / Notion 式「专业工具感」精修层
+   目标：把上一层 Apple 发布会式的光泽感（渐层高光、彩色发光阴影、
+   弹性 spring 动效）收敛成现代 SaaS 工具该有的克制质感——
+   扁平、精准、安静，交互回馈干脆不拖泥带水。
+   本层同样只做覆写，不动版面结构。
+   ============================================================ */
+
+/* 21.1 统一交互过渡曲线：ease，取代前一层的 spring 弹性感 */
+:root {
+  --ease-tool: ease;
+  --duration-tool: 0.25s;
+}
+
+.btn,
+.icon-btn,
+.link-btn,
+.nav-item,
+.tab-item,
+.badge,
+.chip,
+.segmented-item,
+.stat-card,
+.member-card,
+.member-stat-card,
+.expense-row,
+.text-input,
+.select-control,
+.settlement-row,
+.balance-row {
+  transition: all var(--duration-tool) var(--ease-tool);
+}
+
+/* 21.2 按钮：拿掉高光渐层与彩色发光阴影，回到扁平实色 + 极浅投影 */
+.btn-primary {
+  background: var(--accent);
+  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  filter: none;
+  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.1);
+}
+
+.btn-primary:active,
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-danger {
+  background: var(--danger);
+  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08);
+}
+
+.btn-danger:hover {
+  background: var(--danger);
+  filter: brightness(1.08);
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--hairline-strong);
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-subtle);
+  border-color: var(--hairline-strong);
+}
+
+.tab-item-fab {
+  box-shadow: 0 4px 12px rgba(16, 16, 20, 0.16);
+}
+
+/* 21.3 卡片：hover 幅度收敛，安静的浮起感取代明显位移 */
+.stat-card:hover,
+.stat-card-clickable:hover,
+.member-stat-card-clickable:hover,
+.member-card-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--specular);
+}
+
+/* 21.4 徽章 / 分段控制：低饱和度粉彩底色 + 清晰细描边，质感克制但不是纯线框 */
+.badge {
+  background: var(--bg-subtle);
+  box-shadow: inset 0 0 0 0.5px var(--hairline-strong);
+  color: var(--text-secondary);
+}
+
+.badge-accent { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 0.5px var(--accent-glow, rgba(15, 118, 110, 0.32)); }
+.badge-success { background: var(--success-soft); color: var(--success); box-shadow: inset 0 0 0 0.5px rgba(48, 183, 103, 0.32); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); box-shadow: inset 0 0 0 0.5px rgba(255, 159, 10, 0.32); }
+
+/* 21.5 消费列表：发丝级边框，安静的 hover 高亮 */
+.expense-row:hover {
+  background: var(--surface-glass);
+}
+
+.mono,
+.stat-value,
+.balance-amount,
+.settlement-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 21.6 「一键结清」按钮：无待结算款项时隐藏，不占位 */
+#settleAllBtn.is-hidden {
+  display: none;
+}
+
+/* 21.7 页面动效收敛：安静的淡入位移，不带弹性回弹 */
+.page {
+  animation: toolFadeIn var(--duration-tool) var(--ease-tool);
+}
+
+@keyframes toolFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   22. Dashboard 三层漏斗式重构 —— Neo-Glassmorphism 精修层
+   目标：Slate 深色基底（与浅色模式同一色温）+ 克制的 Muted Coral / Sage Green 语意色，
+   取代生硬的大红大绿；Hero Card / Quick Actions Dock / Balance Matrix /
+   Recent Activity 全新组件样式。本层只做覆写与新增组件，
+   不动既有版面结构与 JS 行为。
+   ============================================================ */
+
+/* 22.1 深色基底：暖灰黑（Claude.ai 式）+ 品牌靛紫点缀，层级靠面板亮度区分 */
+[data-theme="dark"] {
+  --bg: #1f1e1c;
+  --bg-subtle: #262523;
+  --bg-elevated: #2d2c29;
+  --surface-glass: rgba(45, 44, 41, 0.62);
+  --surface-glass-strong: rgba(45, 44, 41, 0.86);
+
+  --hairline: rgba(250, 249, 245, 0.08);
+  --hairline-strong: rgba(250, 249, 245, 0.15);
+  --specular: rgba(255, 255, 255, 0.09);
+}
+
+/* 22.2 语意色：Muted Coral（欠款 / 应付）＋ Muted Sage（应收 / 债权），
+   刻意降低饱和度与亮度，避免刺眼的大红大绿 */
+:root {
+  --owe: #b8654c;
+  --owe-soft: rgba(184, 101, 76, 0.12);
+  --owe-glow: rgba(184, 101, 76, 0.22);
+
+  --owed: #4f7d5c;
+  --owed-soft: rgba(79, 125, 92, 0.12);
+  --owed-glow: rgba(79, 125, 92, 0.22);
+}
+
+[data-theme="dark"] {
+  --owe: #e2a08c;
+  --owe-soft: rgba(226, 160, 140, 0.16);
+  --owe-glow: rgba(226, 160, 140, 0.3);
+
+  --owed: #9fc79a;
+  --owed-soft: rgba(159, 199, 154, 0.16);
+  --owed-glow: rgba(159, 199, 154, 0.3);
+}
+
+/* 22.3 Dashboard 沉浸态头部 */
+.dash-welcome {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-2);
+}
+
+.dash-welcome:empty {
+  display: none;
+}
+
+.dash-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.dash-trip-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-title, -0.015em);
+  color: var(--text-primary);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+.dash-trip-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+/* 切换旅程时，标题跟副标先往上淡出，换上新的文字後再淡入回来——见 app.js animateTripHeaderTextSwap() */
+.dash-trip-title.is-text-swapping,
+.dash-trip-meta.is-text-swapping {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.dash-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  border: 2px solid var(--bg-subtle);
+  margin-left: -8px;
+}
+
+.avatar-stack .avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack-more {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 650;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 2px solid var(--bg-subtle);
+  margin-left: -8px;
+}
+
+.dash-switch-trip {
+  background: var(--surface-glass);
+  border: 0.5px solid var(--hairline-strong);
+}
+
+/* 22.5 Hero Card：全宽核心卡片，浅色/深色模式两套完全不同的质感 ——
+   浅色：纯白通透＋立体柔和阴影；深色：Logo 同款靛蓝渐层＋电光蓝紫描边的
+   「午夜电光卡」质感，直接把新 Logo 的品牌配色带进最显眼的焦点卡片。
+   跟 Quick Actions Dock 以下、跟着页面主题走的一般玻璃卡片不同，这张卡刻意做成
+   两种模式下都各自「很有存在感」的焦点卡片，而不是随主题淡入淡出的普通卡片 */
+.hero-card {
+  --hero-owed: #059669;
+  --hero-owing: #be123c;
+
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-8) var(--space-6);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+  text-align: center;
+  color: var(--hero-fg);
+  transition: box-shadow var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              transform var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              background var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              border-color var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+/* ---- 浅色模式：方案三「通透纯白与立体层次」---- */
+[data-theme="light"] .hero-card {
+  --hero-fg: #1a1a1a;
+  --hero-fg-muted: #6b7280;
+  --hero-fg-faint: #9ca3af;
+  --hero-owed: #059669;
+  --hero-owing: #be123c;
+  --hero-divider: rgba(0, 0, 0, 0.08);
+
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+/* ---- 深色模式：Logo 同款「午夜电光卡」Midnight Electric ---- */
+[data-theme="dark"] .hero-card {
+  --hero-fg: rgba(255, 255, 255, 0.92);
+  --hero-fg-muted: #d6d6db;
+  --hero-fg-faint: rgba(214, 214, 219, 0.56);
+  --hero-owed: #30d158;
+  --hero-owing: #ff453a;
+  --hero-divider: rgba(125, 122, 255, 0.22);
+
+  /* 干净的 Slate 深灰渐层，不叠加任何紫色泛光，靠明度层次而非色彩堆叠出立体感 */
+  background: linear-gradient(135deg, #2d2c29 0%, #1f1e1c 100%);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 12px 28px rgba(0, 0, 0, 0.32),
+    0 30px 64px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.3),
+    0 18px 36px rgba(0, 0, 0, 0.36),
+    0 40px 80px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 斜向扫光效果已移除——卡片不再叠加任何反光/光效，只靠背景渐层 + 投影
+   营造立体感，浅色/深色模式都保持乾净 */
+.hero-card::after {
+  content: none;
+}
+
+/* 依应收/应付状态的柔光效果已移除——Hero Card 不再叠加任何色彩泛光，
+   状态改用文字/图标自身的状态色表达，卡片背景保持干净 */
+
+.hero-empty-state,
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-empty-state .empty-illustration {
+  margin: 0 auto var(--space-3);
+  color: var(--hero-fg-faint);
+}
+
+.hero-empty-state h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--hero-fg);
+}
+
+.hero-empty-state p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--hero-fg-faint);
+}
+
+/* -------------------- Hero Card 顶部：吉祥物微交互（跟金库卡片同一套手感） -------------------- */
+
+.hero-card-top {
+  margin-bottom: var(--space-4, 16px);
+}
+
+.hero-mascot-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.hero-mascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.08);
+  cursor: pointer;
+  transition: transform var(--duration-fast, 140ms) var(--ease-out, ease), background var(--duration-fast, 140ms);
+}
+
+.hero-mascot:hover { background: rgba(148, 163, 184, 0.16); }
+.hero-mascot svg { width: 24px; height: 24px; }
+
+.hero-mascot-copy {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--hero-fg-faint);
+  max-width: 220px;
+}
+
+.hero-main {
+  margin-bottom: var(--space-5);
+}
+
+.hero-net-value {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 750;
+  letter-spacing: var(--tracking-display, -0.022em);
+  font-variant-numeric: tabular-nums;
+  color: var(--hero-fg);
+}
+
+.hero-net-value.is-owed { color: var(--hero-owed); }
+.hero-net-value.is-owing { color: var(--hero-owing); }
+
+.hero-net-label {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--hero-fg-faint);
+}
+
+.hero-breakdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.hero-breakdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* flex:1 + min-width:0 让三栏能真的被压缩、换行，而不是撑开整个卡片。
+     没有 min-width:0 的话，flex item 预设的最小宽度是「内容本身」的宽度——
+     中文「已垫付／个人消费／已收款」两三个字最小宽度很窄，怎么挤都没事；
+     换成英文「Personal spend」这种词组，没有 min-width:0 就会被当成
+     「打死不能比这更窄」，三栏加起来比手机屏幕还宽，直接把整张卡片、
+     连带整个页面都撑出视窗，变成需要整页左右滑动才看得到右侧内容 */
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.hero-breakdown-label,
+.hero-breakdown-value {
+  /* 宁可换行变两行，也不要让单一栏位硬撑出去；单字之间原本就能在空格处换行，
+     这里额外加 word-break 保险，避免极端情况下没有空格可断也不会溢出 */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.hero-breakdown-label {
+  font-size: 12px;
+  color: var(--hero-fg-faint);
+}
+
+.hero-breakdown-value {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--hero-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-breakdown-divider {
+  width: 0.5px;
+  height: 28px;
+  background: var(--hero-divider);
+}
+
+/* Hero Card 骨架屏：跟着当下主题走，浅色用极淡的黑影，深色用极淡的白光，
+   确保骨架屏在两种卡面质感上都看得清楚，不会因为跟卡片背景太接近而几乎隐形 */
+[data-theme="light"] .hero-content.is-skeleton .hero-net-value,
+[data-theme="light"] .hero-content.is-skeleton .hero-breakdown-value {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 25%, rgba(0, 0, 0, 0.09) 50%, rgba(0, 0, 0, 0.05) 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .hero-content.is-skeleton .hero-net-value,
+[data-theme="dark"] .hero-content.is-skeleton .hero-breakdown-value {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 25%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.06) 75%);
+  background-size: 200% 100%;
+}
+
+
+/* 22.6 Quick Actions Dock：三颗水平胶囊按钮 */
+.qa-dock {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.qa-pill {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px var(--space-4);
+  border-radius: var(--radius-full);
+  border: 0.5px solid var(--hairline-strong);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: transform var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              background var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              box-shadow var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.qa-pill svg {
+  flex-shrink: 0;
+}
+
+.qa-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.qa-pill:active {
+  transform: scale(0.98);
+}
+
+.qa-pill-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+  animation: qaBreathe 3.2s ease-in-out infinite;
+}
+
+.qa-pill-primary:hover {
+  background: var(--accent-hover);
+}
+
+@keyframes qaBreathe {
+  0%, 100% { box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+  50% { box-shadow: 0 4px 12px rgba(16, 16, 20, 0.14); }
+}
+
+/* 22.7 Balance Matrix：「谁欠谁」直觉资金流向卡片 */
+.balance-matrix-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 0.5px solid var(--hairline);
+}
+
+.balance-matrix-row:last-child {
+  border-bottom: none;
+}
+
+/* 折叠：预设只显示前 3 笔（由 JS 标记 .is-extra），
+   点了「查看全部」后容器加上 .is-expanded 才显示其余的 */
+.balance-matrix-row.is-extra {
+  display: none;
+}
+
+#balanceMatrixList.is-expanded .balance-matrix-row.is-extra {
+  display: flex;
+}
+
+.balance-matrix-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.balance-matrix-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.balance-matrix-amount.is-owed { color: var(--owed); }
+.balance-matrix-amount.is-owing { color: var(--owe); }
+
+.remind-btn {
+  flex-shrink: 0;
+}
+
+/* 22.8 Recent Activity：单行极简消费列表 */
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 0.5px solid var(--hairline);
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.activity-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.activity-icon.cat-food { background: var(--warning-soft); color: var(--warning); }
+.activity-icon.cat-transport { background: var(--accent-soft); color: var(--accent); }
+.activity-icon.cat-hotel { background: var(--owed-soft); color: var(--owed); }
+.activity-icon.cat-ticket { background: var(--owe-soft); color: var(--owe); }
+.activity-icon.cat-shopping { background: rgba(168, 130, 230, 0.14); color: #9d7de0; }
+.activity-icon.cat-others { background: var(--bg-subtle); color: var(--text-tertiary); }
+
+.activity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.activity-amount {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .hero-net-value {
+    font-size: 34px;
+  }
+
+  .qa-dock {
+    gap: var(--space-2);
+  }
+
+  .qa-pill {
+    padding: 11px var(--space-2);
+    font-size: 13px;
+  }
+
+  .dash-trip-title {
+    font-size: 21px;
+  }
+}
+
+/* ============================================================
+   23. 弹窗定位修正 + 移动版重复入口收敛
+   ============================================================ */
+
+/* 23.1 所有 Modal 一律置中弹出，不再是手机版从底部延伸的 Bottom Sheet。
+   直接覆写基础 .modal / .modal.is-open（不用 media query 限制），
+   靠 CSS 层叠顺序（本节在文件最末）同时覆盖第 720px 桌面判定区块与
+   §19 Apple 层的对应覆写，让手机、平板、桌面都呈现同一种置中弹窗观感。 */
+.modal {
+  left: 50%;
+  top: 50%;
+  bottom: auto;
+  width: calc(100% - 32px);
+  border-radius: var(--radius-lg);
+  border-bottom: 0.5px solid var(--hairline-strong, var(--border));
+  transform: translate(-50%, calc(-50% + 12px)) scale(0.97) translateZ(0);
+}
+
+.modal.is-open {
+  transform: translate(-50%, -50%) scale(1) translateZ(0);
+}
+
+.modal.is-open.modal-dimmed {
+  transform: translate(-50%, -50%) scale(0.97) translateZ(0);
+}
+
+/* 23.2 headerActionBtn 现在是 .app-header 外面的独立元素（原因见 HTML 里的注解：
+   backdrop-filter 会让 fixed 定位跑掉），所以不管哪个尺寸都要自己给一个 fixed 位置，
+   不能再依赖原本 .header-right 的 flex 排版。
+   预设（手机／平板，<1024px）：钉在原本 header 的右侧、垂直置中，视觉上跟以前长在
+   header 里没有差别——这个尺寸下只有「同行」页的「新增成员」会显示，
+   「记一笔」被下面 23.3 的规则隐藏掉，底部导览列已经有 ➕ 了。 */
+#headerActionBtn {
+  position: fixed;
+  top: calc((var(--header-height) - 40px) / 2);
+  right: var(--space-4);
+  z-index: 21;
+}
+
+/* 23.3 手机／平板（<1024px，尚未切到侧边栏版面）隐藏重复的「记一笔」，
+   底部导航列已经有 ➕ 快速记一笔的 FAB，两个入口并存会显得多余。
+   只针对 headerActionBtn 目前绑定 addExpenseModal 的情况隐藏——
+   「同行」页的「邀请同行伙伴」不受影响，手机上仍保留这颗按钮，
+   因为底部导览列没有对应的新增成员捷径。
+   headerActionBtn 的显示是由 JS 内联样式(display:inline-flex)控制，
+   这里用 !important 才能在小屏幕下盖过内联样式。 */
+@media (max-width: 1023px) {
+  #headerActionBtn[data-open-modal="addExpenseModal"] {
+    display: none !important;
+  }
+}
+
+/* 23.4 桌面版（>=1024px）：右上角「记一笔」／「新增成员」改成右下角悬浮圆形按钮，
+   只留图示、不放文字，跟手机版底部导览列中间的 ➕ FAB 呼应，但位置换到桌面更顺手的右下角。 */
+@media (min-width: 1024px) {
+  #headerActionBtn {
+    top: auto;
+    right: var(--space-6);
+    bottom: var(--space-6);
+    z-index: 30;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-lg, 0 20px 48px rgba(16, 16, 20, 0.18));
+  }
+
+  #headerActionBtn:hover {
+    transform: translateY(-2px);
+  }
+
+  #headerActionBtn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  #headerActionLabel {
+    /* 视觉上隐藏文字、但保留在无障碍树里，圆形按钮单靠图示还是要有文字说明用途 */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* ============================================================
+   24. 设置页「旅程设置」里的两行（切换旅程 / 邀请码）：改回不带外框的纯排版，
+   跟设置页其他 row 的视觉一致；两行都是「文字标签 + 长条 + 按钮」，
+   标签给同一个 min-width，让两条长条从同一个 x 位置开始、右边的按钮也贴齐
+   容器右边，两行结尾自然对齐（见 index.html #settingsTripSwitcherPanel）
+   ============================================================ */
+.inline-field-label {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.invite-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.invite-card-code {
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.invite-card .btn {
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   25. 全域帐号登入闸门（Auth Gate）+ 新增旅程 Modal 分页 + 帐号设置行
+   ============================================================ */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: calc(var(--space-6) + env(safe-area-inset-top)) var(--space-6) calc(var(--space-6) + env(safe-area-inset-bottom));
+  background: var(--bg-subtle);
+  overflow-y: auto;
+}
+
+.auth-gate.is-hidden {
+  display: none;
+}
+
+.auth-gate-lang-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: var(--radius-full);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-card, 0 4px 16px rgba(16, 16, 20, 0.08));
+  border: 0.5px solid var(--hairline);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.auth-gate-lang-toggle:hover {
+  color: var(--text-primary);
+}
+
+.auth-gate-lang-toggle .theme-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.auth-gate-card {
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-8) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.auth-gate-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.auth-gate-step-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.auth-gate-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.auth-gate-brand .brand-mark {
+  width: 52px;
+  height: 52px;
+}
+
+.auth-gate-brand .brand-name {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.auth-gate-brand .brand-slogan {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.auth-gate-tabs {
+  display: flex;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  gap: 4px;
+}
+
+.auth-gate-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out);
+}
+
+.auth-gate-tab.is-active {
+  background: var(--surface-glass-strong);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.auth-gate-name-row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.auth-gate-name-row .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-gate-form.is-hidden {
+  display: none;
+}
+
+.auth-gate-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--space-1);
+}
+
+.auth-gate-switch-hint {
+  text-align: center;
+  font-size: 13px;
+  margin: 0;
+}
+
+.auth-gate-switch-hint a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-gate-switch-hint a:hover {
+  text-decoration: underline;
+}
+
+/* 新增旅程 Modal：新建旅程 / 加入旅程 分页 */
+.modal-tabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  margin-top: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-tab {
+  border: none;
+  background: transparent;
+  padding: var(--space-2) var(--space-1) var(--space-3);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
+}
+
+.modal-tab.is-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .auth-gate-card {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  /* 已垫付/个人消费/已还款三项在窄屏上间距缩小，避免挤到换行 */
+  .hero-breakdown {
+    gap: var(--space-3);
+  }
+}
+/* ------------------------------------------------------------
+   21. 骨架屏（Skeleton Screens）——初次载入 / 切换旅程时，Dashboard 的
+   Hero Card、谁欠谁、近期账目这几块要等後端回应（GAS 冷启动常常要 1~3 秒），
+   用跟真实内容同样形状的灰色占位块＋微光扫过动画撑住画面，
+   取代原本「整页蒙上一层遮罩＋置中转圈」的全域 Loading，视觉上更轻盈，
+   使用者也能提早看出「等一下这里会长怎样」
+   ------------------------------------------------------------ */
+@keyframes skeletonShimmer {
+  0% { background-position: -120% 0; }
+  100% { background-position: 220% 0; }
+}
+
+.skeleton-block {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-elevated) 50%, var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.skeleton-row:not(:last-child) {
+  border-bottom: 0.5px solid var(--hairline);
+}
+
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeleton-line {
+  height: 10px;
+}
+
+.skeleton-line-title {
+  width: 55%;
+  height: 12px;
+}
+
+.skeleton-line-sub {
+  width: 35%;
+}
+
+.skeleton-amount {
+  flex-shrink: 0;
+  width: 56px;
+  height: 14px;
+}
+
+/* Hero Card（个人净额）骨架：数字＋三个明细栏位都先用占位块顶著 */
+.hero-content.is-skeleton .hero-net-value,
+.hero-content.is-skeleton .hero-breakdown-value {
+  color: transparent;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-elevated) 50%, var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block,
+  .hero-content.is-skeleton .hero-net-value,
+  .hero-content.is-skeleton .hero-breakdown-value {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   26. 手机版表单栏位字级修正——避免 iOS 自动放大
+   ------------------------------------------------------------
+   iOS Safari 有个跟 viewport meta 完全无关、独立运作的规则：只要点击的
+   input/select 栏位字级小於 16px，不管 user-scalable 设成什麽，画面都会
+   自动放大聚焦到那个栏位上（方便使用者看清楚在打什麽字），点完再手动缩小
+   回去——这个「画面自己突然放大又缩小」的动作，是整个 App 里最容易让人
+   出戏、想起「这是网页」的破绽之一，原生 App 的输入框完全不会有这个问题。
+   这里只在手机／平板宽度（<1024px，尚未切到桌面版侧栏版面）把所有会被
+   点击输入的栏位字级都提到 16px，桌面版维持原本比较精致紧凑的字级不变。
+   ------------------------------------------------------------ */
+@media (max-width: 1023px) {
+  .text-input,
+  .select-control,
+  .select-control.text-input,
+  .suffix-select,
+  .search-box input,
+  .participant-amount-input {
+    font-size: 16px;
+  }
+
+  /* 加大字级後，原本靠字级撑出来的欄位高度会显得太挤，稍微加高一点，
+     视觉比例才不会跑掉 */
+  .select-control:not(.text-input) {
+    height: 40px;
+  }
+
+  .participant-amount-input {
+    height: 36px;
+  }
+}
+
+/* ============================================================
+   23. 开机品牌动画 App Splash —— Logo + DivvyDuck 字样短暂动画
+   固定盖在所有内容最上层（z-index 高过 Toast 的 9999）。背景跟随当下
+   浅色/深色模式的 --bg，不再固定用深空靛蓝渐层——开机第一眼就跟之后
+   看到的画面同一个色调，不会有「先看到一个深色画面、进 App 后突然变白」
+   的割裂感。动画结束后淡出交给登入闸门或 App 主体接手
+   ============================================================ */
+.app-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-shell：inset:0 靠浏览器自己拿 bottom:0 去对齐「真正看得到的画面底部」，
+     但 iOS Safari 网址列／工具列刚载入、还没收合的这段时间，这个对齐常常会跟工具列
+     收合后的最终位置对不上，底部因此会露出一截 body 背景色的缝隙——开机动画正好
+     每次都在这个「工具列还没收合」的时间点显示，特别容易中招。改用 100dvh 直接量
+     「现在这一刻真正看得到的画面高度」，不再靠 bottom:0 换算，就不会有这个落差 */
+  height: 100vh; /* 向後相容：不支援 dvh 的旧浏览器会用这个值 */
+  height: 100dvh;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  background: var(--bg);
+  transition: opacity 480ms var(--ease-out, ease);
+}
+
+.app-splash.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 背后的柔光已移除——纯色背景 + Logo 本身的色彩就够干净，
+   不需要再叠一层色块光晕 */
+.app-splash-glow {
+  display: none;
+}
+
+.app-splash-mark {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: scale(0.72);
+  animation: splashMarkIn 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 60ms forwards;
+}
+
+.app-splash-mark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.app-splash-word {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-ui);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(10px);
+  animation: splashWordIn 560ms var(--ease-out, ease) 340ms forwards;
+}
+
+@keyframes splashMarkIn {
+  from { opacity: 0; transform: scale(0.72); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splashWordIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-splash-mark,
+  .app-splash-word {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .app-splash.is-leaving {
+    transition-duration: 150ms;
+  }
+}
+
+/* ============================================================
+   搭伙金库 (Divvy Pool) · Cool Slate 卡片样式
+   独立命名空间 --pool-*，不覆写全域变量（本 App 主题走暖色系 + 紫色 accent），
+   刻意用 Slate/Teal/Amber 跟其余页面拉开一点距离，标示这是「资产／金库」
+   这种更需要信任感与克制感的区块
+   ============================================================ */
+
+.divvy-pool-card {
+  --pool-slate-900: #0f172a;
+  --pool-slate-800: #1e293b;
+  --pool-slate-700: #334155;
+  --pool-slate-400: #94a3b8;
+  --pool-slate-200: #e2e8f0;
+  --pool-teal: #2dd4bf;
+  --pool-teal-soft: rgba(45, 212, 191, 0.14);
+  --pool-amber: #fbbf24;
+  --pool-amber-soft: rgba(251, 191, 36, 0.16);
+
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 22px);
+  padding: var(--space-6, 24px);
+  background: linear-gradient(165deg, var(--pool-slate-900) 0%, var(--pool-slate-800) 100%);
+  color: var(--pool-slate-200);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  /* Safari 对「overflow:hidden + border-radius」裁切带 filter（.pool-card-glow
+     的 filter: blur()）的子元素有已知问题，圆角旁边会露出方形色块。加这个
+     mask 会强制 Safari 走另一条正确处理圆角裁切的合成路径——渐层本身用纯白，
+     只是借这个技巧修正裁切行为，不会真的在卡片上产生任何遮罩淡出效果 */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+  transition: box-shadow var(--duration-base, 220ms) var(--ease-out, ease);
+}
+
+.divvy-pool-card.is-hidden {
+  display: none;
+}
+
+/* 卡片右上角一抹低饱和微光，依状态换色，营造「呼吸感」而非死板色块。
+   沿用原本「实心圆 + filter: blur(40px)」的做法（整体柔光观感是好的，
+   问题不在这里）——Safari 对「overflow:hidden + border-radius」裁切带
+   filter 的子元素有已知的渲染问题，圆角旁边会露出一块方形色块，但那个
+   bug 已经改成在父层（.divvy-pool-card / .hero-card.hero-card-slate）
+   用 -webkit-mask-image 修掉了，不需要为了绕过它牺牲这里原本的柔光效果 */
+.pool-card-glow {
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.5;
+  pointer-events: none;
+  background: var(--pool-teal);
+  transition: background var(--duration-slow, 360ms) var(--ease-out, ease);
+}
+
+.pool-theme-sufficient .pool-card-glow { background: var(--pool-teal); opacity: 0.55; }
+.pool-theme-collecting .pool-card-glow { background: var(--pool-teal); opacity: 0.32; }
+.pool-theme-low .pool-card-glow { background: var(--pool-amber); opacity: 0.5; }
+.pool-theme-settled .pool-card-glow { background: var(--pool-slate-400); opacity: 0.28; }
+
+/* -------------------- 顶部：吉祥物 + 状态徽章 -------------------- */
+
+.pool-card-top {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
+  margin-bottom: var(--space-5, 20px);
+}
+
+.pool-mascot-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.pool-mascot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--pool-teal);
+  cursor: pointer;
+  transition: transform var(--duration-fast, 140ms) var(--ease-out, ease), background var(--duration-fast, 140ms);
+}
+
+.pool-theme-low .pool-mascot { color: var(--pool-amber); }
+.pool-theme-settled .pool-mascot { color: var(--pool-slate-400); }
+
+.pool-mascot:hover { background: rgba(148, 163, 184, 0.16); }
+.pool-mascot svg { width: 24px; height: 24px; }
+
+@keyframes poolMascotBounce {
+  0% { transform: scale(1) rotate(0deg); }
+  35% { transform: scale(1.12) rotate(-4deg); }
+  65% { transform: scale(0.96) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.pool-mascot-bounce { animation: poolMascotBounce 420ms var(--ease-out, ease); }
+
+.pool-mascot-copy {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--pool-slate-400);
+  max-width: 220px;
+}
+
+.pool-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--pool-teal-soft);
+  color: var(--pool-teal);
+  white-space: nowrap;
+}
+
+.pool-theme-low .pool-status-badge { background: var(--pool-amber-soft); color: var(--pool-amber); }
+.pool-theme-settled .pool-status-badge { background: rgba(148, 163, 184, 0.14); color: var(--pool-slate-400); }
+
+.pool-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* -------------------- 主体：余额 + 进度条 + 成员 -------------------- */
+
+.pool-balance-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-4, 16px);
+}
+
+.pool-balance-label {
+  font-size: 12px;
+  color: var(--pool-slate-400);
+}
+
+.pool-balance-value {
+  font-size: 30px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.pool-balance-total {
+  font-size: 12px;
+  color: var(--pool-slate-400);
+}
+
+.pool-currency-list-label {
+  font-size: 12px;
+  color: var(--pool-slate-400);
+  margin: 0 0 var(--space-2, 8px);
+}
+
+.pool-currency-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.pool-currency-row {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pool-currency-row.is-low {
+  background: var(--pool-amber-soft);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.pool-currency-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.pool-currency-code {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--pool-slate-200);
+}
+
+.pool-currency-row.is-low .pool-currency-code { color: var(--pool-amber); }
+
+.pool-currency-balance {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+  font-family: var(--font-mono, monospace);
+}
+
+.pool-currency-row .pool-progress-track {
+  margin-bottom: 4px;
+}
+
+.pool-currency-sub {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--pool-slate-400);
+}
+
+.pool-topup-count {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pool-slate-400);
+}
+
+.pool-progress-track {
+  position: relative;
+  height: 6px;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+
+.pool-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full, 999px);
+  background: linear-gradient(90deg, var(--pool-teal), #5eead4);
+  transition: width var(--duration-slow, 360ms) var(--ease-out, ease), background var(--duration-base, 220ms);
+}
+
+.pool-currency-row.is-low .pool-progress-fill { background: linear-gradient(90deg, var(--pool-amber), #fcd34d); }
+.pool-theme-settled .pool-progress-fill { background: var(--pool-slate-400); }
+
+/* -------------------- 底部操作列 -------------------- */
+
+.pool-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-5, 20px);
+  flex-wrap: wrap;
+}
+
+.pool-card-actions .btn {
+  border-radius: var(--radius-sm, 10px);
+}
+
+.pool-card-actions .btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: var(--pool-slate-200);
+}
+.pool-card-actions .btn-ghost:hover { background: rgba(148, 163, 184, 0.1); }
+
+.pool-card-actions .btn-secondary {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--pool-slate-200);
+  border: 1px solid transparent;
+}
+.pool-card-actions .btn-secondary:hover { background: rgba(148, 163, 184, 0.2); }
+
+.pool-card-actions .btn-primary {
+  background: var(--pool-teal);
+  color: var(--pool-slate-900);
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+.pool-card-actions .btn-primary:hover { background: #5eead4; }
+
+.pool-settled-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm, 10px);
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--pool-slate-400);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* -------------------- 响应式 -------------------- */
+
+@media (max-width: 480px) {
+  .divvy-pool-card { padding: var(--space-5, 20px); }
+  .pool-balance-value { font-size: 26px; }
+  .pool-mascot-copy { max-width: 140px; }
+  .pool-card-actions { justify-content: stretch; }
+  .pool-card-actions .btn { flex: 1; }
+}
+
+/* 设置页「搭伙金库」面板：登记打款表单 + 目前各货币余额概况，走既有 settings-row 排版 */
+.pool-settings-enable-row {
+  display: flex;
+  gap: var(--space-3, 12px);
+  align-items: center;
+  margin-top: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+.pool-settings-enable-row .text-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.pool-settings-currency-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  margin: var(--space-3, 12px) 0;
+}
+
+.pool-settings-currency-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 10px);
+  background: var(--bg-subtle);
+  font-size: 14px;
+}
+
+.pool-settings-currency-row span:first-child {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   Dashboard 顶部卡片组：搭伙金库 + Hero Card 合并成可滑动卡片
+   金库优先（第一张），没开金库时收敛成只有 Hero Card 单卡，不显示滑动分页点
+   ============================================================ */
+
+.dash-card-slider {
+  position: relative;
+  margin-bottom: var(--space-5, 20px);
+}
+
+.dash-card-track {
+  display: flex;
+  align-items: stretch; /* 让金库卡片与 Hero 卡片撑到同一行里最高的那个高度，两张卡不再高低不平 */
+  gap: var(--space-4, 16px); /* 卡片之间留出间隙，滑动/并排时不会黏在一起 */
+  overflow-x: auto;
+  /* 只设定 overflow-x 的话，浏览器规范上会连带把 overflow-y 也强制变成 auto
+     （不会维持「看起来没设定」的 visible）——垂直方向因此也被裁切，卡片圆角
+     那圈会往外扩散的柔和阴影，一到容器的直线边界就被硬生生切平，看起来就像
+     圆角旁边冒出一块方形阴影。这里上下各留一段 padding 当缓冲区，让阴影在
+     真的被裁掉之前就已经淡到看不见，再用等值的负 margin 抵销掉，
+     不会影响外部版面原本的高度/位置 */
+  padding: 48px 0 72px;
+  margin: -48px 0 -72px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dash-card-track::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-card-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* 没开金库：金库那张 slide 直接从排版里拿掉，Hero Card 单卡显示，
+   行为跟原本「只有一张卡片」时一模一样，不会露出可以滑动的空白 */
+.dash-card-slider:not(.has-pool) .dash-card-slide-pool {
+  display: none;
+}
+
+.dash-card-slider:not(.has-pool) .dash-card-track {
+  overflow: visible;
+}
+
+.dash-card-slider .hero-card,
+.dash-card-slider .divvy-pool-card {
+  margin-bottom: 0; /* 卡片自身的下边距交给 slider 容器统一处理，避免滑动时看到不对齐的留白 */
+  min-height: 300px; /* 两张卡固定同一个最小高度，不管彼此内容多寡，看起来都是一样大小的卡片 */
+  box-sizing: border-box;
+}
+
+/* Hero Card 内容本来是从上往下排的区块，卡片被撑高（min-height／align-items:stretch
+   拉到跟金库卡片一样高）之後，内容会全部挤在卡片上半部、下面留一大块空白，很不平衡。
+   改成 flex 直排 + 垂直置中，不管卡片实际有多高，内容永远置中显示，跟金库卡片
+   「内容本来就撑满卡片」的视觉重量感一致 */
+.dash-card-slider .hero-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dash-card-slider .hero-card .hero-empty-state,
+.dash-card-slider .hero-card .hero-content {
+  width: 100%;
+}
+
+.dash-card-dots {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--space-3, 12px);
+}
+
+.dash-card-slider.has-pool .dash-card-dots {
+  display: flex;
+}
+
+.dash-card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--border-strong);
+  cursor: pointer;
+  transition: all var(--duration-fast, 140ms) var(--ease-out, ease);
+}
+
+.dash-card-dot.is-active {
+  width: 18px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .dash-card-slider.has-pool {
+    /* 手机上留一点右侧露出感，暗示「还可以往右滑」，不会看起来像卡死的单卡 */
+    margin-left: calc(-1 * var(--space-4, 16px));
+    margin-right: calc(-1 * var(--space-4, 16px));
+    padding: 0 var(--space-4, 16px);
+  }
+}
+
+/* 三选项分段控制（记账 Modal 的「资金来源」：正常记账/金库支出/代垫归还） */
+.segmented-control-3 .segmented-item {
+  font-size: 12.5px;
+  padding: 0 4px;
+}
+
+/* ============================================================
+   Hero Card 融合进搭伙金库的 Cool Slate 视觉（配合可滑动卡片组）
+   放在文件最尾端：跟 [data-theme="light"/"dark"] .hero-card 是同样的选择器权重，
+   靠「写在後面」赢过主题规则，让 Hero Card 不管目前是浅色/深色模式，
+   在滑动卡片组里都固定呈现跟搭伙金库同一套深色基底，滑过去不会有割裂感
+   ============================================================ */
+.hero-card.hero-card-slate {
+  --hero-fg: #e2e8f0;
+  --hero-fg-muted: #94a3b8;
+  --hero-fg-faint: rgba(148, 163, 184, 0.7);
+  --hero-owed: #2dd4bf;
+  --hero-owing: #fbbf24;
+  --hero-divider: rgba(148, 163, 184, 0.18);
+
+  background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* 跟 .divvy-pool-card 同一个理由：修正 Safari 对圆角裁切 filter 内容
+     （::before 的 filter: blur()）不干净、溢出成方形色块的已知问题 */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+  mask-image: radial-gradient(white, black);
+}
+
+/* 跟搭伙金库卡片同一套「右上角微光」质感，两张卡放在一起才不会一个有材质感、
+   一个死板板的纯色块——微光颜色跟着「预计收回/需付/已结清」三种状态换色。
+   沿用原本「实心圆 + filter: blur(40px)」的做法，理由跟 .pool-card-glow
+   一致：柔光观感本身没问题，Safari 的裁切 bug 已经改到父层
+   （.hero-card.hero-card-slate）用 -webkit-mask-image 修掉了 */
+.hero-card.hero-card-slate::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.32;
+  pointer-events: none;
+  background: #2dd4bf;
+  transition: background var(--duration-slow, 360ms) var(--ease-out, ease);
+  z-index: 0;
+}
+
+.hero-card.hero-card-slate:has(.hero-net-value.is-owed)::before {
+  background: #2dd4bf;
+  opacity: 0.5;
+}
+
+.hero-card.hero-card-slate:has(.hero-net-value.is-owing)::before {
+  background: #fbbf24;
+  opacity: 0.45;
+}
+
+.hero-card.hero-card-slate .hero-empty-state,
+.hero-card.hero-card-slate .hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-card.hero-card-slate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.32);
+}
+
+.hero-card.hero-card-slate .hero-net-value {
+  font-family: var(--font-mono, monospace);
+}
+
+.hero-card.hero-card-slate .hero-breakdown-divider {
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.hero-card.hero-card-slate .hero-content.is-skeleton .hero-net-value,
+.hero-card.hero-card-slate .hero-content.is-skeleton .hero-breakdown-value {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.12) 25%, rgba(148, 163, 184, 0.22) 50%, rgba(148, 163, 184, 0.12) 75%);
+  background-size: 200% 100%;
+}
+
+/* 通用的「checkbox + 文字」单行排版 */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   搭伙金库结程退余明细 Modal
+   ============================================================ */
+.pool-refund-member-group {
+  padding: var(--space-3, 12px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-refund-member-group:last-child {
+  border-bottom: none;
+}
+
+.pool-refund-member-name {
+  margin: 0 0 var(--space-2, 8px);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pool-refund-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.pool-refund-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pool-refund-tag {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 999px);
+}
+
+.pool-refund-tag.is-offset {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pool-refund-tag.is-cash {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* ============================================================
+   搭伙金库明细 Modal：登记流水 / 支出流水 / 结程退余，三段式列表
+   ============================================================ */
+.pool-detail-section {
+  margin-top: var(--space-4, 16px);
+}
+
+.pool-detail-section:first-child {
+  margin-top: 0;
+}
+
+.pool-detail-section-title {
+  margin: 0 0 var(--space-2, 8px);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.pool-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pool-detail-row:last-child {
+  border-bottom: none;
+}
+
+.pool-detail-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pool-detail-row-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pool-detail-row-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.pool-detail-row-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}

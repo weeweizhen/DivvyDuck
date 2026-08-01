@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DivvyDuck · 聚会分账，鸭力全无！</title>
+<meta name="description" content="Split bills, share moments. 优雅记录每一笔开销，让多人同行的财务清算轻盈无感。">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="icon" href="favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E1B4B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DivvyDuck">
+<script>
+  // 在第一次绘制之前就同步决定好深色/浅色模式，直接设定在 <html> 上——
+  // 放在 <link rel="stylesheet"> 前面、body 还没有任何内容时执行，
+  // 避免先闪一下写死的浅色、等 DOMContentLoaded 里的 initTheme() 跑完才又跳成深色的画面闪烁
+  (function () {
+    try {
+      var saved = localStorage.getItem('splitapp-theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+    } catch (error) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+<link rel="stylesheet" href="style.css?v=20260801b">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js?v=20260731a"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     开机品牌动画：一打开网址先看到 Logo + DivvyDuck 字样的短暂动画，
+     营造「这是一个完整 App」的开机感。这层动画纯粹盖在最上面（z-index 最高），
+     不影响底下 authGate / appShell 的判断——那两个照样在这段时间内正常被
+     app.js 既有的登入逻辑判断、准备好，时间到了动画淡出，直接接上已经
+     准备好的画面（未登入 → 登入闸门；已登入 → 概览页）
+     ============================================================ -->
+<div class="app-splash" id="appSplash" aria-hidden="true">
+  <div class="app-splash-glow"></div>
+  <span class="app-splash-mark">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ddPurpleSplash" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1E1B4B"/>
+          <stop offset="100%" stop-color="#0F172A"/>
+        </linearGradient>
+        <linearGradient id="ddBeakSplash" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FBBF24"/>
+          <stop offset="100%" stop-color="#F59E0B"/>
+        </linearGradient>
+        <linearGradient id="ddBarSplash" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#38BDF8"/>
+          <stop offset="100%" stop-color="#818CF8"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleSplash)"/>
+      <g transform="rotate(-12, 50, 50)">
+        <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+        <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+        <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakSplash)"/>
+        <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarSplash)"/>
+        <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+      </g>
+    </svg>
+  </span>
+  <span class="app-splash-word">DivvyDuck</span>
+</div>
+
+<!-- ============================================================
+     全域帐号登入闸门：没有有效登入的帐号一律卡在这里，看不到任何 App 内容/资料
+     真正的 Sign Up / Sign In，进入后才看得到旅程、消费、结算等所有资料
+     ============================================================ -->
+<div class="auth-gate is-hidden" id="authGate">
+  <div class="auth-gate-card glass-card">
+    <div class="auth-gate-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ddPurpleGate" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E1B4B"/>
+              <stop offset="100%" stop-color="#0F172A"/>
+            </linearGradient>
+            <linearGradient id="ddBeakGate" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FBBF24"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </linearGradient>
+            <linearGradient id="ddBarGate" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38BDF8"/>
+              <stop offset="100%" stop-color="#818CF8"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleGate)"/>
+          <g transform="rotate(-12, 50, 50)">
+            <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+            <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+            <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakGate)"/>
+            <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarGate)"/>
+            <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+          </g>
+        </svg>
+      </span>
+      <span class="brand-name" data-i18n="brand.name">DivvyDuck</span>
+      <span class="brand-slogan" data-i18n="authGate.brandSlogan">聚会分账，鸭力全无！</span>
+    </div>
+
+    <!-- 登入 / 注册 -->
+    <div class="auth-gate-step is-hidden" id="authGateAuthStep">
+      <div class="auth-gate-tabs">
+        <button class="auth-gate-tab is-active" id="authGateLoginTab" type="button" data-i18n="authGate.loginTab">登入</button>
+        <button class="auth-gate-tab" id="authGateSignupTab" type="button" data-i18n="authGate.signupTab">注册</button>
+      </div>
+
+      <!-- 登入表单 -->
+      <form class="auth-gate-form" id="authLoginForm">
+        <div class="form-field">
+          <label for="authLoginEmail" data-i18n="authGate.emailLabel">邮箱</label>
+          <input type="email" id="authLoginEmail" class="text-input" required autocomplete="email" data-i18n-placeholder="authGate.emailPlaceholder" placeholder="name@example.com">
+        </div>
+        <div class="form-field">
+          <label for="authLoginPassword" data-i18n="authGate.passwordLabel">密码</label>
+          <input type="password" id="authLoginPassword" class="text-input" required autocomplete="current-password" data-i18n-placeholder="authGate.passwordPlaceholder" placeholder="输入密码">
+        </div>
+        <button type="submit" class="btn btn-primary auth-gate-submit" id="authLoginSubmitBtn">
+          <span class="btn-label" data-i18n="authGate.loginSubmit">登入</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <p class="auth-gate-switch-hint">
+          <a href="#" data-auth-gate-switch="signup" data-i18n="authGate.switchToSignup">还没有帐号？点此注册</a>
+        </p>
+        <p class="auth-gate-switch-hint">
+          <a href="#" id="authGateForgotPasswordLink" data-i18n="authGate.forgotPasswordLink">忘记密码？</a>
+        </p>
+      </form>
+
+      <!-- 注册表单 -->
+      <form class="auth-gate-form is-hidden" id="authSignupForm">
+        <div class="auth-gate-name-row">
+          <div class="form-field">
+            <label for="authSignupFirstName" data-i18n="authGate.firstNameLabel">姓氏</label>
+            <input type="text" id="authSignupFirstName" class="text-input" required autocomplete="given-name" data-i18n-placeholder="authGate.firstNamePlaceholder" placeholder="Tan">
+          </div>
+          <div class="form-field">
+            <label for="authSignupLastName" data-i18n="authGate.lastNameLabel">名字</label>
+            <input type="text" id="authSignupLastName" class="text-input" required autocomplete="family-name" data-i18n-placeholder="authGate.lastNamePlaceholder" placeholder="Wei Ling">
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="authSignupNickname" data-i18n="authGate.nicknameLabel">Nickname</label>
+          <input type="text" id="authSignupNickname" class="text-input" required autocomplete="nickname" data-i18n-placeholder="authGate.nicknamePlaceholder" placeholder="同行会看到的名字，例如「小伟」">
+        </div>
+        <div class="form-field">
+          <label for="authSignupEmail" data-i18n="authGate.emailLabel">邮箱</label>
+          <input type="email" id="authSignupEmail" class="text-input" required autocomplete="email" data-i18n-placeholder="authGate.emailPlaceholder" placeholder="name@example.com">
+        </div>
+        <div class="form-field">
+          <label for="authSignupPassword" data-i18n="authGate.passwordLabel">密码</label>
+          <input type="password" id="authSignupPassword" class="text-input" required autocomplete="new-password" data-i18n-placeholder="authGate.signupPasswordPlaceholder" placeholder="至少 6 个字元，建议混合英数">
+        </div>
+        <div class="form-field">
+          <label for="authSignupInviteCode" data-i18n="authGate.inviteCodeLabel">邀请码（选填）</label>
+          <input type="text" id="authSignupInviteCode" class="text-input" autocomplete="off" data-i18n-placeholder="authGate.inviteCodePlaceholder" placeholder="有朋友的邀请码就填在这里">
+          <p class="form-hint" data-i18n="authGate.inviteCodeHint">有邀请码就会直接加入朋友的旅程；没有的话，注册后可以自己建立新旅程。</p>
+        </div>
+        <div class="form-field is-hidden" id="authSignupClaimMemberField">
+          <label for="authSignupClaimMemberSelect" data-i18n="authGate.claimMemberLabel">这趟旅程里，你是哪一位？</label>
+          <select id="authSignupClaimMemberSelect" class="text-input"></select>
+          <p class="form-hint claim-member-already-notice is-hidden" data-i18n="authGate.alreadyMemberNotice">你已经加入过这个旅程了。</p>
+        </div>
+        <button type="submit" class="btn btn-primary auth-gate-submit" id="authSignupSubmitBtn">
+          <span class="btn-label" data-i18n="authGate.signupSubmit">注册并开始使用</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <p class="auth-gate-switch-hint">
+          <a href="#" data-auth-gate-switch="login" data-i18n="authGate.switchToLogin">已经有帐号？点此登入</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- 忘记密码：申请重设连结 -->
+    <div class="auth-gate-step is-hidden" id="authGateForgotStep">
+      <p class="auth-gate-step-desc" data-i18n="authGate.forgotStepDesc">输入你注册时用的邮箱，我们会寄一封重设密码的连结给你。</p>
+      <form id="authForgotForm">
+        <div class="form-field">
+          <label for="authForgotEmail" data-i18n="authGate.emailLabel">邮箱</label>
+          <input type="email" id="authForgotEmail" class="text-input" required autocomplete="email" data-i18n-placeholder="authGate.emailPlaceholder" placeholder="name@example.com">
+        </div>
+        <button type="submit" class="btn btn-primary auth-gate-submit" id="authForgotSubmitBtn">
+          <span class="btn-label" data-i18n="authGate.forgotSubmitBtn">寄送重设连结</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <p class="auth-gate-switch-hint">
+          <a href="#" id="authGateBackToLoginFromForgotLink" data-i18n="authGate.backToLogin">返回登入</a>
+        </p>
+      </form>
+    </div>
+
+    <!-- 忘记密码：透过 Email 连结设定新密码 -->
+    <div class="auth-gate-step is-hidden" id="authGateResetStep">
+      <p class="auth-gate-step-desc" data-i18n="authGate.resetStepDesc">请设定一个新密码。</p>
+      <form id="authResetForm">
+        <div class="form-field">
+          <label for="authResetNewPassword" data-i18n="authGate.newPasswordLabel">新密码</label>
+          <input type="password" id="authResetNewPassword" class="text-input" required autocomplete="new-password" data-i18n-placeholder="authGate.signupPasswordPlaceholder" placeholder="至少 6 个字元，建议混合英数">
+        </div>
+        <button type="submit" class="btn btn-primary auth-gate-submit" id="authResetSubmitBtn">
+          <span class="btn-label" data-i18n="authGate.resetSubmitBtn">设定新密码</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+        <p class="auth-gate-switch-hint">
+          <a href="#" id="authGateBackToLoginFromResetLink" data-i18n="authGate.backToLogin">返回登入</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <button class="auth-gate-lang-toggle" id="authGateLangToggle" type="button" data-lang-cycle-btn aria-label="Switch language">
+    <span class="theme-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 12H20.5M12 3.5C14.5 6 15.7 9 15.7 12C15.7 15 14.5 18 12 20.5C9.5 18 8.3 15 8.3 12C8.3 9 9.5 6 12 3.5Z" stroke="currentColor" stroke-width="1.5"/></svg>
+    </span>
+    <span id="authGateLangToggleLabel">English</span>
+  </button>
+</div>
+
+<!-- ============================================================
+     App Shell：Sidebar + Header + Main Content
+     ============================================================ -->
+<div class="app-shell is-hidden" id="appShell">
+
+  <!-- ---------------- Sidebar (桌面版) ---------------- -->
+  <aside class="sidebar" aria-label="主导航">
+    <div class="sidebar-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ddPurpleDesktop" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E1B4B"/>
+              <stop offset="100%" stop-color="#0F172A"/>
+            </linearGradient>
+            <linearGradient id="ddBeakDesktop" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FBBF24"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </linearGradient>
+            <linearGradient id="ddBarDesktop" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38BDF8"/>
+              <stop offset="100%" stop-color="#818CF8"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleDesktop)"/>
+          <g transform="rotate(-12, 50, 50)">
+            <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+            <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+            <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakDesktop)"/>
+            <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarDesktop)"/>
+            <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+          </g>
+        </svg>
+      </span>
+      <div class="sidebar-brand-text">
+        <span class="brand-name" data-i18n="brand.name">DivvyDuck</span>
+        <span class="brand-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav">
+      <span class="nav-indicator" id="navIndicator" aria-hidden="true"></span>
+
+      <button class="nav-item is-active" data-page="dashboard" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.dashboard">概览</span>
+      </button>
+
+      <button class="nav-item" data-page="expenses" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.expenses">账目</span>
+      </button>
+
+      <button class="nav-item" data-page="summary" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 8H8.5L6 14.5C6 14.5 4.8 16 6 16.8C6.9 17.4 8.5 17 8.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 8H20.5L18 14.5C18 14.5 16.8 16 18 16.8C18.9 17.4 20.5 17 20.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.summary">结算</span>
+      </button>
+
+      <button class="nav-item" data-page="members" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19C3.5 15.5 6 13.5 9 13.5C12 13.5 14.5 15.5 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15.5 6.5C16.9 6.8 18 8 18 9.5C18 11 16.9 12.2 15.5 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 13.7C18.9 14.2 20.5 15.9 20.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.members">同行</span>
+      </button>
+
+      <button class="nav-item" data-page="settings" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5V5.5M12 18.5V20.5M20.5 12H18.5M5.5 12H3.5M17.8 6.2L16.4 7.6M7.6 16.4L6.2 17.8M17.8 17.8L16.4 16.4M7.6 7.6L6.2 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.settings">设置</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="langToggle" type="button" data-lang-cycle-btn aria-label="Switch language">
+        <span class="theme-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 12H20.5M12 3.5C14.5 6 15.7 9 15.7 12C15.7 15 14.5 18 12 20.5C9.5 18 8.3 15 8.3 12C8.3 9 9.5 6 12 3.5Z" stroke="currentColor" stroke-width="1.5"/></svg>
+        </span>
+        <span class="theme-label" id="langToggleLabel">English</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式">
+        <span class="theme-icon theme-icon-light" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5V4.5M12 19.5V21.5M21.5 12H19.5M4.5 12H2.5M18.4 5.6L17 7M7 17L5.6 18.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="theme-icon theme-icon-dark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.2C18.9 14.7 17.7 15 16.4 15C11.7 15 8 11.3 8 6.6C8 5.3 8.3 4.1 8.8 3C5.2 4.2 2.6 7.6 2.6 11.6C2.6 16.6 6.7 20.7 11.7 20.7C15.6 20.7 19 18.1 20 14.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="theme-label" id="themeToggleLabel">深色模式</span>
+      </button>
+      <button class="theme-toggle" id="sidebarLogoutBtn" type="button" aria-label="登出">
+        <span class="theme-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M15 4H18C19.1 4 20 4.9 20 6V18C20 19.1 19.1 20 18 20H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M10 16L14 12L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 12H4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="theme-label" data-i18n="account.logoutBtn">登出</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ---------------- 移动版侧滑抽屉（补齐手机上看不到的完整导航，例如设置） ---------------- -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="side-drawer" id="sideMenu" aria-label="主导航（移动版）">
+    <div class="sidebar-brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ddPurpleDrawer" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E1B4B"/>
+              <stop offset="100%" stop-color="#0F172A"/>
+            </linearGradient>
+            <linearGradient id="ddBeakDrawer" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FBBF24"/>
+              <stop offset="100%" stop-color="#F59E0B"/>
+            </linearGradient>
+            <linearGradient id="ddBarDrawer" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38BDF8"/>
+              <stop offset="100%" stop-color="#818CF8"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleDrawer)"/>
+          <g transform="rotate(-12, 50, 50)">
+            <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+            <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+            <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakDrawer)"/>
+            <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarDrawer)"/>
+            <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+          </g>
+        </svg>
+      </span>
+      <div class="sidebar-brand-text">
+        <span class="brand-name" data-i18n="brand.name">DivvyDuck</span>
+        <span class="brand-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</span>
+      </div>
+      <button class="icon-btn drawer-close" id="drawerCloseBtn" type="button" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="sidebar-nav drawer-nav" id="drawerNav">
+      <button class="nav-item" data-page="dashboard" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.dashboard">概览</span>
+      </button>
+      <button class="nav-item" data-page="expenses" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.expenses">账目</span>
+      </button>
+      <button class="nav-item" data-page="summary" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 8H8.5L6 14.5C6 14.5 4.8 16 6 16.8C6.9 17.4 8.5 17 8.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 8H20.5L18 14.5C18 14.5 16.8 16 18 16.8C18.9 17.4 20.5 17 20.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.summary">结算</span>
+      </button>
+      <button class="nav-item" data-page="members" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19C3.5 15.5 6 13.5 9 13.5C12 13.5 14.5 15.5 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15.5 6.5C16.9 6.8 18 8 18 9.5C18 11 16.9 12.2 15.5 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 13.7C18.9 14.2 20.5 15.9 20.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.members">同行</span>
+      </button>
+      <button class="nav-item" data-page="settings" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5V5.5M12 18.5V20.5M20.5 12H18.5M5.5 12H3.5M17.8 6.2L16.4 7.6M7.6 16.4L6.2 17.8M17.8 17.8L16.4 16.4M7.6 7.6L6.2 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="nav.settings">设置</span>
+      </button>
+    </nav>
+    <!-- 手机版没有桌面版侧栏底部那排语言/深色模式，这里补上语言切换（一点击直接换下一个语言，
+         想从清单里挑语言的话去设置页）、深色模式切换，跟登出放在一起 -->
+    <div class="drawer-footer">
+      <button class="theme-toggle" id="drawerLangToggle" type="button" data-lang-cycle-btn aria-label="Switch language">
+        <span class="theme-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 12H20.5M12 3.5C14.5 6 15.7 9 15.7 12C15.7 15 14.5 18 12 20.5C9.5 18 8.3 15 8.3 12C8.3 9 9.5 6 12 3.5Z" stroke="currentColor" stroke-width="1.5"/></svg>
+        </span>
+        <span class="theme-label" id="drawerLangToggleLabel">English</span>
+      </button>
+      <button class="theme-toggle" id="drawerThemeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式">
+        <span class="theme-icon theme-icon-light" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5V4.5M12 19.5V21.5M21.5 12H19.5M4.5 12H2.5M18.4 5.6L17 7M7 17L5.6 18.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="theme-icon theme-icon-dark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.2C18.9 14.7 17.7 15 16.4 15C11.7 15 8 11.3 8 6.6C8 5.3 8.3 4.1 8.8 3C5.2 4.2 2.6 7.6 2.6 11.6C2.6 16.6 6.7 20.7 11.7 20.7C15.6 20.7 19 18.1 20 14.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="theme-label" id="drawerThemeToggleLabel">深色模式</span>
+      </button>
+      <button class="nav-item" id="drawerLogoutBtn" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M15 4H18C19.1 4 20 4.9 20 6V18C20 19.1 19.1 20 18 20H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M10 16L14 12L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 12H4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <span class="nav-label" data-i18n="account.logoutBtn">登出</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ---------------- Header ---------------- -->
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="header-left-text">
+        <h1 class="page-title" id="pageTitle">总览</h1>
+        <p class="page-subtitle" id="pageSubtitle">大家的消费，一目了然</p>
+      </div>
+      <!-- 手机版不显示汉堡选单／页面标题（见 style.css 的响应式规则），改显示这个纯品牌字样；
+           桌面版则反过来隐藏这个、维持原本汉堡选单+页面标题的排版 -->
+      <span class="app-header-brand" aria-hidden="true" data-i18n="brand.name">DivvyDuck</span>
+    </div>
+    <div class="header-right">
+      <div class="trip-switcher">
+        <select class="select-control" id="tripSelect" aria-label="选择旅程"></select>
+        <button class="icon-btn" type="button" data-open-modal="addTripModal" aria-label="新增旅程">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- headerActionBtn 刻意放在 .app-header 外面（不是它的子层级）：.app-header 有
+       backdrop-filter（玻璃拟态效果），CSS 规范上 backdrop-filter／filter／transform
+       都会让该元素变成子层级 position: fixed 的新定位基准，而不是整个视窗——放在里面的话，
+       桌面版想用 fixed 把这颗按钮钉在「画面右下角」实际上只会钉在「.app-header 的右下角」，
+       跟预期不符。放在这里（.app-shell 底下、header 跟 main 平行）就不会有这个问题，
+       同时还留在 .app-shell 里，登入前 .app-shell 是 is-hidden 的，这颗按钮也会跟着自动隐藏，
+       不需要额外处理登入状态。 -->
+  <button class="btn btn-primary" id="headerActionBtn" type="button">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span id="headerActionLabel">记一笔</span>
+  </button>
+
+  <!-- ---------------- Main Content ---------------- -->
+  <main class="app-main" id="appMain">
+
+    <!-- 下拉刷新指示器：平常 height:0 完全不占位，手指下拉时用 JS 撑高露出来，
+         放在 .app-main 最前面（不是独立的 grid item），才会自然被 sticky 的
+         Header 盖在上面、只在 Header 底下那截露出来，不需要额外处理定位 -->
+    <div class="ptr-indicator" id="ptrIndicator" aria-hidden="true">
+      <div class="ptr-indicator-inner">
+        <svg class="ptr-arrow" id="ptrArrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 4V20M12 20L6 14M12 20L18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="spinner is-hidden" id="ptrSpinner"></div>
+      </div>
+    </div>
+
+    <!-- 离线状态横幅：目前没有网路连线、或正在把离线暂存的纪录同步回後端时显示；
+         平常（有网路、没有待同步资料）是隐藏的 -->
+    <div class="offline-banner is-hidden" id="offlineBanner" role="status">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L2 22H22L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9V14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="17.5" r="0.9" fill="currentColor"/></svg>
+      <span id="offlineBannerText"></span>
+    </div>
+
+    <!-- ========== Dashboard 页 ========== -->
+    <section class="page" id="page-dashboard" data-page-section="dashboard">
+
+      <!-- 欢迎词：用登入帐号的显示名称打招呼，让「你是谁」一进来就看得到 -->
+      <p class="dash-welcome" id="dashWelcomeText"></p>
+
+      <!-- 沉浸态头部：旅程标题 + 建立日期/汇率 / 旅程切换 + 头像堆叠 -->
+      <div class="dash-header">
+        <div class="dash-header-left">
+          <h1 class="dash-trip-title" id="dashTripTitle" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
+          <p class="dash-trip-meta" id="dashTripMeta"></p>
+        </div>
+        <div class="dash-header-right">
+          <div class="avatar-stack" id="avatarStack"></div>
+          <button class="icon-btn dash-switch-trip" id="dashSwitchTripBtn" type="button" aria-label="切换旅程">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M7 7H17M17 7L13 3M17 7L13 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17H7M7 17L11 13M7 17L11 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Dashboard 顶部卡片组：搭伙金库 + Hero Card（个人净额总览）合并成可滑动的一组卡片。
+           金库优先（第一张），Hero Card 第二张；没开金库的旅程会由 updateDashCardSliderState()
+           拿掉 has-pool class，滑动结构自动收敛成只显示 Hero Card，不会露出空白的第二张卡 -->
+      <div class="dash-card-slider" id="dashCardSlider">
+        <div class="dash-card-track" id="dashCardTrack">
+          <div class="dash-card-slide dash-card-slide-pool" id="poolCardSlide">
+            <!-- 内容由 renderDivvyPoolCard() 全权接管 -->
+            <div id="divvyPoolCard" class="divvy-pool-card"></div>
+          </div>
+
+          <div class="dash-card-slide dash-card-slide-hero">
+            <!-- Hero Card：个人净额总览 -->
+            <div class="hero-card glass-card hero-card-slate" id="heroCard">
+              <div class="hero-empty-state" id="heroEmptyState">
+                <div class="empty-illustration" aria-hidden="true">
+                  <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M24 33L29 38L40 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h3 data-i18n="hero.noViewerTitle">还没设定你是谁</h3>
+                <p data-i18n="hero.noViewerDesc">这个帐号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
+              </div>
+              <div class="hero-content is-hidden" id="heroContent">
+                <div class="hero-card-top">
+                  <div class="hero-mascot-wrap">
+                    <button type="button" class="hero-mascot" onclick="onHeroMascotTap(this)" aria-label="搭伙鸭吉祥物，点一下换句话">
+                      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <linearGradient id="ddLogoHeroBeak" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#FBBF24"/>
+                            <stop offset="100%" stop-color="#F59E0B"/>
+                          </linearGradient>
+                          <linearGradient id="ddLogoHeroBar" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#38BDF8"/>
+                            <stop offset="100%" stop-color="#818CF8"/>
+                          </linearGradient>
+                        </defs>
+                        <g transform="rotate(-12, 50, 50)">
+                          <circle cx="50" cy="27" r="13" fill="#0F172A"/>
+                          <circle cx="54" cy="24" r="2.8" fill="#FFFFFF"/>
+                          <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddLogoHeroBeak)"/>
+                          <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddLogoHeroBar)"/>
+                          <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#0F172A"/>
+                        </g>
+                      </svg>
+                    </button>
+                    <p class="hero-mascot-copy" id="heroMascotCopy"></p>
+                  </div>
+                </div>
+                <div class="hero-main">
+                  <p class="hero-net-value mono" id="heroNetValue">RM 0.00</p>
+                  <p class="hero-net-label" id="heroNetLabel"></p>
+                </div>
+                <div class="hero-breakdown">
+                  <div class="hero-breakdown-item">
+                    <span class="hero-breakdown-label" data-i18n="hero.frontedLabel">已付金额</span>
+                    <span class="hero-breakdown-value mono" id="heroFrontedValue">RM 0.00</span>
+                  </div>
+                  <div class="hero-breakdown-divider" aria-hidden="true"></div>
+                  <div class="hero-breakdown-item">
+                    <span class="hero-breakdown-label" data-i18n="hero.personalLabel">个人消费</span>
+                    <span class="hero-breakdown-value mono" id="heroPersonalValue">RM 0.00</span>
+                  </div>
+                  <div class="hero-breakdown-divider" aria-hidden="true"></div>
+                  <div class="hero-breakdown-item">
+                    <span class="hero-breakdown-label" data-i18n="hero.receivedLabel">已收金额</span>
+                    <span class="hero-breakdown-value mono" id="heroReceivedValue">RM 0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分页圆点：只有金库卡开启时才会显示（见 updateDashCardSliderState） -->
+        <div class="dash-card-dots" id="dashCardDots">
+          <button type="button" class="dash-card-dot" data-slide-index="0" aria-label="搭伙鸭金库"></button>
+          <button type="button" class="dash-card-dot" data-slide-index="1" aria-label="个人净额总览"></button>
+        </div>
+      </div>
+
+      <!-- Quick Actions Dock -->
+      <div class="qa-dock">
+        <button class="qa-pill qa-pill-primary" type="button" data-open-modal="addExpenseModal">
+          <span data-i18n="header.addExpense">记一笔</span>
+        </button>
+        <button class="qa-pill" type="button" id="qaSettleBtn">
+          <span data-i18n="dashboard.qaSettle">最优结算</span>
+        </button>
+        <button class="qa-pill" type="button" id="qaStatsBtn">
+          <span data-i18n="dashboard.qaStats">账单统计</span>
+        </button>
+      </div>
+
+      <!-- Balance Matrix：谁欠谁 -->
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <div>
+            <h2 data-i18n="dashboard.matrixTitle">谁欠谁</h2>
+            <p class="panel-hint" data-i18n="dashboard.matrixHint">一眼看懂资金流向</p>
+          </div>
+          <button class="link-btn is-hidden" type="button" id="balanceMatrixToggleBtn"></button>
+        </div>
+        <div class="panel-body" id="balanceMatrixList">
+          <div class="empty-state empty-state-compact">
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none"><path d="M14 32H50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M40 22L50 32L40 42" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 data-i18n="empty.noSettlement.title">目前没有待结算款项</h3>
+            <p data-i18n="empty.noSettlement.desc">所有人的帐都结清了。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity：最近 3 笔消费 -->
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="dashboard.recentExpenses">近期账目</h2>
+          <button class="link-btn" data-navigate="expenses" type="button" data-i18n="dashboard.viewAll">查看全部</button>
+        </div>
+        <div class="panel-body" id="recentActivityList">
+          <div class="empty-state">
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none"><rect x="14" y="10" width="36" height="46" rx="6" stroke="currentColor" stroke-width="2"/><path d="M22 24H42M22 32H42M22 40H34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <h3 data-i18n="empty.noExpenses.title">还没有任何消费纪录</h3>
+            <p data-i18n="empty.noExpenses.desc">新增第一笔消费，开始与大家一起记帐。</p>
+            <button class="btn btn-primary btn-sm" type="button" data-open-modal="addExpenseModal" data-i18n="header.addExpense">记一笔</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Expenses 页 ========== -->
+    <section class="page is-hidden" id="page-expenses" data-page-section="expenses">
+      <div class="search-box" id="expensesSearchBox">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="M20 20L16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <input type="text" id="expenseSearchInput" placeholder="搜寻消费纪录…" aria-label="搜寻消费纪录" data-i18n-placeholder="header.searchPlaceholder">
+      </div>
+
+      <div class="toolbar">
+        <div class="chip-group" id="categoryFilterChips">
+          <button class="chip is-active" data-category-filter="all" type="button" data-i18n="expenses.filterAll">全部</button>
+          <!-- 分类筛选 chips 由 app.js 动态产生 -->
+        </div>
+        <div class="toolbar-right">
+          <select class="select-control" id="splitTypeFilter" aria-label="依分帐方式筛选">
+            <option value="all" data-i18n="expenses.filterSplitType">所有分帐方式</option>
+            <option value="equal" data-i18n="expenses.filterEqual">平均分帐</option>
+            <option value="custom" data-i18n="expenses.filterCustom">自订分帐</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="glass-card panel panel-flush">
+        <div class="expense-list" id="expensesList">
+          <!-- 消费列表由 app.js 动态产生 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Summary 页 ========== -->
+    <section class="page is-hidden" id="page-summary" data-page-section="summary">
+
+      <div class="toolbar">
+        <p class="panel-hint" style="font-size: 13px;" data-i18n="summary.exportHint">汇出完整报告，包含总开销与每位成员的消费明细</p>
+        <button class="btn btn-secondary btn-sm" id="exportPdfBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span data-i18n="summary.exportPdf">汇出 PDF</span>
+        </button>
+      </div>
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="summary.balancePanel">每人收支</h2>
+          <p class="panel-hint" data-i18n="summary.balanceHint">Paid（已付）· Should Pay（应付）· Balance（余额）</p>
+        </div>
+        <div class="panel-body" id="balanceList">
+          <div class="empty-state">
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none"><path d="M12 22V52M32 12V52M52 30V52" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <h3 data-i18n="empty.noBalance.title">尚无结算资料</h3>
+            <p data-i18n="empty.noBalance.desc">新增消费纪录后，这里会自动显示每个人的收支状况。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <div>
+            <h2 data-i18n="summary.settlementPanel">最优结算</h2>
+            <p class="panel-hint" style="margin-top: 2px;" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="settleAllBtn" type="button" data-i18n="settlement.markAsPaid">一键结清</button>
+        </div>
+        <div class="panel-body" id="settlementList">
+          <div class="empty-state">
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M26 32L30 36L38 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 data-i18n="settlement.allSettled.title">目前没有需要结算的款项</h3>
+            <p data-i18n="settlement.allSettled.desc">大家的帐目都已经平衡。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="summary.repaymentPanel">还款纪录</h2>
+          <button class="link-btn" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>
+        </div>
+        <p class="panel-hint" style="margin-bottom: var(--space-3);" data-i18n="summary.repaymentHint">记录谁已经实际把钱转给谁，系统会自动从上方余额中扣抵</p>
+        <div class="panel-body" id="repaymentList">
+          <div class="empty-state empty-state-compact">
+            <div class="empty-illustration" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none"><path d="M14 32H50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 24L14 32L22 40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 data-i18n="empty.noRepayment.title">还没有任何还款纪录</h3>
+            <p data-i18n="empty.noRepayment.desc">有人实际转帐后，点击上方「记录还款」建立纪录。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Members 页 ========== -->
+    <section class="page is-hidden" id="page-members" data-page-section="members">
+      <div class="members-toolbar">
+        <button class="btn btn-primary btn-sm" type="button" data-open-modal="addMemberModal" data-i18n="members.addBtn">新增成员</button>
+      </div>
+      <div class="member-grid" id="memberGrid">
+        <!-- 成员卡片由 app.js 动态产生 -->
+        <div class="empty-state" id="membersEmptyState">
+          <div class="empty-illustration" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none"><circle cx="26" cy="24" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 50C12 40 18 35 26 35C34 35 40 40 40 50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M42 20C46 20.8 49 24 49 28C49 32 46 35.2 42 36" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M44 38C49 39 52 43 52 50" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h3 data-i18n="empty.noMembers.title">暂无成员</h3>
+          <p data-i18n="empty.noMembers.desc">添加同行者，开始记录开销。</p>
+          <button class="btn btn-primary btn-sm" type="button" data-open-modal="addMemberModal" data-i18n="members.addBtn">新增成员</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Settings 页 ========== -->
+    <section class="page is-hidden" id="page-settings" data-page-section="settings">
+
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="account.panelTitle">账户资料</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <!-- Email：点击「更改」才展开 -->
+          <div class="settings-row" id="accountEmailRow">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="account.emailLabel">Email</p>
+              <p class="settings-row-desc" id="accountEmailDisplay">—</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="editEmailBtn" type="button" data-i18n="account.changeBtn">更改</button>
+          </div>
+          <div class="form-field is-hidden" id="accountEmailForm">
+            <label for="accountEmailInput" data-i18n="account.emailLabel">Email</label>
+            <input type="email" id="accountEmailInput" class="text-input" autocomplete="email">
+            <p class="form-hint" data-i18n="account.emailHint">用来接收忘记密码时的重设连结。</p>
+            <div class="settings-actions">
+              <button class="btn btn-primary btn-sm" id="saveEmailBtn" type="button" data-i18n="account.saveBtn">储存</button>
+              <button class="btn btn-ghost btn-sm" id="cancelEmailBtn" type="button" data-i18n="account.cancelBtn">取消</button>
+            </div>
+          </div>
+
+          <!-- 显示名称：点击「更改」才展开 -->
+          <div class="settings-row" id="accountDisplayNameRow">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="account.displayNameLabel">显示名称</p>
+              <p class="settings-row-desc" id="accountDisplayNameDisplay">—</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="editDisplayNameBtn" type="button" data-i18n="account.changeBtn">更改</button>
+          </div>
+          <div class="form-field is-hidden" id="accountDisplayNameForm">
+            <label for="accountDisplayNameInput" data-i18n="account.displayNameLabel">显示名称</label>
+            <input type="text" id="accountDisplayNameInput" class="text-input" autocomplete="name" data-i18n-placeholder="account.displayNamePlaceholder" placeholder="同行会看到的名字">
+            <p class="form-hint" data-i18n="account.displayNameHint">只会套用到之后新加入或新建立的旅程，不会更改你在既有旅程里已经使用的名字。</p>
+            <div class="settings-actions">
+              <button class="btn btn-primary btn-sm" id="saveDisplayNameBtn" type="button" data-i18n="account.saveBtn">储存</button>
+              <button class="btn btn-ghost btn-sm" id="cancelDisplayNameBtn" type="button" data-i18n="account.cancelBtn">取消</button>
+            </div>
+          </div>
+
+          <!-- 密码：点击「更改」才展开 -->
+          <div class="settings-row" id="accountPasswordRow">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="account.passwordLabel">密码</p>
+              <p class="settings-row-desc" data-i18n="account.passwordDots">••••••••</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="editPasswordBtn" type="button" data-i18n="account.changeBtn">更改</button>
+          </div>
+          <div class="is-hidden" id="accountPasswordForm">
+            <div class="form-field">
+              <label for="accountCurrentPasswordInput" data-i18n="account.currentPasswordLabel">目前密码</label>
+              <input type="password" id="accountCurrentPasswordInput" class="text-input" autocomplete="current-password">
+            </div>
+            <div class="form-field">
+              <label for="accountNewPasswordInput" data-i18n="account.newPasswordLabel">新密码</label>
+              <input type="password" id="accountNewPasswordInput" class="text-input" autocomplete="new-password" data-i18n-placeholder="authGate.signupPasswordPlaceholder" placeholder="至少 6 个字元，建议混合英数">
+            </div>
+            <div class="settings-actions">
+              <button class="btn btn-secondary btn-sm" id="changePasswordBtn" type="button" data-i18n="account.changePasswordBtn">更改密码</button>
+              <button class="btn btn-ghost btn-sm" id="cancelPasswordBtn" type="button" data-i18n="account.cancelBtn">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="settings.preferencePanel">偏好设置</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="settings.darkMode">深色模式</p>
+              <p class="settings-row-desc" data-i18n="settings.darkModeDesc">依照个人喜好切换浅色或深色主题</p>
+            </div>
+            <label class="switch" for="darkModeSwitch">
+              <input type="checkbox" id="darkModeSwitch">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="settings.languageRowTitle">显示语言</p>
+              <p class="settings-row-desc" id="settingsLangCurrentLabel">中文</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="settingsLangToggleBtn" type="button" data-i18n="account.changeBtn">更改</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card panel">
+        <div class="panel-header">
+          <h2 data-i18n="settings.financialPanel">财务设置</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <div class="form-field">
+            <label for="baseCurrencySelect" data-i18n="currency.baseCurrencyLabel">基准货币</label>
+            <select class="select-control" id="baseCurrencySelect">
+            </select>
+            <p class="form-hint" data-i18n="currency.baseCurrencyHint">「结算总览」「建议还款」「还款纪录」都会以这个货币计算与显示</p>
+          </div>
+
+          <div id="exchangeRateWarning" class="currency-warning is-hidden"></div>
+
+          <div class="exchange-rate-toolbar">
+            <p class="form-hint" data-i18n="currency.wiseHint">汇率来自 Wise 中端市场汇率，仅供参考，储存前请自行确认。</p>
+            <button class="btn btn-secondary btn-sm" id="fetchAllRatesBtn" type="button" data-i18n="currency.fetchAllRates">抓取全部即时汇率</button>
+          </div>
+
+          <div id="exchangeRateFields">
+            <!-- 其他货币的汇率输入框由 app.js 动态产生 -->
+          </div>
+
+          <div class="settings-actions">
+            <button class="btn btn-primary btn-sm" id="saveCurrencyBtn" type="button" data-i18n="currency.save">储存货币设定</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
+           「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
+           合并成一个 category，标题换成跟上面几个面板（账户资料／偏好设置／财务设置）
+           同一种命名习惯的「旅程设置」。两行都是「文字标签 + 长条 + 按钮」同一种
+           排版（不额外套边框卡片，纯粹一行文字排版跟设置页其他 row 一致），
+           选旅程那行也比照邀请码补上「切换旅程」这个行内文字标签，两条长条
+           右侧的按钮都贴齐同一个容器右边，视觉上两行结尾自然对齐 -->
+      <div class="glass-card panel" id="settingsTripSwitcherPanel">
+        <div class="panel-header">
+          <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" id="settingsCurrentTripName">—</p>
+              <p class="settings-row-desc" data-i18n="settings.tripPanelDesc">目前正在查看的旅程</p>
+            </div>
+          </div>
+          <div class="trip-switcher trip-switcher-settings">
+            <span class="inline-field-label" data-i18n="settings.switchTripLabel">切换旅程</span>
+            <select class="select-control" id="settingsTripSelect" aria-label="选择旅程"></select>
+            <button class="icon-btn" type="button" data-open-modal="addTripModal" aria-label="新增旅程">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="invite.panelTitle">邀请码</p>
+              <p class="settings-row-desc" data-i18n="invite.rowDesc">分享给朋友，让他们加入这趟旅程</p>
+            </div>
+          </div>
+          <div class="invite-card" id="inviteCard">
+            <span class="inline-field-label" data-i18n="invite.label">邀请码</span>
+            <code class="invite-card-code" id="inviteCodeText">—</code>
+            <button class="btn btn-ghost btn-sm" id="copyInviteCodeBtn" type="button" data-i18n="invite.copyBtn">复制</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搭伙金库 (Divvy Pool)：既有旅程在这里补开，或管理已开启的金库打款状态；
+           内容由 renderPoolSettingsPanel() 全权接管 -->
+      <div class="glass-card panel" id="poolSettingsCard">
+        <div class="panel-header">
+          <h2 data-i18n="pool.settings.enableTitle">搭伙鸭金库</h2>
+        </div>
+        <div class="panel-body settings-body" id="poolSettingsPanel"></div>
+      </div>
+
+      <div class="danger-zone-box" id="dangerZoneBox">
+        <button class="btn btn-danger" id="deleteTripBtn" type="button" data-i18n="settings.deleteTrip">删除目前旅程</button>
+      </div>
+
+      <!-- 登出不再放这里：导览的抽屉选单（手机版汉堡、桌面版侧栏）底部都已经有登出，
+           这里再放一次是重复入口 -->
+
+      <p class="about-footer">
+        <span class="about-text" data-i18n="settings.aboutText">DivvyDuck 搭伙鸭 · 聚会分账，鸭力全无！</span>
+        <span class="about-version">版本 1.0.0</span>
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<!-- ---------------- 移动版底部导航 ---------------- -->
+<nav class="mobile-tabbar" id="mobileTabbar" aria-label="主导航">
+  <button class="tab-item is-active" data-page="dashboard" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>
+    <span data-i18n="nav.dashboard">概览</span>
+  </button>
+  <button class="tab-item" data-page="expenses" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    <span data-i18n="nav.expensesShort">账目</span>
+  </button>
+  <button class="tab-item tab-item-fab" data-open-modal="addExpenseModal" type="button" aria-label="新增消费">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+  </button>
+  <button class="tab-item" data-page="summary" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span data-i18n="nav.summaryShort">结算</span>
+  </button>
+  <button class="tab-item" data-page="members" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19C3.5 15.5 6 13.5 9 13.5C12 13.5 14.5 15.5 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    <span data-i18n="nav.members">同行</span>
+  </button>
+  <!-- 「设置」不再放在底部导览：手机版左上角已经有汉堡选单可以进设置页
+       （见 #drawerNav 里同样带 data-page="settings" 的项目），这里留着会重复 -->
+</nav>
+
+<!-- ============================================================
+     Modals
+     ============================================================ -->
+<div class="modal-backdrop" id="modalBackdrop"></div>
+
+<!-- 新增 / 编辑消费 Modal -->
+<div class="modal" id="addExpenseModal" role="dialog" aria-modal="true" aria-labelledby="addExpenseTitle">
+  <div class="modal-header">
+    <h2 id="addExpenseTitle" data-i18n="expenseModal.titleAdd">新增消费</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <form class="modal-body" id="expenseForm">
+    <div class="form-grid">
+      <!-- 资金来源：只有这趟旅程开了搭伙金库才会出现，预设「正常记账」跟原本行为完全一样。
+           切成「金库支出」或「个人代垫归还」时，付款人/分帐方式/参与人这几个跟拆帐有关的
+           栏位会被隐藏——这两种钱本来就是从大家已经打进金库的预付款出，不需要再另外拆帐 -->
+      <div class="form-field form-field-full pool-source-group is-hidden" id="poolSourceGroup">
+        <label data-i18n="expense.sourceLabel">资金来源</label>
+        <div class="segmented-control segmented-control-2" id="expenseSourceControl">
+          <button type="button" class="segmented-item is-active" data-expense-source="normal" data-i18n="expense.sourceNormal">正常记账</button>
+          <button type="button" class="segmented-item" data-expense-source="deduct" data-i18n="expense.sourceDeduct">金库支出</button>
+        </div>
+        <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分帐方式结算。</p>
+      </div>
+
+      <div class="form-field" id="expensePayerField">
+        <label for="expensePayer" id="expensePayerLabel" data-i18n="expense.payerLabel">谁先垫付了这笔巨款？</label>
+        <select class="select-control" id="expensePayer" required>
+          <option value="" disabled selected data-i18n="expense.payerPlaceholder">选择付款人</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="expenseAmount" data-i18n="expense.amountLabel">金额</label>
+        <div class="input-with-suffix">
+          <input type="number" id="expenseAmount" class="text-input" placeholder="0.00" min="0" step="0.01" required>
+          <select class="suffix-select" id="expenseCurrency" aria-label="币别">
+          </select>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="expenseCategory" data-i18n="expense.categoryLabel">分类</label>
+        <select class="select-control" id="expenseCategory" required>
+          <option value="" disabled selected data-i18n="expense.categoryPlaceholder">选择分类</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="expenseDate" data-i18n="expense.dateLabel">日期</label>
+        <input type="date" id="expenseDate" class="text-input">
+      </div>
+
+      <div class="form-field form-field-full">
+        <label for="expenseDescription" data-i18n="expense.descriptionLabel">说明</label>
+        <input type="text" id="expenseDescription" class="text-input" placeholder="例如：晚餐、油钱、酒店订金…" data-i18n-placeholder="expense.descriptionPlaceholder">
+      </div>
+
+      <div class="form-field form-field-full" id="expenseSplitSection">
+        <label data-i18n="expense.splitTypeLabel">分帐方式</label>
+        <div class="segmented-control segmented-control-4" id="splitTypeControl">
+          <button type="button" class="segmented-item is-active" data-split-type="equal" data-i18n="split.equal">均分</button>
+          <button type="button" class="segmented-item" data-split-type="custom" data-i18n="split.exact">精确金额</button>
+          <button type="button" class="segmented-item" data-split-type="percentage" data-i18n="split.percentage">百分比</button>
+          <button type="button" class="segmented-item" data-split-type="shares" data-i18n="split.shares">份额</button>
+        </div>
+        <p class="form-hint" id="splitTypeHint" data-i18n="expense.splitHint">默认全员均分，支持一键切换自订金额或部分成员分摊。</p>
+      </div>
+
+      <div class="form-field form-field-full" id="expenseParticipantsSection">
+        <label data-i18n="expense.participantsLabel">参与人</label>
+        <div class="select-all-row">
+          <label class="participant-label">
+            <span class="checkbox">
+              <input type="checkbox" id="selectAllParticipants" checked>
+              <span class="checkbox-box">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5L10 17.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </span>
+            <span data-i18n="expense.selectAll">全选 / 全不选</span>
+          </label>
+        </div>
+        <div class="participant-list" id="participantList">
+          <!-- 参与人 checkbox / 分帐数值输入由 app.js 动态产生 -->
+        </div>
+        <div class="custom-split-toolbar is-hidden" id="customSplitToolbar">
+          <p class="form-hint" id="customSplitHint" data-i18n="expense.customSplitHint">自订分帐总额需等于消费金额</p>
+          <button type="button" class="link-btn" id="fillRemainingBtn" data-i18n="expense.fillRemainingBtn">一键均分剩余金额</button>
+        </div>
+        <p class="form-total" id="customSplitTotal"></p>
+      </div>
+
+      <div class="form-field form-field-full">
+        <label data-i18n="expense.receiptLabel">收据照片（选填）</label>
+        <input type="hidden" id="expenseReceipt" value="">
+        <div class="receipt-uploader" id="receiptUploader">
+          <div class="receipt-upload-box" id="receiptUploadBox">
+            <img class="receipt-preview-img is-hidden" id="receiptPreviewImg" alt="收据预览">
+            <svg class="receipt-upload-icon" id="receiptUploadIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 8.5C4 7.4 4.9 6.5 6 6.5H8L9 4.5H15L16 6.5H18C19.1 6.5 20 7.4 20 8.5V17C20 18.1 19.1 19 18 19H6C4.9 19 4 18.1 4 17V8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <circle cx="12" cy="12.5" r="3.3" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M12 15.3V15.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            <input type="file" id="receiptFileInput" accept="image/*" class="receipt-upload-input" aria-label="上传收据照片，可拍照、选相簿或档案">
+            <button type="button" class="icon-btn receipt-remove-btn is-hidden" id="receiptRemoveBtn" aria-label="移除照片">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p class="form-hint" id="receiptUploadHint" data-i18n="expense.receiptHint">点一下选择拍照、相簿或档案。</p>
+        </div>
+      </div>
+
+      <div class="form-field form-field-full">
+        <label for="expenseRemark" data-i18n="expense.remarkLabel">备注（选填）</label>
+        <input type="text" id="expenseRemark" class="text-input" placeholder="备注内容" data-i18n-placeholder="expense.remarkPlaceholder">
+      </div>
+    </div>
+  </form>
+
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="expenseForm" id="expenseSubmitBtn">
+      <span class="btn-label" data-i18n="expenseModal.saveAdd">储存消费</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 新增成员 Modal -->
+<div class="modal modal-sm" id="addMemberModal" role="dialog" aria-modal="true" aria-labelledby="addMemberTitle">
+  <div class="modal-header">
+    <h2 id="addMemberTitle" data-i18n="memberModal.title">邀请同行伙伴加入账本</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <form class="modal-body" id="memberForm">
+    <div class="glass-card duplicate-member-banner is-hidden" id="duplicateMemberBanner">
+      <svg class="duplicate-member-banner-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9V13M12 16.5H12.01M10.3 4.5L2.9 17C2.4 17.9 3.1 19 4.1 19H19.9C20.9 19 21.6 17.9 21.1 17L13.7 4.5C13.2 3.6 10.8 3.6 10.3 4.5Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="duplicate-member-banner-text">
+        <h3 data-i18n="members.duplicateBanner.title">发现还没连结帐号的旧成员</h3>
+        <p data-i18n="members.duplicateBanner.desc">如果其中有一位其实是你，合并之后 ta 名下的历史消费都会接续到你身上。</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" type="button" id="reviewDuplicateMembersBtn" data-i18n="members.duplicateBanner.reviewBtn">查看</button>
+    </div>
+    <div class="form-field">
+      <label for="memberName" data-i18n="memberModal.nameLabel">成员姓名</label>
+      <input type="text" id="memberName" class="text-input" placeholder="例如：Wei" required autocomplete="off" data-i18n-placeholder="memberModal.namePlaceholder">
+    </div>
+  </form>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="memberForm" id="memberSubmitBtn">
+      <span class="btn-label" data-i18n="memberModal.save">新增成员</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 语言选择 Modal：显示语言的「更改」按钮会打开这个清单，而不是直接切到另一种语言——
+     未来加了第三、第四种语言，这里也不用改，清单是 app.js 依 SUPPORTED_LANGUAGES 动态产生的 -->
+<div class="modal" id="languagePickerModal" role="dialog" aria-modal="true" aria-labelledby="languagePickerTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="languagePickerTitle" data-i18n="languagePicker.title">选择语言</h2>
+      <p class="panel-hint" data-i18n="languagePicker.hint">选好之後介面文字会立刻切换</p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="languagePickerList">
+    <!-- 语言选项由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 合并重复成员 Modal -->
+<div class="modal" id="mergeMemberModal" role="dialog" aria-modal="true" aria-labelledby="mergeMemberTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="mergeMemberTitle" data-i18n="mergeMemberModal.title">合并重复成员</h2>
+      <p class="panel-hint" data-i18n="mergeMemberModal.hint">选到「这是我」的那一位，合并后这笔旧纪录会消失，历史消费/还款都会接续到你身上，此操作无法复原。</p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="mergeMemberList">
+    <!-- 待认领的旧成员清单由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 成员消费明细 Modal -->
+<div class="modal" id="memberExpenseModal" role="dialog" aria-modal="true" aria-labelledby="memberExpenseTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="memberExpenseTitle">消费明细</h2>
+      <p class="panel-hint" id="memberExpenseSubtitle"></p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="memberExpenseList">
+    <!-- 该成员的消费明细由 app.js 动态产生 -->
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" id="exportMemberPdfBtn">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span data-i18n="summary.exportPdf">汇出 PDF</span>
+    </button>
+  </div>
+</div>
+
+<!-- 消费明细 Modal：点击账目列表任一笔消费会弹出，显示完整分摊明细；
+     只有当初建立这笔纪录的帐号（当事人）才看得到编辑/删除按钮 -->
+<div class="modal" id="expenseDetailModal" role="dialog" aria-modal="true" aria-labelledby="expenseDetailTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="expenseDetailTitle" data-i18n="expenseDetailModal.title">消费明细</h2>
+      <p class="panel-hint" id="expenseDetailSubtitle"></p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="expense-detail-hero">
+      <p class="expense-detail-amount mono" id="expenseDetailAmount">RM 0.00</p>
+      <div class="expense-detail-badges" id="expenseDetailBadges"></div>
+    </div>
+    <p class="expense-detail-remark is-hidden" id="expenseDetailRemark"></p>
+    <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.splitBreakdown">分摊明细</p>
+    <div id="expenseDetailSplitList">
+      <!-- 每位参与人分摊多少，由 app.js 动态产生 -->
+    </div>
+  </div>
+  <div class="modal-footer is-hidden" id="expenseDetailFooter">
+    <button class="btn btn-ghost" type="button" id="expenseDetailDeleteBtn" data-i18n="aria.delete">删除</button>
+    <button class="btn btn-primary" type="button" id="expenseDetailEditBtn" data-i18n="aria.edit">编辑</button>
+  </div>
+</div>
+
+<!-- 账单统计 Modal（只保留分类消费总览，每人消费总览已移除——个别成员明细改到「同行」页查看） -->
+<div class="modal" id="categoryStatsModal" role="dialog" aria-modal="true" aria-labelledby="categoryStatsTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="categoryStatsTitle" data-i18n="dashboard.categorySummary">分类消费</h2>
+      <p class="panel-hint" data-i18n="dashboard.categoryClickHint">点击分类可查看明细</p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="categorySummaryList">
+    <div class="empty-state empty-state-compact">
+      <div class="empty-illustration" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M32 12V32L46 40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3 data-i18n="empty.noCategory.title">尚无分类资料</h3>
+      <p data-i18n="empty.noCategory.desc">新增消费纪录后，这里会显示各分类的花费占比。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 搭伙金库结程退余明细 Modal：结程当下由 handlePoolSettle() 自动打开，
+     列出每个人在每种货币各该退多少，并标注可抵扣（基准货币）或需退现金（外币） -->
+<div class="modal" id="poolRefundModal" role="dialog" aria-modal="true" aria-labelledby="poolRefundTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="poolRefundTitle" data-i18n="pool.poster.title">搭伙鸭金库结算</h2>
+      <p class="panel-hint" data-i18n="pool.poster.subtitle">结程後的每人退款明细</p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="poolRefundList"></div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" type="button" data-close-modal data-i18n="common.close">关闭</button>
+  </div>
+</div>
+
+<!-- 搭伙金库明细 Modal：登记打款流水 + 支出流水 + 结程退余（结程後才会出现），
+     从 Dashboard 卡片的「查看明细」按钮打开，不管有没有结程都能看，
+     结程後等於是一份可以随时回来查的完整报告 -->
+<div class="modal" id="poolDetailModal" role="dialog" aria-modal="true" aria-labelledby="poolDetailTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="poolDetailTitle" data-i18n="pool.detail.title">搭伙鸭金库明细</h2>
+      <p class="panel-hint" id="poolDetailSubtitle"></p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="poolDetailBody"></div>
+</div>
+
+<!-- 更改登记打款 Modal：设置页「更改」按钮打开，先列出所有登记纪录选一笔，
+     再改人均金额／货币（以防充值当下输错了）——列表跟编辑表单共用同一个 Modal，
+     用 renderPoolTopupEditList()／renderPoolTopupEditForm() 切换内容 -->
+<div class="modal modal-sm" id="poolTopupEditModal" role="dialog" aria-modal="true" aria-labelledby="poolTopupEditTitle">
+  <div class="modal-header">
+    <h2 id="poolTopupEditTitle" data-i18n="pool.settings.editTopupTitle">更改登记打款</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="poolTopupEditBody"></div>
+</div>
+
+<!-- 全部消费记录 Modal -->
+<div class="modal" id="allExpensesModal" role="dialog" aria-modal="true" aria-labelledby="allExpensesTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="allExpensesTitle" data-i18n="nav.expenses">账目</h2>
+      <p class="panel-hint" id="allExpensesSubtitle"></p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="allExpensesList">
+    <!-- 所有消费纪录由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 建议还款 Modal -->
+<div class="modal" id="settlementSuggestionsModal" role="dialog" aria-modal="true" aria-labelledby="settlementSuggestionsTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="settlementSuggestionsTitle" data-i18n="summary.settlementPanel">最优结算</h2>
+      <p class="panel-hint" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="settlementSuggestionsList">
+    <!-- 建议还款清单由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 分类消费明细 Modal -->
+<div class="modal" id="categoryExpensesModal" role="dialog" aria-modal="true" aria-labelledby="categoryExpensesTitle">
+  <div class="modal-header">
+    <div>
+      <h2 id="categoryExpensesTitle">分类明细</h2>
+      <p class="panel-hint" id="categoryExpensesSubtitle"></p>
+    </div>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body" id="categoryExpensesList">
+    <!-- 该分类的消费清单由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 新增旅程 Modal：新建旅程 / 加入旅程（邀请码）两个分页 -->
+<div class="modal modal-sm" id="addTripModal" role="dialog" aria-modal="true" aria-labelledby="addTripTitle">
+  <div class="modal-header">
+    <h2 id="addTripTitle" data-i18n="tripModal.title">新增旅程</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="modal-tabs">
+    <button class="modal-tab is-active" id="createTripTabBtn" type="button" data-i18n="createTrip.tab">新建旅程</button>
+    <button class="modal-tab" id="joinTripTabBtn" type="button" data-i18n="joinTrip.tab">加入旅程</button>
+  </div>
+
+  <form class="modal-body" id="tripForm">
+    <div class="form-field">
+      <label for="tripName" data-i18n="tripModal.nameLabel">旅程名称</label>
+      <input type="text" id="tripName" class="text-input" placeholder="例如：2026 日本雪季之旅" required autocomplete="off" data-i18n-placeholder="tripModal.namePlaceholder">
+    </div>
+    <div class="form-field" style="margin-top: var(--space-4);">
+      <label for="tripBaseCurrency" data-i18n="tripModal.currencyLabel">基准货币</label>
+      <select class="select-control" id="tripBaseCurrency">
+      </select>
+      <p class="form-hint" data-i18n="tripModal.currencyHint">这趟旅程的结算金额都会以此为准，之后可以到设置页调整</p>
+    </div>
+    <p class="form-hint" style="margin-top: var(--space-3);" data-i18n="tripModal.hint">每个旅程都有各自独立的成员与消费纪录，互不影响。</p>
+
+    <!-- 搭伙金库 (Divvy Pool) 开关：建立旅程时可选择性开启 -->
+    <div class="form-field pool-toggle-group" style="margin-top: var(--space-4);">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <p class="settings-row-title" data-i18n="pool.form.enableLabel">开启搭伙鸭金库</p>
+          <p class="settings-row-desc" data-i18n="pool.form.enableHint">开启後，成员预先打款到公共金库，行程中的消费可直接从金库扣款</p>
+        </div>
+        <label class="switch" for="poolEnableToggle">
+          <input type="checkbox" id="poolEnableToggle" onchange="onPoolToggleChange(this)">
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+    <div class="form-field pool-amount-group is-hidden" id="poolAmountGroup">
+      <label for="poolPerPersonAmount" data-i18n="pool.form.perPersonLabel">人均预付款</label>
+      <div class="input-with-suffix">
+        <input type="number" id="poolPerPersonAmount" class="text-input" min="0" step="0.01" placeholder="0.00">
+        <select class="suffix-select" id="poolCurrencySelect" aria-label="金库货币"></select>
+      </div>
+      <p class="form-hint" data-i18n="pool.form.currencyHint">之後还可以用别种货币再登记打款，例如在机场先收马币、到当地再收人民币。</p>
+    </div>
+  </form>
+
+  <form class="modal-body is-hidden" id="joinTripForm">
+    <div class="form-field">
+      <label for="joinTripInviteCode" data-i18n="joinTrip.inviteCodeLabel">邀请码</label>
+      <input type="text" id="joinTripInviteCode" class="text-input" required autocomplete="off" data-i18n-placeholder="joinTrip.inviteCodePlaceholder" placeholder="输入朋友分享给你的邀请码">
+      <p class="form-hint" data-i18n="joinTrip.hint">邀请码可以向已经在这趟旅程里的同行索取。</p>
+    </div>
+    <div class="form-field is-hidden" id="joinTripClaimMemberField">
+      <label for="joinTripClaimMemberSelect" data-i18n="authGate.claimMemberLabel">这趟旅程里，你是哪一位？</label>
+      <select id="joinTripClaimMemberSelect" class="text-input"></select>
+      <p class="form-hint claim-member-already-notice is-hidden" data-i18n="authGate.alreadyMemberNotice">你已经加入过这个旅程了。</p>
+    </div>
+  </form>
+
+  <div class="modal-footer" id="tripModalFooterCreate">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="tripForm" id="tripSubmitBtn">
+      <span class="btn-label" data-i18n="tripModal.save">建立旅程</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+  <div class="modal-footer is-hidden" id="tripModalFooterJoin">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="joinTripForm" id="joinTripSubmitBtn">
+      <span class="btn-label" data-i18n="joinTrip.submit">加入旅程</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 记录还款 Modal -->
+<div class="modal" id="addRepaymentModal" role="dialog" aria-modal="true" aria-labelledby="addRepaymentTitle">
+  <div class="modal-header">
+    <h2 id="addRepaymentTitle" data-i18n="repaymentModal.title">记录还款</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <form class="modal-body" id="repaymentForm">
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label for="repaymentTo" data-i18n="repayment.toLabel">收款人（实际收到钱的人）</label>
+        <select class="select-control" id="repaymentTo" required>
+          <option value="" disabled selected data-i18n="repayment.selectMember">选择成员</option>
+        </select>
+        <p class="form-hint" id="repaymentCurrencyHint"></p>
+      </div>
+
+      <div class="form-field form-field-full">
+        <label data-i18n="repayment.fromLabel">还款人（可勾选多人，各自填还款金额，例如夫妻一起还）</label>
+        <div class="select-all-row">
+          <label class="participant-label">
+            <span class="checkbox">
+              <input type="checkbox" id="selectAllRepaymentFrom">
+              <span class="checkbox-box">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5L10 17.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+            </span>
+            <span data-i18n="expense.selectAll">全选 / 全不选</span>
+          </label>
+        </div>
+        <div class="participant-list" id="repaymentFromList">
+          <!-- 还款人 checkbox + 金额输入由 app.js 动态产生 -->
+        </div>
+        <p class="form-hint" id="repaymentFromTotal"></p>
+      </div>
+
+      <div class="form-field">
+        <label for="repaymentDate" data-i18n="repayment.dateLabel">日期</label>
+        <input type="date" id="repaymentDate" class="text-input">
+      </div>
+      <div class="form-field form-field-full">
+        <label for="repaymentRemark" data-i18n="expense.remarkLabel">备注（选填）</label>
+        <input type="text" id="repaymentRemark" class="text-input" placeholder="例如：现金 / 转帐" data-i18n-placeholder="repayment.remarkPlaceholder">
+      </div>
+    </div>
+  </form>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="repaymentForm" id="repaymentSubmitBtn">
+      <span class="btn-label" data-i18n="repayment.save">储存纪录</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 编辑还款 Modal：针对单一一笔既有的还款纪录做修改（跟「记录还款」不同，
+     那个可以一次勾多人分别新增多笔，这里只单纯改一笔既有纪录） -->
+<div class="modal" id="editRepaymentModal" role="dialog" aria-modal="true" aria-labelledby="editRepaymentTitle">
+  <div class="modal-header">
+    <h2 id="editRepaymentTitle" data-i18n="editRepaymentModal.title">编辑还款纪录</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <form class="modal-body" id="editRepaymentForm">
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="editRepaymentFrom" data-i18n="editRepaymentModal.fromLabel">还款人</label>
+        <select class="select-control" id="editRepaymentFrom" required>
+          <option value="" disabled data-i18n="repayment.selectMember">选择成员</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="editRepaymentTo" data-i18n="repayment.toLabel">收款人（实际收到钱的人）</label>
+        <select class="select-control" id="editRepaymentTo" required>
+          <option value="" disabled data-i18n="repayment.selectMember">选择成员</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="editRepaymentAmount" data-i18n="expense.amountLabel">金额</label>
+        <input type="number" id="editRepaymentAmount" class="text-input" min="0.01" step="0.01" required>
+      </div>
+      <div class="form-field">
+        <label for="editRepaymentDate" data-i18n="repayment.dateLabel">日期</label>
+        <input type="date" id="editRepaymentDate" class="text-input">
+      </div>
+      <div class="form-field form-field-full">
+        <label for="editRepaymentRemark" data-i18n="expense.remarkLabel">备注（选填）</label>
+        <input type="text" id="editRepaymentRemark" class="text-input" placeholder="例如：现金 / 转帐" data-i18n-placeholder="repayment.remarkPlaceholder">
+      </div>
+    </div>
+  </form>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="editRepaymentForm" id="editRepaymentSubmitBtn">
+      <span class="btn-label" data-i18n="editRepaymentModal.saveBtn">储存变更</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 确认删除 Modal（通用） -->
+<div class="modal modal-sm" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal-header">
+    <h2 id="confirmTitle" data-i18n="confirm.title">确定要删除吗？</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <p class="confirm-text" id="confirmText">此操作无法复原，请再次确认。</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-danger" type="button" id="confirmActionBtn">
+      <span class="btn-label" data-i18n="confirm.confirmDelete">确认删除</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     Toast 通知容器
+     ============================================================ -->
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ============================================================
+     全域 Loading Overlay
+     ============================================================ -->
+<div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+  <div class="loading-card">
+    <span class="spinner spinner-lg" aria-hidden="true"></span>
+    <p id="loadingText">处理中…</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     PDF 汇出报告（平常隐藏，只有在列印/汇出 PDF 时才会显示）
+     ============================================================ -->
+<div id="printReport">
+  <!-- 报告内容由 app.js 在汇出时动态产生 -->
+</div>
+
+<script src="app.js?v=20260801n"></script>
+<script>
+  // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
+  // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker
+  // 会一直留在使用者的浏览器里独立运作、独立快取，跟现在部署的档案完全脱钩——
+  // 就算重新推送、重新加到主屏幕，只要它自己没有主动失效，就会一直硬塞旧版本，
+  // 不属於一般「清 Safari 网站资料」以外能碰到的层级。这里在每次载入时都主动
+  // 侦测目前这个来源底下有没有任何 Service Worker 註冊，有的话直接注销掉，
+  // 并且把它可能留下的 Cache Storage 也一并清空，确保往後每次都是真的从
+  // 网路重新抓取最新档案，不会再被某个不知道哪来的旧 Service Worker 卡住。
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      registrations.forEach(function (registration) {
+        registration.unregister();
+      });
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then(function (cacheNames) {
+      cacheNames.forEach(function (cacheName) {
+        caches.delete(cacheName);
+      });
+    });
+  }
+</script>
+</body>
+</html>
