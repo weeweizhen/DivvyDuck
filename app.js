@@ -84,17 +84,7 @@ function getNextLanguageCode() {
 const STORAGE_KEY_LAST_SPLIT = 'splitapp-last-split'; // 智能记忆：每位付款人上次选的参与人/分帐方式
 const STORAGE_KEY_EXPENSE_DRAFT = 'splitapp-expense-draft'; // 新增消费表单草稿
 
-// 把你自己的 Google Apps Script Web App 网址贴在这里（例如 'https://script.google.com/macros/s/xxxxx/exec'），
-// 填好之后重新部署这个档案。API 网址只认这里——前端没有让使用者自己填/改网址的入口，
-// 网址列或分享连结里也不会带出这段网址。
-// ⚠️ 但这不等于「网址是保密的」：任何人打开浏览器 DevTools／view-source 都能立刻看到这段
-// 硬编码的 GAS 执行网址，它本来就是一个公网可直接调用的端点。这里做到的只是「UI 不暴露」，
-// 真正的安全边界必须完全靠後端（code.gs）自己扛：Token 校验、速率限制（防止有人对着这个网址
-// 扫 action 参数）、以及必要时的来源校验，缺一不可，不要误以为「藏起来」本身是一层防护。
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycby46J_8DtS7JBmhRwDmgppfJ1mOYmYM9yCLiastwGu3R6zLeyBeGVmO4kZNHImxXJJinw/exec';
-
 const STORAGE_KEY_CURRENT_TRIP = 'splitapp-current-trip';
-const STORAGE_KEY_USER_SESSION = 'splitapp-user-session'; // 全域帐号登入状态：{ userId, username, displayName, email, token, expiresAt }，token 由后端签发并验证，不分旅程
 
 // 离线韧性（见「4B. 离线韧性」章节）：
 // - STORAGE_KEY_OFFLINE_QUEUE：网路断线时暂存的「新增消费」请求，恢复连线后依序补送
@@ -213,15 +203,6 @@ async function setUserSession(partial) {
  */
 async function clearUserSession() {
   await supabaseClient.auth.signOut();
-}
-
-/**
- * 取得目前登入帐号的 Session Token，串每一支 API 都要带上（除了 signup / login 本身）
- * @return {string} token，尚未登入则回传空字串
- */
-function getUserToken() {
-  const session = getUserSession();
-  return session ? session.token : '';
 }
 
 /**
@@ -607,8 +588,6 @@ const STRINGS = {
     'tripModal.currencyHint': '结算金额都以此为准，之后可以到设置页调整',
     'tripModal.hint': '每个旅程都有各自独立的成员与消费纪录。',
     'tripModal.save': '建立旅程',
-    'system.notConnected': '尚未连接后端',
-    'system.notConnectedMsg': '尚未连接 API，请先到「设置」页填写 Google Apps Script Web App 网址。',
     'system.noTripMsg': '请先建立一个旅程，才能开始记录消费。',
     'system.loadFailed': '资料载入失败',
 
@@ -720,8 +699,6 @@ const STRINGS = {
     'toast.noDataToExportMsg': '请先新增至少一笔消费。',
 
     // 最后一批补充：系统内部提示、下拉选单、组合文字
-    'system.apiUrlMissing': '尚未设定 API 网址，请到「设置」页填写 Web App URL。',
-    'system.responseParseError': '无法解析伺服器回应，请确认 Web App 网址正确，且已部署为「任何人」可存取。',
     'system.unknownError': '发生未知错误，重新整理页面后再试一次。',
     'toast.refreshFailed': '刷新失败',
     'system.networkError': '网路连线不稳定，请检查网路后再试一次',
@@ -1253,8 +1230,6 @@ const STRINGS = {
     'tripModal.currencyHint': 'All settlement totals use this — change it later in Settings',
     'tripModal.hint': 'Each trip has its own members and expenses.',
     'tripModal.save': 'Create Trip',
-    'system.notConnected': 'Not connected',
-    'system.notConnectedMsg': "API isn't connected — go to Settings and paste your Google Apps Script Web App URL.",
     'system.noTripMsg': 'Create a trip first to start tracking expenses.',
     'system.loadFailed': 'Failed to load',
 
@@ -1360,8 +1335,6 @@ const STRINGS = {
     'toast.noDataToExport': 'Nothing to export yet',
     'toast.noDataToExportMsg': 'Add at least one expense first.',
 
-    'system.apiUrlMissing': "API URL isn't set — go to Settings and paste your Web App URL.",
-    'system.responseParseError': "Couldn't parse the server response — check that your Web App URL is correct and deployed with 'Anyone' access.",
     'system.unknownError': 'Something went wrong. Refresh the page and try again.',
     'toast.refreshFailed': 'Refresh failed',
     'system.networkError': "Connection seems unstable — check your network and try again",
@@ -1662,10 +1635,8 @@ function applyLanguage() {
   if (document.getElementById('appMain')) {
     if (currentTripId) {
       renderEverything();
-    } else if (appState.trips && appState.trips.length === 0 && getApiUrl()) {
+    } else if (appState.trips && appState.trips.length === 0) {
       renderNoTripState();
-    } else if (!getApiUrl()) {
-      renderApiNotConfiguredState();
     }
   }
 }
@@ -2011,8 +1982,7 @@ function resolveInitialTripId() {
    ------------------------------------------------------------ */
 
 /**
- * 显示登入闸门、隐藏 App 主体——API 网址是写死在 DEFAULT_API_URL 的，
- * 不会再有「先设定 API」这一步，一律直接显示登入/注册
+ * 显示登入闸门、隐藏 App 主体
  */
 function showAuthGate() {
   const gate = document.getElementById('authGate');
@@ -2464,63 +2434,6 @@ function onAuthSuccess(result) {
 }
 
 
-/* ------------------------------------------------------------
-   3. API 串接层
-   ------------------------------------------------------------ */
-
-function getApiUrl() {
-  return DEFAULT_API_URL;
-}
-
-/**
- * 安全性说明：即使是「读取」类的 action，也一律走 POST body 传送 token/参数，
- * 不再把 token 拼进网址查询字串。理由：GET 的网址（含 token）会完整落入
- * GAS 端的服务器存取日志、任何中间代理/CDN 日志，以及使用者本机的浏览器历史record，
- * 一旦外泄等同于长期有效的登入凭证被明文记录下来。呼叫端仍照旧呼叫 apiGet(action, params)，
- * 只是底层实际送出的是 POST，对呼叫端完全透明，不需要跟着改。
- */
-async function apiGet(action, params) {
-  const apiUrl = requireApiUrl();
-  const body = new URLSearchParams(Object.assign({ action, token: getUserToken() }, params || {}));
-  let response;
-  try {
-    response = await fetch(apiUrl, { method: 'POST', body });
-  } catch (error) {
-    throw toFriendlyFetchError_(error);
-  }
-  return parseApiResponse(response);
-}
-
-async function apiPost(action, data) {
-  const apiUrl = requireApiUrl();
-  const body = new URLSearchParams(Object.assign({ action, token: getUserToken() }, data || {}));
-  let response;
-  try {
-    response = await fetch(apiUrl, { method: 'POST', body });
-  } catch (error) {
-    throw toFriendlyFetchError_(error);
-  }
-  return parseApiResponse(response);
-}
-
-/**
- * fetch() 在「网路层级」失败时（离线、DNS 解析不到、连线中断……）会丢出 TypeError，
- * 各浏览器的 message 不太一样（Chrome 是 'Failed to fetch'、Firefox 是
- * 'NetworkError when attempting to fetch resource.'……），统一包成一个带
- * isNetworkError 标记、文字友善的 Error，讓离线暂存队列（见「4B. 离线韧性」）
- * 能可靠地分辨「这是网路问题」而不是其他种类的错误
- * @param {Error} error fetch() 丢出的原始错误
- * @return {Error}
- */
-function toFriendlyFetchError_(error) {
-  if (!isNetworkError(error)) {
-    return error;
-  }
-  const friendlyError = new Error(t('system.networkError'));
-  friendlyError.isNetworkError = true;
-  return friendlyError;
-}
-
 /**
  * 判断一个错误是不是「网路层级」的问题（离线、连线中断……），而不是伺服器有正常回应、
  * 只是回应内容代表失败的那种。除了看 fetch() 典型的 TypeError／关键字之外，
@@ -2533,7 +2446,7 @@ function isNetworkError(error) {
     return false;
   }
   if (error.isNetworkError === true) {
-    return true; // 已经被 toFriendlyFetchError_ 标记过，不用再重新判断一次
+    return true;
   }
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return true;
@@ -2543,52 +2456,6 @@ function isNetworkError(error) {
     message.includes('failed to fetch') ||
     message.includes('networkerror') ||
     message.includes('load failed'); // Safari 的说法
-}
-
-function requireApiUrl() {
-  const apiUrl = getApiUrl();
-  if (!apiUrl) {
-    throw new Error(t('system.apiUrlMissing'));
-  }
-  return apiUrl;
-}
-
-async function parseApiResponse(response) {
-  let payload;
-
-  try {
-    payload = await response.json();
-  } catch (error) {
-    throw new Error(t('system.responseParseError'));
-  }
-
-  if (!payload || payload.success !== true) {
-    // 后端用固定的 code: 'AUTH_FAILED' 标记「token 遗失/过期/被窜改」——这里统一拦截，
-    // 不管是哪一支 API 呼叫触发的，都立刻清掉本地 Session、强制弹回登入闸门，
-    // 避免使用者停留在一个「介面看起来登入中、实际上每个操作都会失败」的残缺状态。
-    // 用 code 而不是比对 payload.message 文字，是因为文字之后要是改了措辞或语系，
-    // 比对就会跟着失效
-    if (payload && payload.code === 'AUTH_FAILED') {
-      handleAuthFailure_();
-    }
-    throw new Error((payload && payload.message) || t('system.unknownError'));
-  }
-
-  return payload.data;
-}
-
-/**
- * 侦测到後端判定登入 Session 已失效（token 遗失/过期/被窜改）时的统一收尾
- *
- * ⚠️ 过渡期说明：这段逻辑是设计给「旧版 Google Apps Script 後端」用的——那边用自己的
- * Token 机制判断登入是否有效，AUTH_FAILED 代表「那个 Token 无效」。现在登入已经改用
- * Supabase Auth 管理，旧後端当然看不懂 Supabase 发出来的 Token，所以在旅程/消费等功能
- * 还没全部搬到 Supabase 之前（5.3 之后的步骤），这里先不要真的把 Supabase 帐号登出，
- * 只是忽略掉旧後端这个已经过时的判断。等全部功能都搬完、彻底不再呼叫旧後端之后，
- * 这个函式可以整个删掉，呼叫端（parseApiResponse）也可以一并清掉这段判断。
- */
-function handleAuthFailure_() {
-  console.warn('旧後端回报 AUTH_FAILED，过渡期间已忽略（不会登出 Supabase 帐号）');
 }
 
 
@@ -2687,20 +2554,9 @@ function saveOfflineQueue_(queue) {
 }
 
 /**
- * 产生一把「这次提交」专用的幂等键／本地暂存 ID——时间戳 + 随机字串，同一台装置、
- * 同一毫秒内几乎不可能重複。给新增消费这类「送出後可能因为弱网误判失败、需要
- * 安全重试」的操作用，重试時必须沿用同一把（不能重新呼叫这支再生一把新的），
- * 後端才能靠这把 key 认出「这跟原本那次是同一笔请求」，避免重试造成资料重複写入
- * @return {string}
- */
-function generateClientRequestId_() {
-  return 'CLI-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-}
-
-/**
  * 离线时把一笔「新增消费」的请求参数暂存进本地队列，并回传一个「看起来跟正常消费物件一样」
  * 的暂存物件，让呼叫端可以立刻乐观地插进 appState.expenses 显示（标一个「待同步」徽章）
- * @param {Object} payload 原本要送给 apiPost('addExpense', payload) 的参数
+ * @param {Object} payload 原本要写进 Supabase expenses 表的参数
  * @return {Object} 暂存用的消费物件，ID 是 'LOCAL-' 开头、_pendingSync 为 true
  */
 function queueOfflineExpense(payload) {
@@ -4527,22 +4383,6 @@ function renderEverything() {
   renderCategorySummary();
   renderPoolSettingsPanel();
   renderInviteCard();
-}
-
-/**
- * 尚未设定 API 网址时的提示状态
- */
-function renderApiNotConfiguredState() {
-  const title = t('system.notConnected');
-  const message = t('system.notConnectedMsg');
-  renderEmptyBlock('recentActivityList', title, message);
-  renderEmptyBlock('balanceMatrixList', title, message);
-  hideBalanceMatrixToggle();
-  renderEmptyBlock('balanceList', title, message);
-  renderEmptyBlock('settlementList', title, message);
-  renderEmptyBlock('repaymentList', title, message);
-  renderEmptyBlock('expensesList', title, message);
-  renderEmptyBlock('memberGrid', title, message);
 }
 
 /**
