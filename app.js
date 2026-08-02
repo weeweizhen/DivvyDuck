@@ -269,7 +269,7 @@ const STRINGS = {
   zh: {
     'brand.name': '搭伙鸭',
     'brand.slogan': '聚会分账，鸭力全无！',
-    'nav.dashboard': '总览',
+    'nav.dashboard': '概览',
     'nav.expenses': '账目',
     'nav.summary': '结算',
     'nav.members': '同行',
@@ -278,7 +278,7 @@ const STRINGS = {
     'nav.summaryShort': '结算',
 
     // 页首标题 / 副标题（每个页面）
-    'page.dashboard.title': '总览',
+    'page.dashboard.title': '概览',
     'page.dashboard.subtitle': '这趟旅程的收支，一眼看完',
     'page.expenses.title': '账目',
     'page.expenses.subtitle': '所有人的每一笔花费',
@@ -382,9 +382,8 @@ const STRINGS = {
     // Settings 页「语言」面板（手机上碰不到桌面版侧栏的语言切换，这里补一份）
     'settings.languagePanel': '语言',
     'settings.languageRowTitle': '显示语言',
-    'settings.tripPanelTitle': '旅程',
-    'settings.switchTripLabel': '切换旅程',
-    'settings.tripPanelDesc': '目前查看的旅程',
+    'settings.tripPanelTitle': '旅程设置',
+    'settings.currentTripLabel': '目前旅程',
     'languagePicker.title': '选择语言',
     'languagePicker.hint': '选好后介面文字会立刻切换',
 
@@ -594,6 +593,15 @@ const STRINGS = {
     'system.noTripMsg': '请先建立一个旅程，才能开始记录消费。',
     'system.loadFailed': '资料载入失败',
 
+    // 更改旅程名称
+    'renameTripModal.title': '更改旅程名称',
+    'renameTripModal.nameLabel': '旅程名称',
+    'renameTripModal.save': '储存',
+
+    // 选择旅程
+    'tripPicker.title': '选择旅程',
+    'tripPicker.addBtn': '＋ 新增旅程',
+
     // 设置页
     'settings.preferencePanel': '偏好设置',
     'settings.darkMode': '深色模式',
@@ -633,6 +641,8 @@ const STRINGS = {
     'toast.repaymentDeleted': '已删除',
     'toast.repaymentDeletedMsg': '这笔还款已移除。',
     'toast.tripAdded': '旅程已新增',
+    'toast.tripRenamed': '旅程名称已更新',
+    'toast.tripRenamedMsg': '旅程已改名为「{name}」。',
     'toast.tripDeleted': '旅程已删除',
     'toast.tripLeft': '已退出旅程',
     'toast.tripLeftMsg': '你已退出「{name}」，先前的消费与其他人的资料仍会保留。',
@@ -738,6 +748,7 @@ const STRINGS = {
     'expenseDetailModal.title': '消费明细',
     'expenseDetailModal.splitBreakdown': '分摊明细',
     'expenseDetailModal.payerTag': '付款人',
+    'expenseDetailModal.receiptLabel': '收据照片',
     'repayment.currencyUnitHint': '金额单位：{currency}（旅程基准货币）',
     'trip.noTripSelected': '（尚未选择旅程）',
     'summary.paidShouldPay': '已付 {paid} · 应付 {shouldPay}',
@@ -1042,14 +1053,13 @@ const STRINGS = {
     'settings.languagePanel': 'Language',
     'settings.languageRowTitle': 'Display language',
     'settings.tripPanelTitle': 'Trip',
-    'settings.switchTripLabel': 'Switch trip',
-    'settings.tripPanelDesc': "The trip you're viewing now",
+    'settings.currentTripLabel': 'Current Trip',
     'languagePicker.title': 'Choose language',
     'languagePicker.hint': "Switches instantly once you pick one",
 
 
     'account.panelTitle': 'Account',
-    'account.changeBtn': 'Change',
+    'account.changeBtn': 'Edit',
     'account.saveBtn': 'Save',
     'account.cancelBtn': 'Cancel',
     'account.emailLabel': 'Email',
@@ -1240,6 +1250,15 @@ const STRINGS = {
     'system.noTripMsg': 'Create a trip first to start tracking expenses.',
     'system.loadFailed': 'Failed to load',
 
+    // Rename trip
+    'renameTripModal.title': 'Rename Trip',
+    'renameTripModal.nameLabel': 'Trip Name',
+    'renameTripModal.save': 'Save',
+
+    // Trip picker
+    'tripPicker.title': 'Select Trip',
+    'tripPicker.addBtn': '+ New Trip',
+
     'settings.preferencePanel': 'Preferences',
     'settings.darkMode': 'Dark Mode',
     'settings.lightMode': 'Light Mode',
@@ -1276,6 +1295,8 @@ const STRINGS = {
     'toast.repaymentDeleted': 'Deleted',
     'toast.repaymentDeletedMsg': 'This repayment has been removed.',
     'toast.tripAdded': 'Trip added',
+    'toast.tripRenamed': 'Trip renamed',
+    'toast.tripRenamedMsg': 'Trip renamed to "{name}".',
     'toast.tripDeleted': 'Trip deleted',
     'toast.tripLeft': 'Left the trip',
     'toast.tripLeftMsg': 'You\'ve left "{name}". Your past expenses and everyone else\'s data are still there.',
@@ -1377,6 +1398,7 @@ const STRINGS = {
     'expenseDetailModal.title': 'Expense Details',
     'expenseDetailModal.splitBreakdown': 'Split Breakdown',
     'expenseDetailModal.payerTag': 'Paid this',
+    'expenseDetailModal.receiptLabel': 'Receipt Photo',
     'repayment.currencyUnitHint': 'Currency: {currency} (trip base currency)',
     'trip.noTripSelected': '(no trip selected)',
     'summary.paidShouldPay': 'Paid {paid} · Should pay {shouldPay}',
@@ -1855,11 +1877,13 @@ function startAppAfterAuth() {
   initCurrencySettings();
   initExpenseFilters();
   initTripSwitcher();
+  initTripPicker();
   initSelectAllParticipants();
   initRepaymentForm();
   initEditRepaymentForm();
   initSelectAllRepaymentFrom();
   initReceiptUploader();
+  initReceiptViewer();
   initDangerZone();
   initSettleAllButton();
   initDashboardHeader();
@@ -2754,31 +2778,35 @@ function initOfflineHandling() {
  * 「设置」页里那个（手机版，见 #settingsTripSwitcherPanel）。不管从哪个选的，
  * 都要连带把另一个也同步过去，两边显示的值不能对不上
  */
+/**
+ * 实际执行「切换旅程」的动作——原本是 initTripSwitcher() 里的一个闭包，只有
+ * 下拉选单的 change 事件能呼叫到；现在旅程选择改成 tripPickerModal 里点列表，
+ * 拆成外层函式让 Modal 那边也能直接呼叫同一套逻辑，不用另外重写一次
+ * @param {string} newTripId
+ */
+async function switchCurrentTrip(newTripId) {
+  currentTripId = newTripId;
+  localStorage.setItem(STORAGE_KEY_CURRENT_TRIP, currentTripId);
+  applyTripMeta_(currentTripId);
+  setTripSelectValues(currentTripId);
+
+  renderDashboardSkeleton();
+  try {
+    await loadTripData();
+    // 切换成功不再跳 Toast——切换后画面本身就会显示该旅程的资料（Hero Card／消费列表／
+    // 结算总览都会跟着换），这本身就是最直接的回馈，不需要再额外跳一个提示视窗
+  } catch (error) {
+    showToast('error', t('toast.switchFailed'), error.message);
+    clearHeroCardSkeletonToEmpty_();
+    renderApiErrorState(error.message);
+  }
+}
+
 function initTripSwitcher() {
-  const handleSwitch = async (newTripId) => {
-    currentTripId = newTripId;
-    localStorage.setItem(STORAGE_KEY_CURRENT_TRIP, currentTripId);
-    applyTripMeta_(currentTripId);
-    setTripSelectValues(currentTripId);
-
-    renderDashboardSkeleton();
-    try {
-      await loadTripData();
-      // 切换成功不再跳 Toast——切换后画面本身就会显示该旅程的资料（Hero Card／消费列表／
-      // 结算总览都会跟着换），这本身就是最直接的回馈，不需要再额外跳一个提示视窗
-    } catch (error) {
-      showToast('error', t('toast.switchFailed'), error.message);
-      clearHeroCardSkeletonToEmpty_();
-      renderApiErrorState(error.message);
-    }
-  };
-
-  ['tripSelect', 'settingsTripSelect'].forEach((selectId) => {
-    const select = document.getElementById(selectId);
-    if (select) {
-      select.addEventListener('change', (event) => handleSwitch(event.target.value));
-    }
-  });
+  const select = document.getElementById('tripSelect');
+  if (select) {
+    select.addEventListener('change', (event) => switchCurrentTrip(event.target.value));
+  }
 
   document.getElementById('tripForm').addEventListener('submit', (event) => {
     event.preventDefault();
@@ -2787,61 +2815,174 @@ function initTripSwitcher() {
 }
 
 /**
- * 把两个旅程下拉选单（header + 设置页）的目前选取值都设成同一个 tripId——
- * 集中写在这一个函式里，之後不管哪里要「切换旅程后同步下拉选单显示」，
- * 都呼叫这个，不用到处重複写「同时设两个 select.value」这段
+ * 设定 header 那个下拉选单的目前选取值，并连带刷新设置页的 pill 切换器/
+ * 旅程选择清单 Modal——不管是从哪里触发的切换，都呼叫这个统一同步
  * @param {string} tripId
  */
 function setTripSelectValues(tripId) {
-  ['tripSelect', 'settingsTripSelect'].forEach((selectId) => {
-    const select = document.getElementById(selectId);
-    if (select) {
-      select.value = tripId;
-    }
-  });
-  renderSettingsCurrentTripName();
+  const select = document.getElementById('tripSelect');
+  if (select) {
+    select.value = tripId;
+  }
+  renderTripPillSwitcher();
+  renderTripPickerList();
 }
 
 /**
- * 依 appState.trips 渲染旅程下拉选单——现在有两份：header 里那个（桌面版用）跟
- * 「设置」页里那个（手机版用，见 index.html #settingsTripSwitcherPanel）。
- * 两边显示的选项要一模一样，所以用同一份资料各画一次
+ * 依 appState.trips 渲染旅程下拉选单——只剩 header 里那个（桌面版用）还是
+ * 传统下拉选单；「设置」页那份已经换成 pill 切换器 + tripPickerModal，
+ * 改由 renderTripPillSwitcher() / renderTripPickerList() 各自负责
  */
 function renderTripSelect() {
-  ['tripSelect', 'settingsTripSelect'].forEach((selectId) => {
-    const select = document.getElementById(selectId);
-    if (!select) {
-      return;
-    }
-
+  const select = document.getElementById('tripSelect');
+  if (select) {
     select.innerHTML = '';
 
     if (appState.trips.length === 0) {
       select.innerHTML = `<option value="">${escapeHtml(t('trip.noTripOption'))}</option>`;
-      return;
+    } else {
+      appState.trips.forEach((trip) => {
+        const option = document.createElement('option');
+        option.value = trip.id;
+        option.textContent = trip.name;
+        select.appendChild(option);
+      });
     }
+  }
 
-    appState.trips.forEach((trip) => {
-      const option = document.createElement('option');
-      option.value = trip.id;
-      option.textContent = trip.name;
-      select.appendChild(option);
-    });
-  });
-
-  renderSettingsCurrentTripName();
+  renderTripPillSwitcher();
+  renderTripPickerList();
 }
 
 /**
- * 「设置」页切换旅程面板里，「目前正在查看的旅程」那一行文字——跟下拉选单是分开的两个
- * 元素，选单改变时（不管是从哪个下拉选单改的）都要连带更新一次
+ * 设置页「目前旅程」切换器——目前旅程是一般文字，后面接最多 3 颗圆圈代表
+ * 其他旅程（沿用既有的 avatar-stack 头像堆叠样式），每颗圆圈显示该旅程的
+ * 首字母；如果其他旅程超过 3 趟，只列前 2 颗，最后一颗改显示「+N」
+ * （N 是没列出来的剩余数量），不逐一撑爆整排。整个区块跟旁边的「更改」
+ * 按钮点了都会开同一个 tripPickerModal，新增旅程的功能也收在那个 Modal 里，
+ * 选单改变时（不管是从哪里触发的切换）都要连带更新一次
  */
-function renderSettingsCurrentTripName() {
-  const el = document.getElementById('settingsCurrentTripName');
-  if (!el) {
+const TRIP_PILL_MAX_AVATARS = 3;
+const TRIP_AVATAR_COLOR_COUNT = 8;
+
+/**
+ * 依旅程 id 算出固定的颜色 class（1~8 号色轮），同一趟旅程不管重渲染几次、
+ * 不管现在排第几个，拿到的颜色都一样，不会因为切换旅程而跳色
+ * @param {string} tripId
+ * @return {string} 例如 'trip-avatar-color-3'
+ */
+function getTripAvatarColorClass_(tripId) {
+  let hash = 0;
+  const id = String(tripId || '');
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return `trip-avatar-color-${(hash % TRIP_AVATAR_COLOR_COUNT) + 1}`;
+}
+
+function renderTripPillSwitcher() {
+  const nameEl = document.getElementById('tripPillCurrentName');
+  const avatarsEl = document.getElementById('tripOtherAvatars');
+  if (!nameEl || !avatarsEl) {
     return;
   }
-  el.textContent = currentTripId ? getTripName(currentTripId) : t('trip.noTripOption');
+
+  nameEl.textContent = currentTripId ? getTripName(currentTripId) : t('trip.noTripOption');
+
+  const otherTrips = appState.trips.filter((item) => item.id !== currentTripId);
+  const renderAvatar = (trip) =>
+    `<span class="avatar ${getTripAvatarColorClass_(trip.id)}" title="${escapeHtml(trip.name)}">${escapeHtml(getInitials(trip.name))}</span>`;
+
+  if (otherTrips.length === 0) {
+    avatarsEl.innerHTML = '';
+  } else if (otherTrips.length <= TRIP_PILL_MAX_AVATARS) {
+    avatarsEl.innerHTML = otherTrips.map(renderAvatar).join('');
+  } else {
+    const shown = otherTrips.slice(0, TRIP_PILL_MAX_AVATARS - 1);
+    const remaining = otherTrips.length - shown.length;
+    avatarsEl.innerHTML = shown.map(renderAvatar).join('') + `<span class="avatar-stack-more">+${remaining}</span>`;
+  }
+}
+
+/**
+ * 渲染 tripPickerModal 里的旅程清单——每趟旅程一行，点名字那块直接切换，
+ * 目前这趟额外多一颗铅笔小按钮可以改名字（沿用既有的 renameTripModal，
+ * 靠通用的 data-open-modal 监听器处理，这里不用再重複写开 Modal 的逻辑）。
+ * 「新增旅程」原本是选单旁边独立的「+」图示按钮，现在收进这个 Modal 底部，
+ * 跟清单放在一起，逻辑上都是「管理我的旅程」这件事
+ */
+function renderTripPickerList() {
+  const listEl = document.getElementById('tripPickerList');
+  if (!listEl) {
+    return;
+  }
+
+  if (appState.trips.length === 0) {
+    listEl.innerHTML = `<p class="empty-hint">${escapeHtml(t('trip.noTripOption'))}</p>`;
+    return;
+  }
+
+  listEl.innerHTML = appState.trips.map((trip) => {
+    const isActive = trip.id === currentTripId;
+    return `
+      <div class="trip-picker-row ${isActive ? 'is-active' : ''}">
+        <button type="button" class="trip-picker-row-main" data-select-trip-id="${escapeHtml(trip.id)}">
+          <span class="avatar">${escapeHtml(getInitials(trip.name))}</span>
+          <span class="trip-picker-row-name">${escapeHtml(trip.name)}</span>
+        </button>
+        ${isActive ? `
+          <button type="button" class="icon-btn trip-picker-edit-btn" data-open-modal="renameTripModal" aria-label="更改旅程名称">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+/**
+ * 打开「选择旅程」Modal：先确保清单是最新的再开，不然如果是从旧的快取
+ * 画面直接开 Modal，可能会看到切换旅程/改名之前的旧清单
+ */
+function openTripPickerModal() {
+  renderTripPickerList();
+  openModal('tripPickerModal');
+}
+
+/**
+ * tripPickerModal 里的互动：点旅程名字切换、点「新增旅程」开 addTripModal——
+ * 这些是清单动态产生的内容，用事件代理绑在容器上，不用每次重新渲染都重绑一次
+ */
+function initTripPicker() {
+  const listEl = document.getElementById('tripPickerList');
+  if (listEl) {
+    listEl.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-select-trip-id]');
+      if (!btn) {
+        return;
+      }
+      const tripId = btn.getAttribute('data-select-trip-id');
+      closeActiveModal();
+      if (tripId !== currentTripId) {
+        switchCurrentTrip(tripId);
+      }
+    });
+  }
+
+  const addBtn = document.getElementById('tripPickerAddBtn');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      closeActiveModal();
+      openModal('addTripModal');
+    });
+  }
+
+  ['tripPillSwitcher', 'openTripPickerBtn'].forEach((btnId) => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener('click', openTripPickerModal);
+    }
+  });
 }
 
 /**
@@ -2852,6 +2993,46 @@ function renderSettingsCurrentTripName() {
 function getTripName(tripId) {
   const trip = appState.trips.find((item) => item.id === tripId);
   return trip ? trip.name : '';
+}
+
+/**
+ * 「更改旅程名称」表单送出处理——跟货币设置的 saveExchangeRates_ 走同一套模式：
+ * 直接 update trips 那一列（关联都是靠 trip.id，改名字不会动到任何其他资料），
+ * 成功後同步更新 appState 缓存的那份名字，再重新渲染选单/标题等所有显示旅程
+ * 名称的地方，不然会看到画面上还是旧名字，要等下次重新整理才会更新
+ */
+async function handleRenameTripFormSubmit() {
+  if (!currentTripId) {
+    return;
+  }
+
+  const nameInput = document.getElementById('renameTripNameInput');
+  const newName = nameInput.value.trim();
+
+  if (!newName) {
+    showToast('error', t('toast.pleaseEnterTripName'), '');
+    return;
+  }
+
+  const submitBtn = document.getElementById('renameTripSubmitBtn');
+  setButtonLoading(submitBtn, true);
+
+  try {
+    const { error } = await supabaseClient.from('trips').update({ name: newName }).eq('id', currentTripId);
+    if (error) throw error;
+
+    const tripInList = appState.trips.find((item) => item.id === currentTripId);
+    if (tripInList) tripInList.name = newName;
+
+    closeActiveModal();
+    renderTripSelect();
+    renderDashboardHeader();
+    showToast('success', t('toast.tripRenamed'), t('toast.tripRenamedMsg', { name: newName }));
+  } catch (error) {
+    showToast('error', t('toast.actionFailed'), error.message);
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
 }
 
 /**
@@ -4756,6 +4937,14 @@ function initModals() {
         return;
       }
 
+      if (modalId === 'renameTripModal') {
+        if (!currentTripId) {
+          showToast('error', t('toast.pleaseSelectTrip'), '');
+          return;
+        }
+        document.getElementById('renameTripNameInput').value = getTripName(currentTripId);
+      }
+
       openModal(modalId);
     }
   });
@@ -4780,6 +4969,11 @@ function initModals() {
   document.getElementById('memberForm').addEventListener('submit', (event) => {
     event.preventDefault();
     handleMemberFormSubmit();
+  });
+
+  document.getElementById('renameTripForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    handleRenameTripFormSubmit();
   });
 }
 
@@ -5817,6 +6011,27 @@ function updateReceiptUploadHint(text) {
   if (hint) {
     hint.textContent = text;
   }
+}
+
+/**
+ * 消费明细弹窗（所有成员都看得到，不只是记录建立者）里的收据缩图——点一下
+ * 开启 receiptViewerModal 看大图。缩图的 src 是 openExpenseDetailModal() 打开
+ * 当下就设定好的，这里只要在按钮被点的当下把同一张图丢进 viewer 就好，
+ * 不需要额外传参数或重新查一次 expense 资料
+ */
+function initReceiptViewer() {
+  const thumbBtn = document.getElementById('expenseDetailReceiptThumb');
+  if (!thumbBtn) {
+    return;
+  }
+  thumbBtn.addEventListener('click', () => {
+    const src = document.getElementById('expenseDetailReceiptImg').src;
+    if (!src) {
+      return;
+    }
+    document.getElementById('receiptViewerImg').src = src;
+    openModal('receiptViewerModal');
+  });
 }
 
 
@@ -7999,6 +8214,16 @@ function openExpenseDetailModal(expenseId) {
     remarkEl.classList.add('is-hidden');
   }
 
+  // 收据照片：对所有成员开放预览，不比照编辑权限做限制——之前这个弹窗完全没放
+  // 收据，只有记录建立者打开编辑表单才看得到，其他成员根本无从预览
+  const receiptWrap = document.getElementById('expenseDetailReceiptWrap');
+  if (expense.Receipt) {
+    document.getElementById('expenseDetailReceiptImg').src = expense.Receipt;
+    receiptWrap.classList.remove('is-hidden');
+  } else {
+    receiptWrap.classList.add('is-hidden');
+  }
+
   const splitResult = calculateExpenseSplitClientSide(expense);
   // 金库支出没有真正的 Participants（SplitType='pool'，钱是从公共账户直接出的），
   // 但对使用者来说，这笔钱本来就是「全体成员均摊」的消费，分摊明细直接比照均分显示，
@@ -9308,6 +9533,10 @@ function handleDeleteTripClick() {
       showToast('success', t('toast.tripDeleted'), t('toast.tripDeletedMsg', { name: tripName }));
       localStorage.removeItem(STORAGE_KEY_CURRENT_TRIP);
       await bootstrapApp();
+      // bootstrapApp() 不会主动切页，画面还是留在设置页——但如果使用者删除前
+      // 页面已经往下捲到「危险区域」按钮那边，捲动位置不会跟着重置，会让人
+      // 誤以为删除没生效、忍不住又按一次。这里主动切回设置页顶端给个明确回饋
+      navigateToPage('settings');
     }
   );
 }

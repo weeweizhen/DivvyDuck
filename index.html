@@ -434,7 +434,7 @@
   <header class="app-header">
     <div class="header-left">
       <div class="header-left-text">
-        <h1 class="page-title" id="pageTitle">总览</h1>
+        <h1 class="page-title" id="pageTitle">概览</h1>
         <p class="page-subtitle" id="pageSubtitle">大家的消费，一目了然</p>
       </div>
       <!-- 手机版不显示汉堡选单／页面标题（见 style.css 的响应式规则），改显示这个纯品牌字样；
@@ -1017,10 +1017,10 @@
       <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
            「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
            合并成一个 category，标题换成跟上面几个面板（账户资料／偏好设置／财务设置）
-           同一种命名习惯的「旅程设置」。两行都是「文字标签 + 长条 + 按钮」同一种
-           排版（不额外套边框卡片，纯粹一行文字排版跟设置页其他 row 一致），
-           选旅程那行也比照邀请码补上「切换旅程」这个行内文字标签，两条长条
-           右侧的按钮都贴齐同一个容器右边，视觉上两行结尾自然对齐 -->
+           同一种命名习惯的「旅程设置」。「目前旅程」这行是 pill 式切换器：
+           左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
+           小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
+           选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
       <div class="glass-card panel" id="settingsTripSwitcherPanel">
         <div class="panel-header">
           <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
@@ -1028,16 +1028,13 @@
         <div class="panel-body settings-body">
           <div class="settings-row">
             <div class="settings-row-text">
-              <p class="settings-row-title" id="settingsCurrentTripName">—</p>
-              <p class="settings-row-desc" data-i18n="settings.tripPanelDesc">目前正在查看的旅程</p>
+              <p class="settings-row-title" data-i18n="settings.currentTripLabel">目前旅程</p>
+              <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程">
+                <span class="trip-current-name" id="tripPillCurrentName">—</span>
+                <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
+              </button>
             </div>
-          </div>
-          <div class="trip-switcher trip-switcher-settings">
-            <span class="inline-field-label" data-i18n="settings.switchTripLabel">切换旅程</span>
-            <select class="select-control" id="settingsTripSelect" aria-label="选择旅程"></select>
-            <button class="icon-btn" type="button" data-open-modal="addTripModal" aria-label="新增旅程">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
-            </button>
+            <button class="btn btn-ghost btn-sm" type="button" id="openTripPickerBtn" data-i18n="account.changeBtn">更改</button>
           </div>
 
           <div class="settings-row">
@@ -1320,8 +1317,9 @@
   </div>
 </div>
 
-<!-- 消费明细 Modal：点击账目列表任一笔消费会弹出，显示完整分摊明细；
-     只有当初建立这笔纪录的账号（当事人）才看得到编辑/删除按钮 -->
+<!-- 消费明细 Modal：点击账目列表任一笔消费会弹出，显示完整分摊明细跟收据照片（若有）
+     ——这两块对所有成员都开放预览；编辑/删除按钮才是只有当初建立这笔纪录的账号
+     （当事人）才看得到 -->
 <div class="modal" id="expenseDetailModal" role="dialog" aria-modal="true" aria-labelledby="expenseDetailTitle">
   <div class="modal-header">
     <div>
@@ -1338,6 +1336,12 @@
       <div class="expense-detail-badges" id="expenseDetailBadges"></div>
     </div>
     <p class="expense-detail-remark is-hidden" id="expenseDetailRemark"></p>
+    <div class="expense-detail-receipt is-hidden" id="expenseDetailReceiptWrap">
+      <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.receiptLabel">收据照片</p>
+      <button type="button" class="expense-detail-receipt-thumb" id="expenseDetailReceiptThumb" aria-label="查看收据照片">
+        <img src="" alt="收据照片" id="expenseDetailReceiptImg">
+      </button>
+    </div>
     <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.splitBreakdown">分摊明细</p>
     <div id="expenseDetailSplitList">
       <!-- 每位参与人分摊多少，由 app.js 动态产生 -->
@@ -1346,6 +1350,20 @@
   <div class="modal-footer is-hidden" id="expenseDetailFooter">
     <button class="btn btn-ghost" type="button" id="expenseDetailDeleteBtn" data-i18n="aria.delete">删除</button>
     <button class="btn btn-primary" type="button" id="expenseDetailEditBtn" data-i18n="aria.edit">编辑</button>
+  </div>
+</div>
+
+<!-- 收据大图预览 Modal：从消费明细弹窗的收据缩图点进来，纯粹放大看图，
+     不需要表单或其他互动，沿用同一套 Modal 堆叠机制（背景点击/Esc 都能关） -->
+<div class="modal modal-sm receipt-viewer-modal" id="receiptViewerModal" role="dialog" aria-modal="true" aria-labelledby="receiptViewerTitle">
+  <div class="modal-header">
+    <h2 id="receiptViewerTitle" data-i18n="expenseDetailModal.receiptLabel">收据照片</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body receipt-viewer-body">
+    <img src="" alt="收据照片" id="receiptViewerImg" class="receipt-viewer-img">
   </div>
 </div>
 
@@ -1463,6 +1481,49 @@
   </div>
   <div class="modal-body" id="categoryExpensesList">
     <!-- 该分类的消费清单由 app.js 动态产生 -->
+  </div>
+</div>
+
+<!-- 选择旅程 Modal：设置页「目前旅程」pill 或「更改」按钮点了都会开这个——
+     列出使用者所有旅程，点名字切换；目前这趟旁边多一颗铅笔可以改名字
+     （沿用下面的 renameTripModal）；底部「新增旅程」取代原本独立的「+」图示 -->
+<div class="modal modal-sm" id="tripPickerModal" role="dialog" aria-modal="true" aria-labelledby="tripPickerTitle">
+  <div class="modal-header">
+    <h2 id="tripPickerTitle" data-i18n="tripPicker.title">选择旅程</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div id="tripPickerList">
+      <!-- 每趟旅程一行，由 app.js 动态产生 -->
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" type="button" id="tripPickerAddBtn" data-i18n="tripPicker.addBtn">＋ 新增旅程</button>
+  </div>
+</div>
+
+<!-- 更改旅程名称 Modal -->
+<div class="modal modal-sm" id="renameTripModal" role="dialog" aria-modal="true" aria-labelledby="renameTripTitle">
+  <div class="modal-header">
+    <h2 id="renameTripTitle" data-i18n="renameTripModal.title">更改旅程名称</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <form class="modal-body" id="renameTripForm">
+    <div class="form-field">
+      <label for="renameTripNameInput" data-i18n="renameTripModal.nameLabel">旅程名称</label>
+      <input type="text" id="renameTripNameInput" class="text-input" required autocomplete="off">
+    </div>
+  </form>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="renameTripForm" id="renameTripSubmitBtn">
+      <span class="btn-label" data-i18n="renameTripModal.save">储存</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
   </div>
 </div>
 
