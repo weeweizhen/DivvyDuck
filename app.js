@@ -305,8 +305,6 @@ const STRINGS = {
     'dashboard.viewAll': '查看全部',
     'dashboard.categorySummary': '分类消费',
     'dashboard.categoryClickHint': '点击分类查看明细',
-    'dashboard.emptyTrip.title': '还没有旅程',
-    'dashboard.emptyTrip.desc': '建立第一个旅程，开始记账。',
 
     // Dashboard 欢迎词（用登入账号的显示名称打招呼）
     'dashboard.welcomeBack': '{greeting}，{name}',
@@ -339,7 +337,7 @@ const STRINGS = {
     'authGate.loginFailed': '登入失败',
     'authGate.signupFailed': '注册失败',
     'authGate.signupSuccessTitle': '注册成功',
-    'authGate.signupSuccessMsg': '请前往信箱点击验证连结后再登入',
+    'authGate.signupSuccessMsg': '请前往邮箱点击验证连结后再登入',
     'authGate.switchToSignup': '还没有账号？注册',
     'authGate.switchToLogin': '已经有账号？登入',
     'authGate.emailLabel': '邮箱',
@@ -362,7 +360,8 @@ const STRINGS = {
     'invite.panelTitle': '邀请码',
     'invite.rowDesc': '分享给朋友，让他们加入这趟旅程',
     'invite.label': '邀请码',
-    'invite.copyBtn': '复制',
+    'invite.copyBtn': '分享',
+    'invite.shareMessage': '嘎～我在搭伙鸭上开了一趟旅程「{tripName}」，点这个链接就能加入，一起记账不心累：{link}',
     'invite.copiedTitle': '已复制',
     'invite.copiedMsg': '分享给同行的人，注册或登入后就能加入。',
 
@@ -373,14 +372,12 @@ const STRINGS = {
     'joinTrip.inviteCodePlaceholder': '输入朋友分享的邀请码',
     'joinTrip.submit': '加入旅程',
     'joinTrip.hint': '向已经在旅程里的同行索取邀请码。',
-    'joinTrip.successTitle': '加入成功',
     'joinTrip.failedTitle': '加入失败',
 
     // 账号（登出按钮实际放在左边导览栏，不在设置页里）
     'account.logoutBtn': '登出',
 
     // Settings 页「语言」面板（手机上碰不到桌面版侧栏的语言切换，这里补一份）
-    'settings.languagePanel': '语言',
     'settings.languageRowTitle': '显示语言',
     'settings.tripPanelTitle': '旅程设置',
     'settings.currentTripLabel': '目前旅程',
@@ -408,8 +405,6 @@ const STRINGS = {
     'account.currentPasswordLabel': '目前密码',
     'account.newPasswordLabel': '新密码',
     'account.changePasswordBtn': '更改密码',
-    'account.displayNameSavedTitle': '已更新',
-    'account.passwordChangedTitle': '密码已更改',
     'account.passwordChangeFailedTitle': '更改密码失败',
     'account.passwordFieldsRequired': '请输入目前密码与新密码',
     'account.displayNameSaveFailedTitle': '更新显示名称失败',
@@ -443,20 +438,16 @@ const STRINGS = {
     'dashboard.matrix.otherPair': '{from} 需要转给 {to}',
     'dashboard.matrix.remind': '提醒',
     'dashboard.matrix.collapse': '收起',
-    'dashboard.matrix.reminderText': '嗨 {name}，这趟旅程你还有 {amount} 没结清，方便时记得转给我 🙏 —— 来自搭伙鸭',
-    'toast.reminderCopied': '已复制',
+    'dashboard.matrix.reminderText': '嘎～{name}，鸭鸭掐指一算，你还欠 {amount} 没转喔，别让鸭鸭继续念叨啦 🦆\n点这里看明细、还能自己开个账号盯着：{link}',
     'empty.noExpenses.title': '还没有消费纪录',
     'empty.noExpenses.desc': '记第一笔消费，开始一起记账。',
     'empty.noSettlement.title': '没有待结算款项',
     'empty.noSettlement.desc': '所有人的账都结清了。',
-    'empty.noCategory.title': '尚无分类资料',
-    'empty.noCategory.desc': '新增消费后，这里会显示各分类的花费占比。',
+    'empty.noCategory.title': '鸭鸭还没算出花费占比～',
+    'empty.noCategory.desc': '记几笔消费，这里就会自动长出分类图表。',
 
     // 消费纪录页
     'expenses.filterAll': '全部',
-    'expenses.filterSplitType': '所有分账方式',
-    'expenses.filterEqual': '平均分账',
-    'expenses.filterCustom': '自订分账',
     'expenses.loadMore': '载入更多（还有 {count} 笔）',
     'table.date': '日期',
     'table.description': '说明',
@@ -467,7 +458,6 @@ const STRINGS = {
     'badge.custom': '自订',
     'empty.noMatchingExpenses.title': '没有符合条件的消费',
     'empty.noMatchingExpenses.desc': '试试调整筛选条件或搜寻关键字。',
-    'empty.noExpensesYet.desc2': '点击右上角「记一笔」建立第一笔。',
 
     // 消费记账 Modal
     'expenseModal.titleAdd': '新增消费',
@@ -477,8 +467,6 @@ const STRINGS = {
     'expense.payerLabel': '谁先垫付的？',
     'expense.payerPlaceholder': '选择付款人',
     'expense.amountLabel': '金额',
-    'expense.categoryLabel': '分类',
-    'expense.categoryPlaceholder': '选择分类',
     'expense.dateLabel': '日期',
     'expense.descriptionLabel': '说明',
     'expense.descriptionPlaceholder': '例如：晚餐、油钱、酒店订金…',
@@ -531,9 +519,7 @@ const STRINGS = {
 
     // 结算总览页
     'summary.exportPdf': '汇出 PDF',
-    'summary.exportHint': '汇出完整报告，包含总开销与每位成员的明细',
     'summary.balancePanel': '每人收支',
-    'summary.balanceHint': 'Paid（已付）· Should Pay（应付）· Balance（余额）',
     'summary.settlementPanel': '最优结算',
     'settlement.bannerHint': '最少转账次数，最简单的归还路径。',
     'settlement.allSettled.title': '太棒了',
@@ -547,8 +533,8 @@ const STRINGS = {
     'summary.repaymentPanel': '还款纪录',
     'summary.addRepayment': '+ 记录还款',
     'summary.repaymentHint': '记录谁实际把钱转给谁，余额会自动扣抵',
-    'empty.noBalance.title': '尚无结算资料',
-    'empty.noBalance.desc': '新增消费后，这里会显示每个人的收支状况。',
+    'empty.noBalance.title': '鸭鸭还算不出谁欠谁～',
+    'empty.noBalance.desc': '记第一笔消费，收支状况马上现形。',
     'empty.noRepayment.title': '还没有还款纪录',
     'empty.noRepayment.desc': '有人实际转账后，点击上方「记录还款」。',
 
@@ -567,8 +553,8 @@ const STRINGS = {
     // 成员页
     'members.addBtn': '新增成员',
     'members.participatedIn': '参与 {count} 笔消费',
-    'empty.noMembers.title': '暂无成员',
-    'empty.noMembers.desc': '加入同行的人，开始记录开销。',
+    'empty.noMembers.title': '鸭鸭的旅程还是一个人～',
+    'empty.noMembers.desc': '拉朋友进来，开销才有地方分。',
     'members.duplicateBanner.title': '发现还没连结账号的旧成员',
     'members.duplicateBanner.desc': '如果其中一位其实是你，合并后 ta 名下的历史消费会接续到你身上。',
     'members.duplicateBanner.reviewBtn': '查看',
@@ -610,7 +596,6 @@ const STRINGS = {
     'settings.darkMode': '深色模式',
     'settings.lightMode': '浅色模式',
     'settings.darkModeDesc': '切换浅色或深色主题',
-    'settings.language': '语言',
     'settings.financialPanel': '财务设置',
     'currency.baseCurrencyLabel': '基准货币',
     'currency.baseCurrencyHint': '结算总览、建议还款、还款纪录都以这个货币计算',
@@ -630,26 +615,19 @@ const STRINGS = {
     'category.Others': '其他',
 
     // 常用 Toast / 确认文字
-    'toast.expenseAdded': '消费已新增',
-    'toast.expenseUpdated': '已储存',
     'toast.expenseDeleted': '已删除',
     'toast.expenseDeletedMsg': '这笔消费已移除。',
-    'toast.memberAdded': '成员已新增',
     'toast.memberDeleted': '已删除',
     'toast.memberDeletedMsg': '成员「{name}」已移除。',
     'toast.memberMerged': '合并成功',
     'toast.memberMergedMsg': '「{name}」的历史纪录已并入你的账号。',
-    'toast.repaymentAdded': '已记录还款',
-    'toast.repaymentUpdated': '已更新',
     'toast.repaymentDeleted': '已删除',
     'toast.repaymentDeletedMsg': '这笔还款已移除。',
-    'toast.tripAdded': '旅程已新增',
     'toast.tripRenamed': '旅程名称已更新',
     'toast.tripRenamedMsg': '旅程已改名为「{name}」。',
     'toast.tripDeleted': '旅程已删除',
     'toast.tripLeft': '已退出旅程',
     'toast.tripLeftMsg': '你已退出「{name}」，先前的消费与其他人的资料仍会保留。',
-    'toast.currencySaved': '货币设定已储存',
     'toast.pleaseSelectTrip': '请先选择旅程',
     'toast.pleaseSelectPayer': '请选择付款人',
     'toast.pleaseSelectCategory': '请选择分类',
@@ -672,7 +650,6 @@ const STRINGS = {
 
     // 其余 Toast / 提示文字
     'toast.loadFailed': '载入失败',
-    'toast.tripSwitched': '已切换旅程',
     'toast.switchFailed': '切换失败',
     'toast.pleaseEnterTripName': '请输入旅程名称',
     'toast.createFailed': '新增失败',
@@ -716,21 +693,20 @@ const STRINGS = {
     'toast.noDataToExportMsg': '请先新增至少一笔消费。',
 
     // 最后一批补充：系统内部提示、下拉选单、组合文字
-    'system.unknownError': '发生未知错误，重新整理页面后再试一次。',
-    'toast.refreshFailed': '刷新失败',
-    'system.networkError': '网路连线不稳定，请检查网路后再试一次',
+    'system.unknownError': '鸭鸭也不知道发生什么事了：重新整理页面，通常就会好~',
+    'toast.refreshFailed': '鸭鸭没跟上，刷新卡住了',
 
     // 离线韧性：断线提示、待同步状态
     'offline.banner': '目前离线中，新增的消费会先存在这台装置上',
-    'offline.bannerSyncing': '网路已恢复，正在同步 {count} 笔离线纪录…',
+    'offline.bannerSyncing': '网络已恢复，鸭鸭正在同步 {count} 笔离线纪录…',
     'offline.pendingBadge': '待同步',
     'offline.expenseQueuedTitle': '已离线暂存',
-    'offline.expenseQueuedMsg': '这笔消费先存在装置上，网路恢复后会自动同步。',
+    'offline.expenseQueuedMsg': '这笔消费先存在装置上，网络恢复后鸭鸭会自动帮你同步。',
     'offline.syncSuccessTitle': '离线纪录已同步',
     'offline.syncSuccessMsg': '{count} 笔离线新增的消费已同步到伺服器。',
     'offline.syncFailedTitle': '部分离线纪录同步失败',
     'offline.syncFailedMsg': '还有 {count} 笔尚未同步，下次连线时会继续重试。',
-    'offline.staleDataBanner': '目前离线，显示的是上次连线时的资料（{time}）',
+    'offline.staleDataBanner': '鸭鸭暂时飞不出网络：现在看到的是上次连线的资料（{time}）',
     'trip.noTripOption': '尚无旅程',
     'members.noMembersYet': '尚无成员，请先到「成员」页新增。',
     'expense.customSplitSummary': '已分配 {currency} {allocated} ／ 总额 {currency} {total}',
@@ -742,8 +718,6 @@ const STRINGS = {
     'expense.noDescription': '（无说明）',
     'aria.edit': '编辑',
     'aria.delete': '删除',
-    'aria.editRepayment': '编辑还款纪录',
-    'aria.deleteRepayment': '删除还款纪录',
     'aria.deleteMember': '删除成员',
     'repayment.paidTo': '还款给 {name}',
     'repayment.recordSuffix': '还款纪录',
@@ -754,14 +728,13 @@ const STRINGS = {
     'expenseDetailModal.receiptLabel': '收据照片',
     'repayment.currencyUnitHint': '金额单位：{currency}（旅程基准货币）',
     'trip.noTripSelected': '（尚未选择旅程）',
-    'summary.paidShouldPay': '已付 {paid} · 应付 {shouldPay}',
     'toast.closeAriaLabel': '关闭通知',
     'common.processing': '处理中…',
 
     // PDF 报告
     'report.untitledTrip': '未命名旅程',
     'report.printQualityHintTitle': '汇出前的提醒',
-    'report.printQualityHintMsg': '在打印视窗里勾选「背景图形 / Background graphics」，卡片底色才会正常显示，不然会印成纯白底。',
+    'report.printQualityHintMsg': '记得在打印视窗勾选「背景图形」，卡片底色才印得出来，不然会变成纯白底喔。',
     'report.generatedAt': '生成时间',
     'report.reportId': '报告编号',
     'report.memberLabel': '成员',
@@ -842,7 +815,6 @@ const STRINGS = {
     'currency.wiseHint': '汇率来自 Wise 中端市场汇率，仅供参考，储存前请自行确认。',
     'currency.fetchAllRates': '抓取全部即时汇率',
     'currency.fetchRateAria': '抓取即时汇率',
-    'toast.rateFetched': '已带入即时汇率',
     'toast.rateAutoFetched': '已自动补上汇率',
     'toast.rateAutoFetchedMsg': '1 {currency} = {rate} {base}（来源：Wise），已存进这趟旅程，不准确可到设置页调整。',
     'toast.rateFetchFailed': '抓取失败',
@@ -866,7 +838,7 @@ const STRINGS = {
     'pool.card.settleBtn': '结程退余',
 
     'pool.form.enableLabel': '开启搭伙鸭金库',
-    'pool.form.enableHint': '开启后，登记的打款会存进公共金库，旅程中的消费可直接从金库扣款',
+    'pool.form.enableHint': '开启后，大家先把钱交给鸭鸭金库统一保管，行程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！',
     'pool.form.perPersonLabel': '人均预付款',
 
     'pool.error.invalidAmount': '请输入有效的金额',
@@ -876,7 +848,6 @@ const STRINGS = {
     'pool.alert.lowBalanceMessage': '{currency} 余额偏低，建议尽快补充值',
 
     'pool.settle.confirmMessage': '结程后金库将不能再扣款，确定要按目前余额平分退款给每位成员吗？',
-    'pool.settle.successTitle': '金库已结清，退款明细已生成',
     'pool.poster.title': '搭伙鸭金库结算',
     'pool.poster.refundLine': '{name} 退 {refund}',
     'pool.poster.subtitle': '结程后的每人退款明细',
@@ -917,7 +888,7 @@ const STRINGS = {
     'pool.settings.enableTitle': '搭伙鸭金库',
     'pool.settings.statusTitle': '搭伙鸭金库状态',
     'pool.settings.readOnlyTitle': '金库已开启',
-    'pool.settings.readOnlyDesc': '充值与结程退余由启动金库的人或旅程建立者负责，你可以在下面查看目前各币种的余额。',
+    'pool.settings.readOnlyDesc': '金库由发起人统一管钱，充值、退款都他处理，你只要在下面看看余额剩多少就好，很省心～',
     'pool.settings.topupFormTitle': '充值',
     'pool.settings.topupFormDesc': '填这次的人均金额，系统会自动乘上目前 {count} 位成员算出总额',
     'pool.settings.noMembers': '这趟旅程还没有成员，先加成员再充值',
@@ -931,19 +902,16 @@ const STRINGS = {
     'expense.sourceNormalHint': '照一般方式记账，跟同行的人依分账方式结算。',
     'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆账。',
 
-    'pool.expense.deductSuccess': '已从金库支出',
     'pool.expense.deductFailed': '金库支出失败',
 
     'pool.form.currencyHint': '之后还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
     'pool.settings.topupCountSummary': '已登记 {count} 笔打款',
     'pool.settings.topupBtn': '充值',
-    'pool.settings.topupSuccess': '充值成功',
     'pool.settings.editTopupBtn': '更改',
     'pool.settings.editTopupTitle': '更改登记打款',
     'pool.settings.editTopupEmptyTitle': '还没有登记纪录',
     'pool.settings.editTopupEmptyDesc': '先充值一笔，之后才能在这里更改。',
     'pool.settings.editTopupMemberCountNote': '总额会用这笔登记当时的人数（{count} 人）重新计算，不受目前成员异动影响。',
-    'pool.settings.editTopupSuccess': '已更改这笔登记',
     'pool.settings.editTopupFailed': '更改失败',
     'pool.expense.payerDisplayName': '搭伙鸭金库',
     'pool.settings.topupPreview': '{count} 人份 × {perPerson} = {total}'
@@ -985,8 +953,6 @@ const STRINGS = {
     'dashboard.viewAll': 'View all',
     'dashboard.categorySummary': 'By Category',
     'dashboard.categoryClickHint': 'Tap a category for details',
-    'dashboard.emptyTrip.title': 'No trips yet',
-    'dashboard.emptyTrip.desc': 'Create a trip to start tracking expenses.',
 
     'dashboard.welcomeBack': '{greeting}, {name}',
     'dashboard.greeting.morning': 'Good morning',
@@ -1038,7 +1004,8 @@ const STRINGS = {
     'invite.panelTitle': 'Invite Code',
     'invite.rowDesc': 'Share this so friends can join the trip',
     'invite.label': 'Invite code',
-    'invite.copyBtn': 'Copy',
+    'invite.copyBtn': 'Share',
+    'invite.shareMessage': 'Hey! I started a trip called "{tripName}" on DivvyDuck \u{1F986} \u2014 tap this link to join, splitting bills just got way easier: {link}',
     'invite.copiedTitle': 'Copied',
     'invite.copiedMsg': 'Share this with your Members — they can join after signing up or logging in.',
 
@@ -1048,12 +1015,10 @@ const STRINGS = {
     'joinTrip.inviteCodePlaceholder': "Enter the code your friend shared",
     'joinTrip.submit': 'Join Trip',
     'joinTrip.hint': 'Ask someone already on the trip for the code.',
-    'joinTrip.successTitle': 'Joined',
     'joinTrip.failedTitle': 'Join failed',
 
     'account.logoutBtn': 'Log out',
 
-    'settings.languagePanel': 'Language',
     'settings.languageRowTitle': 'Display language',
     'settings.tripPanelTitle': 'Trip',
     'settings.currentTripLabel': 'Current Trip',
@@ -1079,8 +1044,6 @@ const STRINGS = {
     'account.currentPasswordLabel': 'Current password',
     'account.newPasswordLabel': 'New password',
     'account.changePasswordBtn': 'Change Password',
-    'account.displayNameSavedTitle': 'Updated',
-    'account.passwordChangedTitle': 'Password changed',
     'account.passwordChangeFailedTitle': 'Could not change password',
     'account.passwordFieldsRequired': 'Enter your current and new password',
     'account.displayNameSaveFailedTitle': 'Could not update display name',
@@ -1111,8 +1074,7 @@ const STRINGS = {
     'dashboard.matrix.otherPair': '{from} owes {to}',
     'dashboard.matrix.remind': 'Remind',
     'dashboard.matrix.collapse': 'Collapse',
-    'dashboard.matrix.reminderText': 'Hey {name}, you still have {amount} outstanding from our trip — whenever you get a chance 🙏 — sent via DivvyDuck',
-    'toast.reminderCopied': 'Copied',
+    'dashboard.matrix.reminderText': 'Hey {name}, DivvyDuck here \u{1F986} \u2014 you still have {amount} outstanding from our trip, whenever you get a chance!\nCheck the details (and set up your own account) here: {link}',
     'empty.noExpenses.title': 'No expenses yet',
     'empty.noExpenses.desc': 'Add your first expense to start tracking.',
     'empty.noSettlement.title': 'Nothing to settle',
@@ -1121,9 +1083,6 @@ const STRINGS = {
     'empty.noCategory.desc': "Add some expenses and your breakdown will show up here.",
 
     'expenses.filterAll': 'All',
-    'expenses.filterSplitType': 'All split types',
-    'expenses.filterEqual': 'Equal split',
-    'expenses.filterCustom': 'Custom split',
     'expenses.loadMore': 'Load more ({count} left)',
     'table.date': 'Date',
     'table.description': 'Description',
@@ -1134,7 +1093,6 @@ const STRINGS = {
     'badge.custom': 'Custom',
     'empty.noMatchingExpenses.title': 'No matching expenses',
     'empty.noMatchingExpenses.desc': 'Try adjusting your filters or search.',
-    'empty.noExpensesYet.desc2': 'Tap "Add Expense" above to create your first one.',
 
     'expenseModal.titleAdd': 'Add Expense',
     'expenseModal.titleEdit': 'Edit Expense',
@@ -1143,8 +1101,6 @@ const STRINGS = {
     'expense.payerLabel': 'Who paid?',
     'expense.payerPlaceholder': 'Select payer',
     'expense.amountLabel': 'Amount',
-    'expense.categoryLabel': 'Category',
-    'expense.categoryPlaceholder': 'Select category',
     'expense.dateLabel': 'Date',
     'expense.descriptionLabel': 'Description',
     'expense.descriptionPlaceholder': 'e.g. dinner, gas, hotel deposit…',
@@ -1194,9 +1150,7 @@ const STRINGS = {
     'categoryModal.empty.desc': 'Add one to see it here.',
 
     'summary.exportPdf': 'Export PDF',
-    'summary.exportHint': 'Export a full report with totals and per-member breakdowns',
     'summary.balancePanel': 'Balances',
-    'summary.balanceHint': 'Paid · Should Pay · Balance',
     'summary.settlementPanel': 'Optimal Settlement',
     'settlement.bannerHint': 'The fewest transfers, the simplest path back to even.',
     'settlement.settleAllConfirm': "This marks all {count} suggested transfer(s) — {total} total — as repaid. Confirm these transfers actually happened first: DivvyDuck can't move money or verify it arrived. Mark something wrong and you'll need to edit or delete it individually afterward.",
@@ -1269,7 +1223,6 @@ const STRINGS = {
     'settings.darkMode': 'Dark Mode',
     'settings.lightMode': 'Light Mode',
     'settings.darkModeDesc': 'Switch between light and dark themes',
-    'settings.language': 'Language',
     'settings.financialPanel': 'Financial',
     'currency.baseCurrencyLabel': 'Base Currency',
     'currency.baseCurrencyHint': 'Settlement, transfers, and repayment history all use this currency',
@@ -1287,26 +1240,19 @@ const STRINGS = {
     'category.Shopping': 'Shopping',
     'category.Others': 'Others',
 
-    'toast.expenseAdded': 'Expense added',
-    'toast.expenseUpdated': 'Saved',
     'toast.expenseDeleted': 'Deleted',
     'toast.expenseDeletedMsg': 'This expense has been removed.',
-    'toast.memberAdded': 'Member added',
     'toast.memberDeleted': 'Deleted',
     'toast.memberDeletedMsg': '"{name}" has been removed.',
     'toast.memberMerged': 'Merged',
     'toast.memberMergedMsg': "\"{name}\"'s history now belongs to your account.",
-    'toast.repaymentAdded': 'Repayment recorded',
-    'toast.repaymentUpdated': 'Updated',
     'toast.repaymentDeleted': 'Deleted',
     'toast.repaymentDeletedMsg': 'This repayment has been removed.',
-    'toast.tripAdded': 'Trip added',
     'toast.tripRenamed': 'Trip renamed',
     'toast.tripRenamedMsg': 'Trip renamed to "{name}".',
     'toast.tripDeleted': 'Trip deleted',
     'toast.tripLeft': 'Left the trip',
     'toast.tripLeftMsg': 'You\'ve left "{name}". Your past expenses and everyone else\'s data are still there.',
-    'toast.currencySaved': 'Currency saved',
     'toast.pleaseSelectTrip': 'Select a trip first',
     'toast.pleaseSelectPayer': 'Select a payer',
     'toast.pleaseSelectCategory': 'Select a category',
@@ -1327,7 +1273,6 @@ const STRINGS = {
     'draft.restoredMessage': 'We brought back the expense you were filling in',
 
     'toast.loadFailed': 'Failed to load',
-    'toast.tripSwitched': 'Trip switched',
     'toast.switchFailed': 'Switch failed',
     'toast.pleaseEnterTripName': 'Enter a trip name',
     'toast.createFailed': 'Failed to create',
@@ -1372,7 +1317,6 @@ const STRINGS = {
 
     'system.unknownError': 'Something went wrong. Refresh the page and try again.',
     'toast.refreshFailed': 'Refresh failed',
-    'system.networkError': "Connection seems unstable — check your network and try again",
 
     'offline.banner': "You're offline — new expenses save on this device for now",
     'offline.bannerSyncing': 'Back online — syncing {count} record(s)…',
@@ -1395,8 +1339,6 @@ const STRINGS = {
     'expense.noDescription': '(no description)',
     'aria.edit': 'Edit',
     'aria.delete': 'Delete',
-    'aria.editRepayment': 'Edit repayment',
-    'aria.deleteRepayment': 'Delete repayment',
     'aria.deleteMember': 'Delete member',
     'repayment.paidTo': 'Paid to {name}',
     'repayment.recordSuffix': 'Repayment',
@@ -1407,7 +1349,6 @@ const STRINGS = {
     'expenseDetailModal.receiptLabel': 'Receipt Photo',
     'repayment.currencyUnitHint': 'Currency: {currency} (trip base currency)',
     'trip.noTripSelected': '(no trip selected)',
-    'summary.paidShouldPay': 'Paid {paid} · Should pay {shouldPay}',
     'toast.closeAriaLabel': 'Dismiss notification',
     'common.processing': 'Processing…',
 
@@ -1492,7 +1433,6 @@ const STRINGS = {
     'currency.wiseHint': "Rates come from Wise's mid-market rate, for reference only — confirm before saving.",
     'currency.fetchAllRates': 'Fetch All Live Rates',
     'currency.fetchRateAria': 'Fetch live rate',
-    'toast.rateFetched': 'Live rate fetched',
     'toast.rateAutoFetched': 'Rate filled in',
     'toast.rateAutoFetchedMsg': '1 {currency} = {rate} {base} (via Wise), saved for this trip. Adjust in Settings if it looks off.',
     'toast.rateFetchFailed': 'Fetch failed',
@@ -1526,7 +1466,6 @@ const STRINGS = {
     'pool.alert.lowBalanceMessage': '{currency} balance is running low — log another payment soon',
 
     'pool.settle.confirmMessage': 'Once settled, the pool can\u2019t take more deductions. Split the remaining balance equally among everyone?',
-    'pool.settle.successTitle': 'Pool settled — refund breakdown ready',
     'pool.poster.title': 'Divvy Duck Pool Settlement',
     'pool.poster.refundLine': '{name} refund {refund}',
     'pool.poster.subtitle': 'Per-person refund breakdown after settling',
@@ -1581,19 +1520,16 @@ const STRINGS = {
     'expense.sourceNormalHint': 'Recorded as usual and split with the group.',
     'expense.sourceDeductHint': 'Paid straight from the Divvy Duck Pool — no split needed.',
 
-    'pool.expense.deductSuccess': 'Paid from the pool',
     'pool.expense.deductFailed': 'Pool expense failed',
 
     'pool.form.currencyHint': 'You can log future payments in a different currency too — e.g. Ringgit at the airport, then Yuan once you land.',
     'pool.settings.topupCountSummary': '{count} payment(s) logged',
     'pool.settings.topupBtn': 'Top up',
-    'pool.settings.topupSuccess': 'Topped up',
     'pool.settings.editTopupBtn': 'Edit',
     'pool.settings.editTopupTitle': 'Edit a Top-up',
     'pool.settings.editTopupEmptyTitle': 'No top-ups yet',
     'pool.settings.editTopupEmptyDesc': 'Log one first, then you can edit it here.',
     'pool.settings.editTopupMemberCountNote': 'The total is recalculated using the member count at the time this was logged ({count} people) \u2014 unaffected by membership changes since.',
-    'pool.settings.editTopupSuccess': 'Top-up updated',
     'pool.settings.editTopupFailed': 'Update failed',
     'pool.expense.payerDisplayName': 'Divvy Duck Pool',
     'pool.settings.topupPreview': '{count} \u00d7 {perPerson} = {total}'
@@ -1783,6 +1719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuthGate();
     initOfflineHandling();
     initDashCardSlider();
+    initDashCardHeightObserver();
   } catch (error) {
     console.error('App 初始化流程发生错误：', error);
   }
@@ -1876,7 +1813,6 @@ function isPasswordRecoveryRedirect() {
 function startAppAfterAuth() {
   initNavigation();
   initModals();
-  initMobileFab();
   document.getElementById('memberDetailBackBtn').addEventListener('click', closeMemberDetailPage_);
   initSegmentedControl();
   initSmartMemory();
@@ -1910,7 +1846,6 @@ function startAppAfterAuth() {
   enableEasyDatePicker('expenseDate');
   enableEasyDatePicker('repaymentDate');
   updateHeaderForPage('dashboard'); // 修正：首次载入时也要设定 Header 按钮，否则「新增消费」点不了
-  updateMobileFabForPage('dashboard'); // 同上，FAB 的 aria-label 首次载入也要设定一次
   positionNavIndicator();
   renderWelcomeBanner(); // 不必等旅程资料载入完成，登入了就先打招呼
 
@@ -2141,6 +2076,18 @@ function initAuthGate() {
       setAuthGateTab(link.getAttribute('data-auth-gate-switch'));
     });
   });
+
+  // 提醒讯息里现在会附一个「?invite=邀请码」的连结（见 buildReminderMessage_()），
+  // 收到讯息的人点进来，直接帮他切到注册分页、邀请码也预填好，不用自己再去问
+  // 邀请码是什么、也不用手动切分页——降低「点了链接却不知道要做什么」的落差
+  const urlInviteCode = new URLSearchParams(window.location.search).get('invite');
+  if (urlInviteCode) {
+    setAuthGateTab('signup');
+    const inviteInput = document.getElementById('authSignupInviteCode');
+    if (inviteInput) {
+      inviteInput.value = urlInviteCode;
+    }
+  }
 
   loginForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -4905,16 +4852,6 @@ function navigateToPage(pageId) {
     return;
   }
 
-  const fanWrap = document.getElementById('mobileFabFan');
-  const fanBackdrop = document.getElementById('fabFanBackdrop');
-  if (fanWrap) {
-    fanWrap.classList.remove('is-open'); // 切页的话，展开中的扇形捷径没意义了，一併收起来
-  }
-  if (fanBackdrop) {
-    fanBackdrop.classList.remove('is-open');
-  }
-  document.getElementById('mobileTabbar')?.classList.remove('is-fan-open');
-
   document.querySelectorAll('.page').forEach((section) => {
     section.classList.toggle('is-hidden', section.getAttribute('data-page-section') !== pageId);
   });
@@ -4924,8 +4861,16 @@ function navigateToPage(pageId) {
   });
 
   updateHeaderForPage(pageId);
-  updateMobileFabForPage(pageId);
   positionNavIndicator();
+
+  // 从别的分页（例如设置页开启金库）切回概览页时，要重新量一次两张卡片的高度——
+  // renderEverything() 那次 syncDashCardHeights() 是在概览页还被 .is-hidden 藏著的
+  // 情况下跑的，offsetHeight 量到的是 0（隐藏元素量不到真实高度），等於白跑一次，
+  // 两张卡片实际上没有真的对齐。这里在切换「进入」概览页的当下，趁页面已经真的
+  // 显示出来，再补一次量测才准
+  if (pageId === 'dashboard') {
+    syncDashCardHeights();
+  }
 
   // 注意：捲动的其实是 window／body，不是 #appMain 自己（它没有独立的 overflow，
   // 原因跟 .app-shell 那边 Sidebar sticky 定位的理由一样，见 style.css 的说明）；
@@ -4951,107 +4896,6 @@ function updateHeaderForPage(pageId) {
   } else {
     actionBtn.style.display = 'none';
   }
-}
-
-/**
- * 手机版底部导览中间那颗 FAB，现在放的是品牌 Logo，点了会展开四个圆形捷径
- * （见 initMobileFab()），不是直接执行单一动作——这里负责标出「目前所在
- * 页面对应哪一个捷径」，帮那颗加上 .is-current 高亮，让使用者一眼就认得
- * 出「这个是这页原本就有的动作」，其他三个也都还是能直接点
- * @param {string} pageId
- */
-function updateMobileFabForPage(pageId) {
-  document.querySelectorAll('.fab-fan-item').forEach((item) => {
-    item.classList.toggle('is-current', item.getAttribute('data-fab-action') === pageId);
-  });
-}
-
-/**
- * 中间 FAB 现在点了会「扇形展开」四个捷径（切换旅程／新增消费／汇出PDF／
- * 新增成员），不是直接执行目前页面对应的那个动作——跟 macOS 下载堆叠展开
- * 成扇形选项那个手感一样。点 Logo 本身开合，点空白处（fan 展开时）也会
- * 收合，点任一颗捷径就执行对应动作并收合。新增消费／新增成员沿用跟原本
- * data-open-modal 委派处理一样的「没选旅程就跳提示」防呆
- */
-function initMobileFab() {
-  const fanWrap = document.getElementById('mobileFabFan');
-  const fabBtn = document.getElementById('mobileFabBtn');
-  const backdrop = document.getElementById('fabFanBackdrop');
-  const tabbar = document.getElementById('mobileTabbar');
-  if (!fanWrap || !fabBtn) {
-    return;
-  }
-
-  const closeFan = () => {
-    fanWrap.classList.remove('is-open');
-    if (backdrop) {
-      backdrop.classList.remove('is-open');
-    }
-    if (tabbar) {
-      tabbar.classList.remove('is-fan-open');
-    }
-  };
-  const openFan = () => {
-    fanWrap.classList.add('is-open');
-    if (backdrop) {
-      backdrop.classList.add('is-open');
-    }
-    if (tabbar) {
-      tabbar.classList.add('is-fan-open');
-    }
-  };
-  const runFabAction = (pageId) => {
-    switch (pageId) {
-      case 'expenses':
-        if (!currentTripId) {
-          showToast('error', t('toast.pleaseSelectTrip'), t('toast.pleaseSelectTripForExpense'));
-          return;
-        }
-        resetExpenseForm();
-        openModal('addExpenseModal');
-        break;
-      case 'summary':
-        exportSummaryPdf();
-        break;
-      case 'members':
-        if (!currentTripId) {
-          showToast('error', t('toast.pleaseSelectTrip'), t('toast.pleaseSelectTripForMember'));
-          return;
-        }
-        openModal('addMemberModal');
-        break;
-      case 'settings':
-        navigateToPage('settings');
-        break;
-      case 'dashboard':
-      default:
-        openTripPickerModal();
-        break;
-    }
-  };
-
-  fabBtn.addEventListener('click', () => {
-    if (fanWrap.classList.contains('is-open')) {
-      closeFan();
-    } else {
-      openFan();
-    }
-  });
-
-  fanWrap.querySelectorAll('.fab-fan-item').forEach((item) => {
-    item.addEventListener('click', () => {
-      closeFan();
-      runFabAction(item.getAttribute('data-fab-action'));
-    });
-  });
-
-  // 点空白处（fan 已经展开的情况下）直接收合，不用特地再点一次 Logo 关掉——
-  // 跟大部分下拉/弹出选单同一种「点外面自动关闭」的习惯
-  document.addEventListener('click', (event) => {
-    if (fanWrap.classList.contains('is-open') && !fanWrap.contains(event.target)) {
-      closeFan();
-    }
-  });
 }
 
 function positionNavIndicator() {
@@ -7141,14 +6985,18 @@ function renderBalanceMatrix() {
 
 /**
  * 「谁欠谁」每一行的「提醒」按钮：组好提醒文字，装置支援分享面板就用分享，
- * 不支援就复制到剪贴板，让使用者自己贴去 WhatsApp/Line 之类的地方发送
+ * 不支援就复制到剪贴板，让使用者自己贴去 WhatsApp/Line 之类的地方发送。
+ * 讯息里现在会带一个「?invite=邀请码」的连结——对方点进来，App 会自动帮他
+ * 切到注册分页、邀请码也预填好，他就能自己开账号、看这趟旅程实际花在哪，
+ * 不用只凭一句「你还欠多少钱」的文字乾等着被催
  */
 function bindBalanceMatrixRemindButtons_() {
   document.querySelectorAll('.balance-matrix-remind-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const name = btn.getAttribute('data-remind-name');
       const amount = Number(btn.getAttribute('data-remind-amount')) || 0;
-      const message = t('dashboard.matrix.reminderText', { name, amount: formatMoney(amount) });
+      const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(appState.inviteCode || '')}`;
+      const message = t('dashboard.matrix.reminderText', { name, amount: formatMoney(amount), link: inviteLink });
 
       if (navigator.share) {
         navigator.share({ text: message }).catch(() => {});
@@ -7207,7 +7055,7 @@ function renderRecentActivity() {
 function initDashboardHeader() {
   const switchBtn = document.getElementById('dashSwitchTripBtn');
   if (switchBtn) {
-    switchBtn.addEventListener('click', () => navigateToPage('settings'));
+    switchBtn.addEventListener('click', () => openTripPickerModal());
   }
 }
 
@@ -8141,15 +7989,46 @@ function syncDashCardHeights() {
     return;
   }
 
-  // 用 requestAnimationFrame 确保这一輪 DOM 更新已经画完，量到的高度才是最新、準确的，
-  // 量之前先清空舊的 min-height，避免舊值影响这次量到的「内容本来的高度」
-  requestAnimationFrame(() => {
+  // 实际去量測、赋值的动作抽成一个小函式，等一下要连续呼叫两次（见下方说明）
+  const measureAndApply = () => {
     heroEl.style.minHeight = '';
     poolEl.style.minHeight = '';
     const targetHeight = Math.max(poolEl.offsetHeight, heroEl.offsetHeight);
     heroEl.style.minHeight = `${targetHeight}px`;
     poolEl.style.minHeight = `${targetHeight}px`;
+  };
+
+  // 用 requestAnimationFrame 确保这一輪 DOM 更新已经画完，量到的高度才是最新、準确的，
+  // 量之前先清空舊的 min-height，避免舊值影响这次量到的「内容本来的高度」。
+  // 手机版（尤其 iOS Safari）在「横向 overflow-x 卷动 + flex align-items:stretch」这个
+  // 组合下，就算等到下一帧，有时候量到的还是切页/隐藏状态下的旧尺寸——单靠一次
+  // rAF 不够保险，这里多加一次 100ms 後的延迟重量，抓住那个还没真正稳定下来的空档，
+  // 桌面版这次多余的重量不会造成任何视觉差异（数值应该跟第一次算出来的一样）
+  requestAnimationFrame(measureAndApply);
+  setTimeout(measureAndApply, 100);
+}
+
+/**
+ * 用 MutationObserver 盯着 #page-dashboard 的 class——不管是靠 navigateToPage()
+ * 切页、还是开机流程本来就直接落在概览页（这种情况从来不会真的呼叫
+ * navigateToPage('dashboard')，因为一开始就是显示状态，没有「切换」这个动作），
+ * 只要 .is-hidden 被拿掉（这个页面变成看得到的那一刻），都会補一次高度同步。
+ * 比在每个「可能让概览页变可见」的地方各自加一行呼叫更保险——不用穷举所有
+ * 触发场景，只要结果是「这个页面现在看得到了」，都逃不掉这个观察者
+ */
+function initDashCardHeightObserver() {
+  const dashPage = document.getElementById('page-dashboard');
+  if (!dashPage || typeof MutationObserver === 'undefined') return;
+
+  let wasHidden = dashPage.classList.contains('is-hidden');
+  const observer = new MutationObserver(() => {
+    const isHidden = dashPage.classList.contains('is-hidden');
+    if (wasHidden && !isHidden) {
+      syncDashCardHeights();
+    }
+    wasHidden = isHidden;
   });
+  observer.observe(dashPage, { attributes: true, attributeFilter: ['class'] });
 }
 
 function updateDashCardSliderState() {
@@ -8792,7 +8671,7 @@ function renderMembersPage() {
   const members = appState.members;
 
   if (members.length === 0) {
-    renderEmptyBlock('memberGrid', t('empty.noMembers.title'), t('empty.noMembers.desc'), 'addMemberModal', t('members.addBtn'));
+    renderEmptyBlock('memberGrid', t('empty.noMembers.title'), t('empty.noMembers.desc'));
     return;
   }
 
@@ -9895,9 +9774,10 @@ function renderInviteCard() {
 }
 
 /**
- * 绑定设置页邀请卡片的「复制」按钮：把邀请码复制到剪贴板，成功後跳 Toast 提示
- * 优先用 navigator.clipboard（需要 HTTPS 或 localhost），不支援的环境（极少数老旧
- * WebView）退回用隐藏 textarea + execCommand('copy') 这个传统写法
+ * 绑定设置页邀请卡片的「分享」按钮——原本是复制纯邀请码，现在改成组一段带连结的
+ * 分享文字（跟提醒讯息那个连结同一套：?invite=邀请码，对方点了会自动帮他切到
+ * 注册分页、邀请码也预填好）。装置支援原生分享面板（navigator.share）就跳出来，
+ * 不支援的环境（多半是桌面浏览器）退回复制到剪贴板，让使用者自己贴去想发的地方
  */
 function initInviteCard() {
   const button = document.getElementById('copyInviteCodeBtn');
@@ -9907,12 +9787,20 @@ function initInviteCard() {
     const code = appState.inviteCode || document.getElementById('inviteCodeText').textContent;
     if (!code || code === '—') return;
 
+    const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(code)}`;
+    const tripName = getTripName(currentTripId) || t('report.untitledTrip');
+    const message = t('invite.shareMessage', { tripName, link: inviteLink });
+
     try {
+      if (navigator.share) {
+        await navigator.share({ text: message });
+        return;
+      }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(code);
+        await navigator.clipboard.writeText(message);
       } else {
         const textarea = document.createElement('textarea');
-        textarea.value = code;
+        textarea.value = message;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
@@ -9922,6 +9810,7 @@ function initInviteCard() {
       }
       showToast('success', t('invite.copiedTitle'), t('invite.copiedMsg'));
     } catch (error) {
+      if (error && error.name === 'AbortError') return; // 使用者自己在分享面板按了取消，不是错误
       showToast('error', t('invite.copiedTitle'), '');
     }
   });

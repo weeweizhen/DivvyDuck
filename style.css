@@ -1522,10 +1522,10 @@ html {
   margin-bottom: var(--space-4);
 }
 
-.members-toolbar {
+.members-add-row {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--space-4);
+  justify-content: center;
+  margin-top: var(--space-5);
 }
 
 .chip-group {
@@ -3216,16 +3216,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   transition: color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), filter var(--duration-fast) var(--ease-out);
 }
 
-/* 扇形展开时，底部导览列其他四个分页图示（概览/账目/结算/同行）也跟着
-   一起压暗压糊，只留 Logo／扇形本身清楚——不是只有页面内容被朦胧罩住，
-   整个底部感觉起来都「让出空间」给扇形，最左（切换行程）跟最右（设置）
-   两颗胶囊才会有种「盖过」导览列的效果，跟最早期的版本一样 */
-.mobile-tabbar.is-fan-open .tab-item:not(.tab-item-fab) {
-  opacity: 0.28;
-  filter: blur(2px);
-  pointer-events: none;
-}
-
 .tab-item svg {
   width: 22px;
   height: 22px;
@@ -3239,156 +3229,17 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
    拿掉外层画框跟内距，纯粹就是 Logo 本身浮在导览列正中央，静止时完全没有
    额外底色；hover 才浮现一圈跟目前深浅模式一致的淡底色当互动回饋（用
    --bg-subtle，这个变数本身就跟着 [data-theme] 换深浅模式，不用另外
-   写两套颜色）。
-   点一下不再直接执行「新增消费」这类单一动作，改成跟 macOS 下载堆叠的
-   「扇形展开」一样，弹出四个圆形捷径（切换旅程／新增消费／汇出PDF／
-   新增成员）；目前所在页面对应的那个用 accent 色标出来，方便快速辨认
-   「这个是这页原本就有的动作」，其他三个也都能直接点——见 JS 的
-   initMobileFab() / updateMobileFabForPage() */
-/* 扇形展开时的朦胧遮罩——半透明深色 + 模糊，垫在扇形捷径底下、盖住原本
-   页面内容，让胶囊本身跟文字标签维持清楚的对比度，不会被底下五颜六色的
-   内容盖过去看不清楚。z-index 比 .mobile-tabbar（z-index:30）低，
-   遮罩不会盖住导览列/FAB 本身，只挡在它们跟一般页面内容之间 */
-.fab-fan-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  height: 100dvh;
-  /* 之前 0.38 不透明度在深色模式下够暗，但浅色模式的页面底色本来就比较亮，
-     同样 38% 的深色蒙层混完还是偏灰、不够暗，导致没被强调色标出来的那几颗
-     胶囊（白底白字）几乎融进背景里，要仔细看才找得到。加重到 0.62、模糊
-     也加大，不管浅色/深色模式蒙层本身都要够暗，胶囊的白色文字才能稳定
-     维持对比度，不用看模式脸色 */
-  background: rgba(8, 8, 12, 0.62);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--duration-fast) var(--ease-out);
-  z-index: 28;
-}
-
-.fab-fan-backdrop.is-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.fab-fan {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translateY(-24px);
-}
-
-.fab-fan-items {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  z-index: 1;
-}
-
-/* 圖示圆圈本身不大（跟原本圆点版一样小），文字标签放在圆圈外面、下方，
-   不是塞进一个加大的胶囊画框——单靠圖示猜不出「这颗是做什么的」，加上
-   文字才看得懂，但画框本身还是维持小巧 */
-.fab-fan-item {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  opacity: 0;
-  pointer-events: none;
-  white-space: nowrap;
-  transform: translate(-50%, -50%) scale(0.3);
-  transition: transform 0.4s var(--ease-spring), opacity 0.25s var(--ease-out);
-}
-
-.fab-fan-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-.fab-fan-item-icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.fab-fan-item-label {
-  font-size: 10px;
-  font-weight: 650;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
-
-.fab-fan-item.is-current .fab-fan-item-icon {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  box-shadow: var(--shadow-lg, 0 12px 28px rgba(16, 16, 20, 0.2)), 0 0 0 3px var(--accent-soft);
-}
-
-.fab-fan-item.is-current .fab-fan-item-label {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-/* 展开时五颗胶囊的落点，从 FAB 正中央呈扇形往上撑开——跟底部导览列由左到右
-   「概览/账目/…/结算/同行」的顺序对应，扇形最左边是切换旅程（最接近
-   「概览」那颗分页），最右边是设置，空间上的对应关系比随便排列更直觉 */
-.fab-fan.is-open .fab-fan-item {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.fab-fan.is-open .fab-fan-item[data-fab-action="dashboard"] {
-  transform: translate(calc(-50% - 170px), calc(-50% - 65px)) scale(1);
-  transition-delay: 0s;
-}
-
-.fab-fan.is-open .fab-fan-item[data-fab-action="expenses"] {
-  transform: translate(calc(-50% - 90px), calc(-50% - 115px)) scale(1);
-  transition-delay: 0.025s;
-}
-
-.fab-fan.is-open .fab-fan-item[data-fab-action="summary"] {
-  transform: translate(-50%, calc(-50% - 145px)) scale(1);
-  transition-delay: 0.05s;
-}
-
-.fab-fan.is-open .fab-fan-item[data-fab-action="members"] {
-  transform: translate(calc(-50% + 90px), calc(-50% - 115px)) scale(1);
-  transition-delay: 0.075s;
-}
-
-.fab-fan.is-open .fab-fan-item[data-fab-action="settings"] {
-  transform: translate(calc(-50% + 170px), calc(-50% - 65px)) scale(1);
-  transition-delay: 0.1s;
-}
-
+   写两套颜色）。点一下就是新增消费，跟其他四个分页的点击手感一致，
+   不再展开选单——原本的四个捷径（切换旅程／汇出PDF／新增成员／设置）
+   各自搬去更贴近使用情境的地方了 */
 .tab-item-fab {
-  position: relative;
-  z-index: 2;
   width: 52px;
   height: 52px;
   border-radius: 50%;
   background: none;
   padding: 0;
   justify-content: center;
+  transform: translateY(-14px);
   transition: background var(--duration-fast) var(--ease-out), transform 0.3s var(--ease-spring);
 }
 
@@ -3399,10 +3250,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
 .tab-item-fab:hover {
   background: var(--bg-subtle);
-}
-
-.fab-fan.is-open .tab-item-fab {
-  transform: rotate(45deg);
 }
 
 /* ------------------------------------------------------------
@@ -4849,6 +4696,23 @@ body {
   margin-bottom: var(--space-5);
 }
 
+.dash-trip-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dash-switch-trip-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.dash-switch-trip-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
 .dash-trip-title {
   margin: 0;
   font-size: 26px;
@@ -5392,15 +5256,6 @@ body {
      浮动汉堡按钮的高度，不然第一屏内容会直接顶到按钮下面，甚至被盖住 */
   .app-main {
     padding-top: calc(var(--space-4) + env(safe-area-inset-top) + 44px + var(--space-4));
-  }
-
-  /* 结算页顶部「汇出 PDF」、同行页顶部「新增成员」这两颗按钮在手机版藏起来——
-     底部导览中间的 FAB 现在切到对应页面就是做这两件事，两个入口并存是多余的。
-     只藏手机/平板尺寸：桌面版没有底部导览、也没有这颗 FAB，这两颗按钮在
-     桌面版仍是唯一的入口，不能动 */
-  #summaryExportToolbar,
-  .members-toolbar {
-    display: none;
   }
 
   /* 成员消费明细页的「返回」在手机版改成固定定位，跟汉堡按钮同一行高度、
@@ -6326,6 +6181,10 @@ body {
 .dash-card-slider .divvy-pool-card {
   margin-bottom: 0; /* 卡片自身的下边距交给 slider 容器统一处理，避免滑动时看到不对齐的留白 */
   min-height: 300px; /* 两张卡固定同一个最小高度，不管彼此内容多寡，看起来都是一样大小的卡片 */
+  height: 100%; /* min-height 只是下限，两张卡内容量不同时高度还是会各自不一样；
+                   父层 .dash-card-slide 已经被 .dash-card-track 的 align-items: stretch
+                   拉到跟最高的兄弟一样高，这里让卡片本体（真正看得见背景/圆角/阴影的那层）
+                   跟着撑满父层，两张卡的可见高度才会真的对齐 */
   box-sizing: border-box;
 }
 
