@@ -9,7 +9,12 @@
    ------------------------------------------------------------ */
 :root {
   /* 字体 */
-  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", Helvetica, Arial, sans-serif;
+  /* 英文/数字用 Inter（见 index.html 的 Google Fonts 载入）；中文这个 App 内容
+     全部是简体字，改用简体的黑体/苹方/雅黑（原本写的是 PingFang TC／Microsoft
+     JhengHei 这两个繁体字体，虽然渲染简体字不会缺字，但字体本身设计上不是给
+     简体用的，这里一并修正）。'Inter' 排最前面，浏览器遇到中文字符会自动跳过
+     （Inter 字型档案里没有对应字形）落到後面的中文字体，两者可以自然并存 */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Heiti SC", "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
 
   /* 颜色：基础 —— 暖灰黑阶（Claude.ai 式），比冷 Slate 更沉稳厚实，
@@ -184,11 +189,13 @@ body {
   font-family: var(--font-ui);
   /* 品牌渐层氛围：复用 Logo 本身的三色（靛紫／琥珀金／天蓝），做成模糊的光晕铺在
      底色上，整个 App 背景不再是一片死板单色。固定不跟着内容捲动（background-attachment:
-     fixed），氛围感维持稳定，不会捲动时露出色块边界 */
+     fixed），氛围感维持稳定，不会捲动时露出色块边界。透明度比导览抽屉自己的背景
+     （见 .side-drawer::before）淡一些，全站背景是「常驻」的，导览是「偶尔跳出来的
+     强调层」，两者要有层次感，不能一样浓 */
   background:
-    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.14), transparent 60%),
-    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.09), transparent 60%),
-    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.05), transparent 65%),
+    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.24), transparent 60%),
+    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.16), transparent 60%),
+    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.09), transparent 65%),
     var(--bg-subtle);
   background-attachment: fixed;
   color: var(--text-primary);
@@ -200,9 +207,9 @@ body {
 [data-theme="dark"] body {
   /* 深色模式背景本身够暗，光晕透明度可以拉高一点才看得出来，不然会几乎隐形 */
   background:
-    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.22), transparent 60%),
-    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.14), transparent 60%),
-    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.09), transparent 65%),
+    radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.32), transparent 60%),
+    radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.2), transparent 60%),
+    radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.12), transparent 65%),
     var(--bg-subtle);
   background-attachment: fixed;
 }
@@ -3022,7 +3029,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   --report-positive: #2E8B57;   /* 应收（绿）：对齐参考版色号 */
   --report-negative: #D93838;   /* 应付（红）：对齐参考版色号 */
   --report-radius: 8px;
-  --report-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang TC", "Microsoft JhengHei", Helvetica, Arial, sans-serif;
+  --report-font: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Heiti SC", "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
 
   /* 报表字级 tokens：结算总览（.report-*）与单人／同行报告（.pr-*）
      共用同一份字级，避免两边各自写死数字、日后改一处却漏改另一处
@@ -5040,7 +5047,7 @@ body {
      （金库卡片如果比这个矮，syncDashCardHeights() 还是会用 JS inline style 把两张卡
      动态对齐到同一高度，这条只是把「没有金库卡片、或金库卡片也很矮」时的下限调整） */
   .dash-card-slider .hero-card {
-    min-height: 180px;
+    min-height: 180px !important;
   }
 }
 

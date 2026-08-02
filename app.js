@@ -1591,7 +1591,7 @@ function t(key, params) {
  * 由于部分内容是 JS 动态产生的（空状态、警示文字等），切换语言后会连带重新渲染这些区块
  */
 function applyLanguage() {
-  document.documentElement.setAttribute('lang', currentLang === 'zh' ? 'zh-Hant' : 'en');
+  document.documentElement.setAttribute('lang', currentLang === 'zh' ? 'zh-Hans' : 'en');
 
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     el.textContent = t(el.getAttribute('data-i18n'));
@@ -4462,8 +4462,17 @@ function initNavigation() {
  */
 function initDrawer() {
   document.getElementById('drawerOpenBtn').addEventListener('click', openDrawer);
-  document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
   document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
+
+  // 导览现在是全屏的，没有额外的关闭按钮——点击选项/语言/深色模式/登出以外的
+  // 「空白处」（品牌区块本身、选项跟选项之间的空隙……）都能关闭，跟手势滑动是
+  // 两条互补的关闭路径
+  document.getElementById('sideMenu').addEventListener('click', (event) => {
+    const isInteractive = event.target.closest('.nav-item, .theme-toggle');
+    if (!isInteractive) {
+      closeDrawer();
+    }
+  });
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -4487,24 +4496,28 @@ function closeDrawer() {
 }
 
 /**
- * 绑定两个手势：
+ * 绑定三个手势：
  *   1. 下拉刷新——页面卷到最顶端时，在内容区往下拖，放开就重新整批载入目前旅程的资料
- *   2. 左边缘右滑——从萤幕最左边缘开始右滑，滑够距离就打开侧滑导览（等同点汉堡按钮）
+ *   2. 右边缘左滑——从萤幕最右边缘开始左滑，滑够距离就打开侧滑导览（等同点汉堡按钮）
+ *   3. 导览打开时向右滑——导览现在是全屏的，没有实体关闭按钮，从萤幕任何位置开始
+ *      向右滑（不用像开启那样限定要贴著边缘）就能关闭，方向跟「打开」正好相反、
+ *      符合直觉（导览是从右边推进来的，往右推回去就是关掉）
  *
- * 两个手势公用同一组 touch 事件监听、而不是分开各自注册：因为一根手指从「画面顶端
- * 又贴著左边缘」这个位置按下去，理论上两种手势都有可能——要等使用者第一次有意义的
- * 移动方向出来才能判断到底是哪一种（横向为主 → 边缘滑抽屉；纵向往下为主 → 下拉刷新），
+ * 三个手势公用同一组 touch 事件监听、而不是分开各自注册：因为一根手指按下去的当下，
+ * 不知道使用者接下来要往哪个方向滑，要等第一次有意义的移动方向出来才能判断是哪一种，
  * 判断出来之后就「锁定」这个方向，不会两个手势同时各自反应、互相打架。
  *
- * 边缘滑抽屉刻意不做「跟著手指即时滑出」的效果——直接複用 openDrawer() 原本的
- * CSS transition，一放开（或滑超过门槛的当下）就播放跟点汉堡按钮一模一样的动画，
- * 这样不用重新处理 .side-drawer 的 transform／transition 细节，风险最低。
- * 下拉刷新则维持「跟手」的即时视觉回馈，因为这个手势的重点本来就是过程中的反馈。
+ * 边缘滑抽屉／关闭抽屉都刻意不做「跟著手指即时滑出」的效果——直接複用
+ * openDrawer()／closeDrawer() 原本的 CSS transition，一放开（或滑超过门槛的当下）
+ * 就播放跟点按钮一模一样的动画，这样不用重新处理 .side-drawer 的 transform／
+ * transition 细节，风险最低。下拉刷新则维持「跟手」的即时视觉回馈，因为这个
+ * 手势的重点本来就是过程中的反馈。
  */
 function initTouchGestures() {
-  const EDGE_ZONE_PX = 10; // 只有从最右边 10px 内按下去，才算「边缘」滑动的候选（原本是最左边）
+  const EDGE_ZONE_PX = 10; // 只有从最右边 10px 内按下去，才算「边缘」滑动的候选（开启导览用）
   const DIRECTION_LOCK_PX = 10; // 移动超过这个距离才判断方向，避免手抖误判
   const DRAWER_OPEN_THRESHOLD_PX = 70;
+  const DRAWER_CLOSE_THRESHOLD_PX = 70;
   const PTR_THRESHOLD_PX = 64;
   const PTR_MAX_PULL_PX = 96;
   const PTR_HOLD_HEIGHT_PX = 56;
@@ -4518,13 +4531,16 @@ function initTouchGestures() {
     return; // 缺任何一个必要元素就整个不启用，不要半吊子运作
   }
 
-  let touch = null; // { startX, startY, lastX, lastY, mode: null|'drawer'|'ptr'|'none' }
+  let touch = null; // { startX, startY, lastX, lastY, mode: null|'drawer'|'closeDrawer'|'ptr'|'none' }
   let drawerOpenedByGesture = false;
+  let drawerClosedByGesture = false;
   let ptrRefreshing = false;
 
   function isGestureBlocked() {
-    // Modal 开着、或抽屉本来就已经开著的时候，两个手势都不该启动，避免画面互相打架
-    return modalStack.length > 0 || sideMenu.classList.contains('is-open');
+    // Modal 开着的时候两个手势都不该启动，避免画面互相打架；导览开着的时候
+    // 「下拉刷新」还是要挡（内容被盖住，刷新没有意义），但「向右滑关闭」要放行，
+    // 所以导览开着不算在这个总闸门里，改在各自的判断式里处理
+    return modalStack.length > 0;
   }
 
   function setPtrPull(distance) {
@@ -4545,12 +4561,14 @@ function initTouchGestures() {
       lastX: t.clientX,
       lastY: t.clientY,
       mode: null,
-      // 导览选单现在改从右边滑入（配合汉堡按钮搬到右上角），边缘侦测跟着从
-      // 「最左边 10px」改成「最右边 10px」
-      canEdgeSwipe: t.clientX >= window.innerWidth - EDGE_ZONE_PX,
-      canPullToRefresh: window.scrollY <= 0
+      // 开启导览要贴著最右边缘按下去才算数；导览已经开著时要关闭，不用贴边，
+      // 从萤幕任何位置开始向右滑都算（导览这时候盖满全屏，随便按都是按在它上面）
+      canEdgeSwipe: !sideMenu.classList.contains('is-open') && t.clientX >= window.innerWidth - EDGE_ZONE_PX,
+      canCloseDrawer: sideMenu.classList.contains('is-open'),
+      canPullToRefresh: !sideMenu.classList.contains('is-open') && window.scrollY <= 0
     };
     drawerOpenedByGesture = false;
+    drawerClosedByGesture = false;
   }, { passive: true });
 
   document.addEventListener('touchmove', (event) => {
@@ -4566,8 +4584,9 @@ function initTouchGestures() {
       if (Math.abs(dx) < DIRECTION_LOCK_PX && Math.abs(dy) < DIRECTION_LOCK_PX) {
         return; // 移动还太小，先不判断方向
       }
-      // 原本是「从左边缘往右滑」（dx > 0），现在改成「从右边缘往左滑」（dx < 0）
-      if (touch.canEdgeSwipe && dx < 0 && Math.abs(dx) > Math.abs(dy)) {
+      if (touch.canCloseDrawer && dx > 0 && dx > Math.abs(dy)) {
+        touch.mode = 'closeDrawer';
+      } else if (touch.canEdgeSwipe && dx < 0 && Math.abs(dx) > Math.abs(dy)) {
         touch.mode = 'drawer';
       } else if (touch.canPullToRefresh && dy > 0 && dy > Math.abs(dx)) {
         touch.mode = 'ptr';
@@ -4582,6 +4601,12 @@ function initTouchGestures() {
       if (!drawerOpenedByGesture && dx <= -DRAWER_OPEN_THRESHOLD_PX) {
         openDrawer();
         drawerOpenedByGesture = true;
+      }
+    } else if (touch.mode === 'closeDrawer') {
+      event.preventDefault();
+      if (!drawerClosedByGesture && dx >= DRAWER_CLOSE_THRESHOLD_PX) {
+        closeDrawer();
+        drawerClosedByGesture = true;
       }
     } else if (touch.mode === 'ptr') {
       // 拖到一半如果页面自己已经卷动开了（代表这其实不是真的贴著顶端在下拉），取消手势

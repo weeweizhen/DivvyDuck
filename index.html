@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hans">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -27,7 +27,13 @@
     }
   })();
 </script>
-<link rel="stylesheet" href="style.css?v=20260801k">
+<!-- Inter 只用来显示英文/数字，中文维持系统字体（黑体/苹方/雅黑），不额外下载
+     中文字型档案——中文网络字体动辄几 MB，对这种轻量 App 不划算。preconnect
+     先建立好连线，实际字体档案等 CSS 载入时才真的抓，不阻塞页面显示 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=20260801m">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -364,9 +370,6 @@
         <span class="brand-name" data-i18n="brand.name">DivvyDuck</span>
         <span class="brand-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</span>
       </div>
-      <button class="icon-btn drawer-close" id="drawerCloseBtn" type="button" aria-label="关闭">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
     </div>
     <nav class="sidebar-nav drawer-nav" id="drawerNav">
       <button class="nav-item" data-page="dashboard" type="button">
@@ -1686,7 +1689,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260801s"></script>
+<script src="app.js?v=20260801u"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker
