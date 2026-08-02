@@ -78,7 +78,7 @@
 </div>
 
 <!-- ============================================================
-     全域帐号登入闸门：没有有效登入的帐号一律卡在这里，看不到任何 App 内容/资料
+     全域账号登入闸门：没有有效登入的账号一律卡在这里，看不到任何 App 内容/资料
      真正的 Sign Up / Sign In，进入后才看得到旅程、消费、结算等所有资料
      ============================================================ -->
 <div class="auth-gate is-hidden" id="authGate">
@@ -136,7 +136,7 @@
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
         <p class="auth-gate-switch-hint">
-          <a href="#" data-auth-gate-switch="signup" data-i18n="authGate.switchToSignup">还没有帐号？点此注册</a>
+          <a href="#" data-auth-gate-switch="signup" data-i18n="authGate.switchToSignup">还没有账号？点此注册</a>
         </p>
         <p class="auth-gate-switch-hint">
           <a href="#" id="authGateForgotPasswordLink" data-i18n="authGate.forgotPasswordLink">忘记密码？</a>
@@ -182,7 +182,7 @@
           <span class="btn-spinner" aria-hidden="true"></span>
         </button>
         <p class="auth-gate-switch-hint">
-          <a href="#" data-auth-gate-switch="login" data-i18n="authGate.switchToLogin">已经有帐号？点此登入</a>
+          <a href="#" data-auth-gate-switch="login" data-i18n="authGate.switchToLogin">已经有账号？点此登入</a>
         </p>
       </form>
     </div>
@@ -529,7 +529,7 @@
 
       <div class="page-normal-content" id="dashNormalContent">
 
-      <!-- 欢迎词：用登入帐号的显示名称打招呼，让「你是谁」一进来就看得到 -->
+      <!-- 欢迎词：用登入账号的显示名称打招呼，让「你是谁」一进来就看得到 -->
       <p class="dash-welcome" id="dashWelcomeText"></p>
 
       <!-- 沉浸态头部：旅程标题 + 建立日期/汇率 / 旅程切换 + 头像堆叠 -->
@@ -564,7 +564,7 @@
                   <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M24 33L29 38L40 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
                 <h3 data-i18n="hero.noViewerTitle">还没设定你是谁</h3>
-                <p data-i18n="hero.noViewerDesc">这个帐号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
+                <p data-i18n="hero.noViewerDesc">这个账号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
               </div>
               <div class="hero-content is-hidden" id="heroContent">
                 <div class="hero-card-top">
@@ -653,7 +653,7 @@
               <svg viewBox="0 0 64 64" fill="none"><path d="M14 32H50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M40 22L50 32L40 42" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <h3 data-i18n="empty.noSettlement.title">目前没有待结算款项</h3>
-            <p data-i18n="empty.noSettlement.desc">所有人的帐都结清了。</p>
+            <p data-i18n="empty.noSettlement.desc">所有人的账都结清了。</p>
           </div>
         </div>
       </div>
@@ -670,7 +670,7 @@
               <svg viewBox="0 0 64 64" fill="none"><rect x="14" y="10" width="36" height="46" rx="6" stroke="currentColor" stroke-width="2"/><path d="M22 24H42M22 32H42M22 40H34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </div>
             <h3 data-i18n="empty.noExpenses.title">还没有任何消费纪录</h3>
-            <p data-i18n="empty.noExpenses.desc">新增第一笔消费，开始与大家一起记帐。</p>
+            <p data-i18n="empty.noExpenses.desc">新增第一笔消费，开始与大家一起记账。</p>
             <button class="btn btn-primary btn-sm" type="button" data-open-modal="addExpenseModal" data-i18n="header.addExpense">记一笔</button>
           </div>
         </div>
@@ -725,10 +725,10 @@
           <!-- 分类筛选 chips 由 app.js 动态产生 -->
         </div>
         <div class="toolbar-right">
-          <select class="select-control" id="splitTypeFilter" aria-label="依分帐方式筛选">
-            <option value="all" data-i18n="expenses.filterSplitType">所有分帐方式</option>
-            <option value="equal" data-i18n="expenses.filterEqual">平均分帐</option>
-            <option value="custom" data-i18n="expenses.filterCustom">自订分帐</option>
+          <select class="select-control" id="splitTypeFilter" aria-label="依分账方式筛选">
+            <option value="all" data-i18n="expenses.filterSplitType">所有分账方式</option>
+            <option value="equal" data-i18n="expenses.filterEqual">平均分账</option>
+            <option value="custom" data-i18n="expenses.filterCustom">自订分账</option>
           </select>
         </div>
       </div>
@@ -813,7 +813,7 @@
               <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M26 32L30 36L38 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <h3 data-i18n="settlement.allSettled.title">目前没有需要结算的款项</h3>
-            <p data-i18n="settlement.allSettled.desc">大家的帐目都已经平衡。</p>
+            <p data-i18n="settlement.allSettled.desc">大家的账目都已经平衡。</p>
           </div>
         </div>
       </div>
@@ -821,7 +821,7 @@
       <div class="glass-card panel">
         <div class="panel-header">
           <h2 data-i18n="summary.repaymentPanel">还款纪录</h2>
-          <button class="link-btn" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>
         </div>
         <p class="panel-hint" style="margin-bottom: var(--space-3);" data-i18n="summary.repaymentHint">记录谁已经实际把钱转给谁，系统会自动从上方余额中扣抵</p>
         <div class="panel-body" id="repaymentList">
@@ -830,7 +830,7 @@
               <svg viewBox="0 0 64 64" fill="none"><path d="M14 32H50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M22 24L14 32L22 40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <h3 data-i18n="empty.noRepayment.title">还没有任何还款纪录</h3>
-            <p data-i18n="empty.noRepayment.desc">有人实际转帐后，点击上方「记录还款」建立纪录。</p>
+            <p data-i18n="empty.noRepayment.desc">有人实际转账后，点击上方「记录还款」建立纪录。</p>
           </div>
         </div>
       </div>
@@ -1121,15 +1121,15 @@
   <form class="modal-body" id="expenseForm">
     <div class="form-grid">
       <!-- 资金来源：只有这趟旅程开了搭伙金库才会出现，预设「正常记账」跟原本行为完全一样。
-           切成「金库支出」或「个人代垫归还」时，付款人/分帐方式/参与人这几个跟拆帐有关的
-           栏位会被隐藏——这两种钱本来就是从大家已经打进金库的预付款出，不需要再另外拆帐 -->
+           切成「金库支出」或「个人代垫归还」时，付款人/分账方式/参与人这几个跟拆账有关的
+           栏位会被隐藏——这两种钱本来就是从大家已经打进金库的预付款出，不需要再另外拆账 -->
       <div class="form-field form-field-full pool-source-group is-hidden" id="poolSourceGroup">
         <label data-i18n="expense.sourceLabel">资金来源</label>
         <div class="segmented-control segmented-control-2" id="expenseSourceControl">
           <button type="button" class="segmented-item is-active" data-expense-source="normal" data-i18n="expense.sourceNormal">正常记账</button>
           <button type="button" class="segmented-item" data-expense-source="deduct" data-i18n="expense.sourceDeduct">金库支出</button>
         </div>
-        <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分帐方式结算。</p>
+        <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分账方式结算。</p>
       </div>
 
       <div class="form-field form-field-full">
@@ -1165,7 +1165,7 @@
       </div>
 
       <div class="form-field form-field-full" id="expenseSplitSection">
-        <label data-i18n="expense.splitTypeLabel">分帐方式</label>
+        <label data-i18n="expense.splitTypeLabel">分账方式</label>
         <div class="segmented-control segmented-control-4" id="splitTypeControl">
           <button type="button" class="segmented-item is-active" data-split-type="equal" data-i18n="split.equal">均分</button>
           <button type="button" class="segmented-item" data-split-type="custom" data-i18n="split.exact">精确金额</button>
@@ -1189,10 +1189,10 @@
           </label>
         </div>
         <div class="participant-list" id="participantList">
-          <!-- 参与人 checkbox / 分帐数值输入由 app.js 动态产生 -->
+          <!-- 参与人 checkbox / 分账数值输入由 app.js 动态产生 -->
         </div>
         <div class="custom-split-toolbar is-hidden" id="customSplitToolbar">
-          <p class="form-hint" id="customSplitHint" data-i18n="expense.customSplitHint">自订分帐总额需等于消费金额</p>
+          <p class="form-hint" id="customSplitHint" data-i18n="expense.customSplitHint">自订分账总额需等于消费金额</p>
           <button type="button" class="link-btn" id="fillRemainingBtn" data-i18n="expense.fillRemainingBtn">一键均分剩余金额</button>
         </div>
         <p class="form-total" id="customSplitTotal"></p>
@@ -1246,7 +1246,7 @@
     <div class="glass-card duplicate-member-banner is-hidden" id="duplicateMemberBanner">
       <svg class="duplicate-member-banner-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9V13M12 16.5H12.01M10.3 4.5L2.9 17C2.4 17.9 3.1 19 4.1 19H19.9C20.9 19 21.6 17.9 21.1 17L13.7 4.5C13.2 3.6 10.8 3.6 10.3 4.5Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div class="duplicate-member-banner-text">
-        <h3 data-i18n="members.duplicateBanner.title">发现还没连结帐号的旧成员</h3>
+        <h3 data-i18n="members.duplicateBanner.title">发现还没连结账号的旧成员</h3>
         <p data-i18n="members.duplicateBanner.desc">如果其中有一位其实是你，合并之后 ta 名下的历史消费都会接续到你身上。</p>
       </div>
       <button class="btn btn-secondary btn-sm" type="button" id="reviewDuplicateMembersBtn" data-i18n="members.duplicateBanner.reviewBtn">查看</button>
@@ -1321,7 +1321,7 @@
 </div>
 
 <!-- 消费明细 Modal：点击账目列表任一笔消费会弹出，显示完整分摊明细；
-     只有当初建立这笔纪录的帐号（当事人）才看得到编辑/删除按钮 -->
+     只有当初建立这笔纪录的账号（当事人）才看得到编辑/删除按钮 -->
 <div class="modal" id="expenseDetailModal" role="dialog" aria-modal="true" aria-labelledby="expenseDetailTitle">
   <div class="modal-header">
     <div>
@@ -1588,7 +1588,7 @@
       </div>
       <div class="form-field form-field-full">
         <label for="repaymentRemark" data-i18n="expense.remarkLabel">备注（选填）</label>
-        <input type="text" id="repaymentRemark" class="text-input" placeholder="例如：现金 / 转帐" data-i18n-placeholder="repayment.remarkPlaceholder">
+        <input type="text" id="repaymentRemark" class="text-input" placeholder="例如：现金 / 转账" data-i18n-placeholder="repayment.remarkPlaceholder">
       </div>
     </div>
   </form>
@@ -1634,7 +1634,7 @@
       </div>
       <div class="form-field form-field-full">
         <label for="editRepaymentRemark" data-i18n="expense.remarkLabel">备注（选填）</label>
-        <input type="text" id="editRepaymentRemark" class="text-input" placeholder="例如：现金 / 转帐" data-i18n-placeholder="repayment.remarkPlaceholder">
+        <input type="text" id="editRepaymentRemark" class="text-input" placeholder="例如：现金 / 转账" data-i18n-placeholder="repayment.remarkPlaceholder">
       </div>
     </div>
   </form>

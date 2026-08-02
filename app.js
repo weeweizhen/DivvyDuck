@@ -1,5 +1,5 @@
 /* ============================================================
-   分帐 App · app.js
+   分账 App · app.js
    已串接 Google Apps Script Web App API（doGet / doPost）
    支援：多旅程切换、消费自订日期、参与人全选/全不选
    ============================================================ */
@@ -81,7 +81,7 @@ function getNextLanguageCode() {
   return SUPPORTED_LANGUAGES[nextIndex].code;
 }
 
-const STORAGE_KEY_LAST_SPLIT = 'splitapp-last-split'; // 智能记忆：每位付款人上次选的参与人/分帐方式
+const STORAGE_KEY_LAST_SPLIT = 'splitapp-last-split'; // 智能记忆：每位付款人上次选的参与人/分账方式
 const STORAGE_KEY_EXPENSE_DRAFT = 'splitapp-expense-draft'; // 新增消费表单草稿
 
 const STORAGE_KEY_CURRENT_TRIP = 'splitapp-current-trip';
@@ -136,7 +136,7 @@ function getCategoryIconMeta(category) {
 }
 
 /**
- * 取得目前登入中的全域帐号 Session（未过期才算数；真正的防线是后端验证签章跟过期时间，
+ * 取得目前登入中的全域账号 Session（未过期才算数；真正的防线是后端验证签章跟过期时间，
  * 这里只是让前端能提前判断要不要显示登入闸门，不需要每次都先打一次 API 才知道）
  * @return {{userId: string, username: string, displayName: string, token: string, expiresAt: number}|null}
  */
@@ -164,7 +164,7 @@ function initSupabaseAuthListener() {
 }
 
 /**
- * 取得目前登入中的帐号 Session（未过期才算数）
+ * 取得目前登入中的账号 Session（未过期才算数）
  * 栏位维持跟旧版一样的形状（userId / displayName / email / token），
  * 这样呼叫端（画面渲染那些地方）几乎不用跟着改
  * @return {{userId: string, displayName: string, email: string, token: string}|null}
@@ -185,7 +185,7 @@ function getUserSession() {
 }
 
 /**
- * 更新目前帐号的显示名称（存到 Supabase Auth 的 user_metadata 里）
+ * 更新目前账号的显示名称（存到 Supabase Auth 的 user_metadata 里）
  * 目前唯一的呼叫端是「设置」页编辑显示名称，见 initAccountPanel
  * @param {{displayName: string}} partial
  */
@@ -206,7 +206,7 @@ async function clearUserSession() {
 }
 
 /**
- * 取得目前登入帐号，在「目前这趟旅程」里对应的成员姓名——也就是 Hero Card / Balance Matrix
+ * 取得目前登入账号，在「目前这趟旅程」里对应的成员姓名——也就是 Hero Card / Balance Matrix
  * 要显示「谁的」净额。伺服器在 getTripBootstrap 时就已经算好（appState.viewerName），
  * 这里沿用旧名称 getViewerName()，是为了让既有的 renderHeroCard / renderBalanceMatrix 等呼叫端不用跟着改
  * @return {string} 成员姓名，找不到（例如资料还没载入）则回传空字串
@@ -299,16 +299,16 @@ const STRINGS = {
     'stat.expenseRecords': '消费笔数',
     'allExpenses.subtitle': '共 {count} 笔 · 合计 {total}',
     'settlementModal.empty.title': '没有需要结算的款项',
-    'settlementModal.empty.desc': '帐目已经平衡。',
+    'settlementModal.empty.desc': '账目已经平衡。',
     'stat.monthRecords': '本月',
     'dashboard.recentExpenses': '近期账目',
     'dashboard.viewAll': '查看全部',
     'dashboard.categorySummary': '分类消费',
     'dashboard.categoryClickHint': '点击分类查看明细',
     'dashboard.emptyTrip.title': '还没有旅程',
-    'dashboard.emptyTrip.desc': '建立第一个旅程，开始记帐。',
+    'dashboard.emptyTrip.desc': '建立第一个旅程，开始记账。',
 
-    // Dashboard 欢迎词（用登入帐号的显示名称打招呼）
+    // Dashboard 欢迎词（用登入账号的显示名称打招呼）
     'dashboard.welcomeBack': '{greeting}，{name}',
     'dashboard.greeting.morning': '早安',
     'dashboard.greeting.afternoon': '午安',
@@ -318,7 +318,7 @@ const STRINGS = {
     // Dashboard 沉浸态头部：旅程标题、日期/汇率、头像堆叠
     'dashboard.tripMetaCreated': '建立于 {date} · {currency}',
 
-    // 全域帐号登入闸门：进 App 前一定要先登入/注册，看不到任何资料
+    // 全域账号登入闸门：进 App 前一定要先登入/注册，看不到任何资料
     'authGate.brandSlogan': '聚会分账，鸭力全无！',
     'authGate.loginTab': '登入',
     'authGate.signupTab': '注册',
@@ -338,8 +338,10 @@ const STRINGS = {
     'authGate.signupSubmit': '注册',
     'authGate.loginFailed': '登入失败',
     'authGate.signupFailed': '注册失败',
-    'authGate.switchToSignup': '还没有帐号？注册',
-    'authGate.switchToLogin': '已经有帐号？登入',
+    'authGate.signupSuccessTitle': '注册成功',
+    'authGate.signupSuccessMsg': '请前往信箱点击验证连结后再登入',
+    'authGate.switchToSignup': '还没有账号？注册',
+    'authGate.switchToLogin': '已经有账号？登入',
     'authGate.emailLabel': '邮箱',
     'authGate.emailPlaceholder': 'name@example.com',
     'authGate.forgotPasswordLink': '忘记密码？',
@@ -353,7 +355,7 @@ const STRINGS = {
     'authGate.claimMemberNoneOption': '都不是，新建一位成员',
     'authGate.claimMemberPlaceholder': '请选择',
     'authGate.claimMemberReviewTitle': '再确认一下',
-    'authGate.claimMemberReviewMsg': '这趟旅程有还没连结帐号的旧成员，选好「你是哪一位」再送出。',
+    'authGate.claimMemberReviewMsg': '这趟旅程有还没连结账号的旧成员，选好「你是哪一位」再送出。',
     'authGate.alreadyMemberNotice': '你已经加入过这趟旅程了。',
 
     // 邀请码与用户名面板（设置页第一个面板）
@@ -374,7 +376,7 @@ const STRINGS = {
     'joinTrip.successTitle': '加入成功',
     'joinTrip.failedTitle': '加入失败',
 
-    // 帐号（登出按钮实际放在左边导览栏，不在设置页里）
+    // 账号（登出按钮实际放在左边导览栏，不在设置页里）
     'account.logoutBtn': '登出',
 
     // Settings 页「语言」面板（手机上碰不到桌面版侧栏的语言切换，这里补一份）
@@ -397,12 +399,13 @@ const STRINGS = {
     'account.emailNotSet': '尚未设定',
     'account.emailHint': '登入用的邮箱，也会用来接收重设密码的连结。',
     'account.emailSavedTitle': 'Email 已更新',
+    'account.emailSavedMsg': '请前往新邮箱点击确认连结，完成后邮箱才会真的更新',
     'account.emailSaveFailedTitle': '更新 Email 失败',
     'account.passwordLabel': '密码',
     'account.passwordDots': '••••••••',
     'account.displayNameLabel': 'Nickname',
     'account.displayNamePlaceholder': '同行会看到的名字',
-    'account.displayNameHint': '会同步更新到这个帐号目前所在的所有旅程，包含既有的。',
+    'account.displayNameHint': '会同步更新到这个账号目前所在的所有旅程，包含既有的。',
     'account.currentPasswordLabel': '目前密码',
     'account.newPasswordLabel': '新密码',
     'account.changePasswordBtn': '更改密码',
@@ -420,7 +423,7 @@ const STRINGS = {
     'hero.personalLabel': '个人消费',
     'hero.receivedLabel': '已收金额',
     'hero.noViewerTitle': '还没设定你是谁',
-    'hero.noViewerDesc': '这个帐号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。',
+    'hero.noViewerDesc': '这个账号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。',
     'hero.mascot.ariaLabel': '搭伙鸭吉祥物，点一下换句话',
     'hero.mascot.receivable.1': '别人欠你的，记得提醒一下',
     'hero.mascot.receivable.2': '钱还在路上，别急',
@@ -444,17 +447,17 @@ const STRINGS = {
     'dashboard.matrix.reminderText': '嗨 {name}，这趟旅程你还有 {amount} 没结清，方便时记得转给我 🙏 —— 来自搭伙鸭',
     'toast.reminderCopied': '已复制',
     'empty.noExpenses.title': '还没有消费纪录',
-    'empty.noExpenses.desc': '记第一笔消费，开始一起记帐。',
+    'empty.noExpenses.desc': '记第一笔消费，开始一起记账。',
     'empty.noSettlement.title': '没有待结算款项',
-    'empty.noSettlement.desc': '所有人的帐都结清了。',
+    'empty.noSettlement.desc': '所有人的账都结清了。',
     'empty.noCategory.title': '尚无分类资料',
     'empty.noCategory.desc': '新增消费后，这里会显示各分类的花费占比。',
 
     // 消费纪录页
     'expenses.filterAll': '全部',
-    'expenses.filterSplitType': '所有分帐方式',
-    'expenses.filterEqual': '平均分帐',
-    'expenses.filterCustom': '自订分帐',
+    'expenses.filterSplitType': '所有分账方式',
+    'expenses.filterEqual': '平均分账',
+    'expenses.filterCustom': '自订分账',
     'expenses.loadMore': '载入更多（还有 {count} 笔）',
     'table.date': '日期',
     'table.description': '说明',
@@ -480,7 +483,7 @@ const STRINGS = {
     'expense.dateLabel': '日期',
     'expense.descriptionLabel': '说明',
     'expense.descriptionPlaceholder': '例如：晚餐、油钱、酒店订金…',
-    'expense.splitTypeLabel': '分帐方式',
+    'expense.splitTypeLabel': '分账方式',
     'expense.splitHint': '预设全员均分，也能切换成自订金额或部分成员分摊。',
     'expense.participantsLabel': '参与人',
     'expense.selectAll': '全选 / 全不选',
@@ -493,7 +496,7 @@ const STRINGS = {
     'common.cancel': '取消',
     'common.close': '关闭',
     'common.back': '返回',
-    'common.save': '保存',
+    'common.save': '储存',
     'confirm.title': '确定要删除吗？',
     'confirm.confirmDelete': '确认删除',
     'confirm.settleAllTitle': '确认结清',
@@ -535,11 +538,11 @@ const STRINGS = {
     'summary.settlementPanel': '最优结算',
     'settlement.bannerHint': '最少转账次数，最简单的归还路径。',
     'settlement.allSettled.title': '太棒了',
-    'settlement.allSettled.desc': '所有帐目已经结清，大家两不相欠。',
+    'settlement.allSettled.desc': '所有账目已经结清，大家两不相欠。',
     'settlement.markAsPaid': '一键结清',
     'settlement.goRepay': '去还款',
     'settlement.poolOffsetBadge': '金库抵扣',
-    'settlement.settleAllConfirm': '这会把 {count} 笔建议（共 {total}）标记成「已还款」。请先确认转帐都已经实际完成——搭伙鸭不会帮你转帐，也无法验证钱有没有到帐，标记错了要自己回来修改或删除。',
+    'settlement.settleAllConfirm': '这会把 {count} 笔建议（共 {total}）标记成「已还款」。请先确认转账都已经实际完成——搭伙鸭不会帮你转账，也无法验证钱有没有到账，标记错了要自己回来修改或删除。',
     'settlement.settleAllSuccess': '已全部结清',
     'settlement.settleAllSuccessMsg': '已自动记录 {count} 笔还款。',
     'summary.repaymentPanel': '还款纪录',
@@ -548,7 +551,7 @@ const STRINGS = {
     'empty.noBalance.title': '尚无结算资料',
     'empty.noBalance.desc': '新增消费后，这里会显示每个人的收支状况。',
     'empty.noRepayment.title': '还没有还款纪录',
-    'empty.noRepayment.desc': '有人实际转帐后，点击上方「记录还款」。',
+    'empty.noRepayment.desc': '有人实际转账后，点击上方「记录还款」。',
 
     // 还款 Modal
     'repaymentModal.title': '记录还款',
@@ -556,7 +559,7 @@ const STRINGS = {
     'repayment.fromLabel': '还款人（可勾选多人，各自填金额，例如夫妻一起还）',
     'repayment.selectMember': '选择成员',
     'repayment.dateLabel': '日期',
-    'repayment.remarkPlaceholder': '例如：现金 / 转帐',
+    'repayment.remarkPlaceholder': '例如：现金 / 转账',
     'repayment.save': '储存',
     'editRepaymentModal.title': '编辑还款纪录',
     'editRepaymentModal.fromLabel': '还款人',
@@ -567,14 +570,14 @@ const STRINGS = {
     'members.participatedIn': '参与 {count} 笔消费',
     'empty.noMembers.title': '暂无成员',
     'empty.noMembers.desc': '加入同行的人，开始记录开销。',
-    'members.duplicateBanner.title': '发现还没连结帐号的旧成员',
+    'members.duplicateBanner.title': '发现还没连结账号的旧成员',
     'members.duplicateBanner.desc': '如果其中一位其实是你，合并后 ta 名下的历史消费会接续到你身上。',
     'members.duplicateBanner.reviewBtn': '查看',
     'mergeMemberModal.title': '合并重复成员',
     'mergeMemberModal.hint': '选到「这是我」的那一位，合并后旧纪录会消失，历史消费与还款都会接续到你身上，此操作无法复原。',
     'mergeMemberModal.confirmBtn': '这是我，合并',
     'mergeMemberModal.empty.title': '没有需要合并的成员',
-    'mergeMemberModal.empty.desc': '这趟旅程目前没有还没连结帐号的旧成员。',
+    'mergeMemberModal.empty.desc': '这趟旅程目前没有还没连结账号的旧成员。',
     'memberModal.title': '邀请同行加入账本',
     'memberModal.nameLabel': '成员姓名',
     'memberModal.namePlaceholder': '例如：Wei',
@@ -624,7 +627,7 @@ const STRINGS = {
     'toast.memberDeleted': '已删除',
     'toast.memberDeletedMsg': '成员「{name}」已移除。',
     'toast.memberMerged': '合并成功',
-    'toast.memberMergedMsg': '「{name}」的历史纪录已并入你的帐号。',
+    'toast.memberMergedMsg': '「{name}」的历史纪录已并入你的账号。',
     'toast.repaymentAdded': '已记录还款',
     'toast.repaymentUpdated': '已更新',
     'toast.repaymentDeleted': '已删除',
@@ -652,7 +655,7 @@ const STRINGS = {
 
     // 表单草稿
     'draft.restoredToast': '已还原草稿',
-    'draft.restoredMessage': '你上次填到一半的消费被自动保存下来了',
+    'draft.restoredMessage': '你上次填到一半的消费被自动储存下来了',
 
     // 其余 Toast / 提示文字
     'toast.loadFailed': '载入失败',
@@ -672,7 +675,7 @@ const STRINGS = {
     'toast.recordNotFoundMsg': '这笔消费可能已被删除，请重新整理。',
     'toast.receiptUploading': '照片上传中',
     'toast.receiptUploadingMsg': '请等收据照片上传完成后再储存。',
-    'toast.customSplitMismatch': '自订分帐总额不一致',
+    'toast.customSplitMismatch': '自订分账总额不一致',
     'toast.customSplitMismatchMsg': '还差 {remaining} 没分完，要不要让搭伙鸭帮你均分剩余？',
     'toast.customSplitOverMsg': '目前分配的金额比总额多了 {over}，检查一下是不是哪笔打多了？',
     'toast.fileFormatError': '档案格式错误',
@@ -781,7 +784,7 @@ const STRINGS = {
     'pool.detail.emptyTitle': '还没有搭伙鸭金库',
     'pool.detail.emptyDesc': '这趟旅程还没有开始使用搭伙鸭金库。',
     'report.settlementDisclaimer': '以下为最少交易笔数的还款建议，独立于消费总额计算，请勿与消费金额相加。',
-    'report.splitRatio': '分帐比例',
+    'report.splitRatio': '分账比例',
     'report.settlementFlow': '还款流向',
     'report.originalCurrency': '原始币值',
     'report.exchangeRatesUsed': '本次计算采用汇率',
@@ -797,7 +800,7 @@ const STRINGS = {
     'report.noExpenseData': '尚无消费纪录',
     'report.noCategoryData': '尚无分类资料',
     'report.noBalanceData': '尚无结算资料',
-    'report.allSettled': '没有需要结算的款项，帐目已经平衡',
+    'report.allSettled': '没有需要结算的款项，账目已经平衡',
     'report.total': '合计（共 {count} 笔）',
     'report.settleCurrency': '结算货币',
     'table.currency': '货币',
@@ -849,7 +852,7 @@ const STRINGS = {
     'pool.card.settleBtn': '结程退余',
 
     'pool.form.enableLabel': '开启搭伙鸭金库',
-    'pool.form.enableHint': '开启後，登记的打款会存进公共金库，行程中的消费可直接从金库扣款',
+    'pool.form.enableHint': '开启后，登记的打款会存进公共金库，旅程中的消费可直接从金库扣款',
     'pool.form.perPersonLabel': '人均预付款',
 
     'pool.error.invalidAmount': '请输入有效的金额',
@@ -858,12 +861,12 @@ const STRINGS = {
     'pool.alert.lowBalanceTitle': '金库余额偏低',
     'pool.alert.lowBalanceMessage': '{currency} 余额偏低，建议尽快补充值',
 
-    'pool.settle.confirmMessage': '结程後金库将不能再扣款，确定要按目前余额平分退款给每位成员吗？',
+    'pool.settle.confirmMessage': '结程后金库将不能再扣款，确定要按目前余额平分退款给每位成员吗？',
     'pool.settle.successTitle': '金库已结清，退款明细已生成',
     'pool.poster.title': '搭伙鸭金库结算',
     'pool.poster.refundLine': '{name} 退 {refund}',
-    'pool.poster.subtitle': '结程後的每人退款明细',
-    'pool.poster.offsetLabel': '可与旅程内部欠款互相抵扣，不用真的转帐',
+    'pool.poster.subtitle': '结程后的每人退款明细',
+    'pool.poster.offsetLabel': '可与旅程内部欠款互相抵扣，不用真的转账',
     'pool.poster.cashRefundLabel': '外币现金，需要实际退还',
     'pool.poster.noRefundTitle': '这次没有余额可退',
     'pool.poster.noRefundDesc': '金库刚好用完，大家都不用退钱也不用补钱。',
@@ -911,20 +914,20 @@ const STRINGS = {
     'expense.sourceLabel': '资金来源',
     'expense.sourceNormal': '正常记账',
     'expense.sourceDeduct': '金库支出',
-    'expense.sourceNormalHint': '照一般方式记账，跟同行的人依分帐方式结算。',
-    'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆帐。',
+    'expense.sourceNormalHint': '照一般方式记账，跟同行的人依分账方式结算。',
+    'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆账。',
 
     'pool.expense.deductSuccess': '已从金库支出',
     'pool.expense.deductFailed': '金库支出失败',
 
-    'pool.form.currencyHint': '之後还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
+    'pool.form.currencyHint': '之后还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
     'pool.settings.topupCountSummary': '已登记 {count} 笔打款',
     'pool.settings.topupBtn': '充值',
     'pool.settings.topupSuccess': '充值成功',
     'pool.settings.editTopupBtn': '更改',
     'pool.settings.editTopupTitle': '更改登记打款',
     'pool.settings.editTopupEmptyTitle': '还没有登记纪录',
-    'pool.settings.editTopupEmptyDesc': '先充值一笔，之後才能在这里更改。',
+    'pool.settings.editTopupEmptyDesc': '先充值一笔，之后才能在这里更改。',
     'pool.settings.editTopupMemberCountNote': '总额会用这笔登记当时的人数（{count} 人）重新计算，不受目前成员异动影响。',
     'pool.settings.editTopupSuccess': '已更改这笔登记',
     'pool.settings.editTopupFailed': '更改失败',
@@ -998,6 +1001,8 @@ const STRINGS = {
     'authGate.signupSubmit': 'Sign Up',
     'authGate.loginFailed': 'Login failed',
     'authGate.signupFailed': 'Sign up failed',
+    'authGate.signupSuccessTitle': 'Account created',
+    'authGate.signupSuccessMsg': 'Check your inbox and click the verification link before logging in.',
     'authGate.switchToSignup': "New here? Sign up",
     'authGate.switchToLogin': 'Already have an account? Log in',
     'authGate.emailLabel': 'Email',
@@ -1051,6 +1056,7 @@ const STRINGS = {
     'account.emailNotSet': 'Not set',
     'account.emailHint': "The email you log in with — also used for password resets.",
     'account.emailSavedTitle': 'Email updated',
+    'account.emailSavedMsg': 'Check your new inbox and click the confirmation link \u2014 the email won\u2019t actually change until you do.',
     'account.emailSaveFailedTitle': 'Could not update email',
     'account.passwordLabel': 'Password',
     'account.passwordDots': '••••••••',
@@ -1718,9 +1724,9 @@ const appState = {
   repayments: [],
   categorySummary: [],
   tripCurrency: { baseCurrency: 'MYR', rates: {}, updatedAt: {} },
-  viewerName: '', // 登入的帐号在「目前这趟旅程」里对应的成员姓名，由后端 getTripBootstrap 算好
+  viewerName: '', // 登入的账号在「目前这趟旅程」里对应的成员姓名，由后端 getTripBootstrap 算好
   inviteCode: '', // 目前这趟旅程的邀请码（就是旅程自己的 ID），给邀请卡片显示/复制用
-  unclaimedMembers: [], // 这趟旅程里还没连结帐号的旧成员，同行页用来提示「合并重复成员」
+  unclaimedMembers: [], // 这趟旅程里还没连结账号的旧成员，同行页用来提示「合并重复成员」
   canDeleteTrip: true, // 是不是这趟旅程的建立者，决定设置页显示「删除目前旅程」还是「退出旅程」；预设 true 只是还没载到资料前的暂时值
   pool: null // 搭伙金库 (Divvy Pool)：未开启（还没登记过任何一笔打款）时为 null，
              // 结构对应後端 handleGetPool()，详见「10B. 搭伙金库」章节
@@ -1780,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         startAppAfterAuth();
       };
     } else {
-      // 没有有效登入的帐号 Session，一律先卡在全萤幕登入闸门，看不到任何 App 内容/资料，
+      // 没有有效登入的账号 Session，一律先卡在全萤幕登入闸门，看不到任何 App 内容/资料，
       // 直到 signup / login 成功才会呼叫 startAppAfterAuth() 真正进入 App
       revealApp = showAuthGate;
     }
@@ -1978,7 +1984,7 @@ function resolveInitialTripId() {
 
 
 /* ------------------------------------------------------------
-   2B. 全域帐号登入闸门（Auth Gate）
+   2B. 全域账号登入闸门（Auth Gate）
    进 App 前一定要先登入或注册，闸门关着的时候 .app-shell 完全不会显示，
    所有资料（旅程/消费/结算……）都不会被载入或看到
    ------------------------------------------------------------ */
@@ -2172,7 +2178,7 @@ function initAuthGate() {
       // 如果 Supabase 项目开启了「需验证 Email 才能登入」，这里 session 会是 null，
       // 使用者必须先去信箱点验证连结，这里先提示、暂不进 App（等设定 Auth 时我们会一起确认这个开关）
       if (!signUpData.session) {
-        showToast('success', t('authGate.signupSuccessTitle') || '注册成功', '请前往信箱点击验证连结后再登入');
+        showToast('success', t('authGate.signupSuccessTitle'), t('authGate.signupSuccessMsg'));
         return;
       }
 
@@ -2276,8 +2282,8 @@ function initAuthGate() {
     });
   }
 
-  // 注册时填邀请码：如果这趟旅程有「还没建立帐号」的旧成员，问一下是不是本人，是的话就直接
-  // 认领这个身份，让过去用那个名字记的消费自动接续到新帐号名下，不会被拆成两个人
+  // 注册时填邀请码：如果这趟旅程有「还没建立账号」的旧成员，问一下是不是本人，是的话就直接
+  // 认领这个身份，让过去用那个名字记的消费自动接续到新账号名下，不会被拆成两个人
   initClaimMemberPicker({
     inviteInputId: 'authSignupInviteCode',
     fieldId: 'authSignupClaimMemberField',
@@ -2286,7 +2292,7 @@ function initAuthGate() {
 }
 
 /**
- * 实际去查「这个邀请码的旅程里，有没有还没建立帐号的旧成员可以认领」，并把结果套用到画面上
+ * 实际去查「这个邀请码的旅程里，有没有还没建立账号的旧成员可以认领」，并把结果套用到画面上
  * 两个地方共用：绑定 input 事件的即时预览（debounce），以及送出表单前的强制检查（见下方两个 fix）
  * 检查完会把这次检查过的邀请码记在 select.dataset.checkedCode 上，让送出表单时可以判断
  * 「使用者有没有真的看过这次的选项」，而不是照抄输入框当下的值就直接送出
@@ -2390,7 +2396,7 @@ async function checkClaimMemberOptions(inviteCode, field, select) {
 }
 
 /**
- * 绑定「输入邀请码后，即时预览这趟旅程有没有还没建立帐号的旧成员可以认领」
+ * 绑定「输入邀请码后，即时预览这趟旅程有没有还没建立账号的旧成员可以认领」
  * 用在两个地方：注册表单的邀请码栏位、加入旅程 Modal 的邀请码栏位，逻辑完全一样
  * 这只是「打字时的即时预览」，真正防止漏看的把关在送出表单那一刻（见对应的 submit handler）
  * @param {{inviteInputId: string, fieldId: string, selectId: string}} config
@@ -3127,7 +3133,7 @@ function initAccountPanel() {
           emailDisplayEl.textContent = email || t('account.emailNotSet');
         }
 
-        showToast('info', t('account.emailSavedTitle'), '请前往新邮箱点击确认连结，完成后邮箱才会真的更新');
+        showToast('info', t('account.emailSavedTitle'), t('account.emailSavedMsg'));
         closeAccountEditForm('accountEmailRow', 'accountEmailForm');
       } catch (error) {
         showToast('error', t('account.emailSaveFailedTitle'), error.message);
@@ -3154,7 +3160,7 @@ function initAccountPanel() {
         if (error) throw error;
 
         // members.nickname 是「登记当下」存的一份快照（见 syncMembersState_ 的说明），
-        // 不会自动跟着帐号改名——这里把这个帐号在「所有」旅程里的成员显示名称都一并同步过去
+        // 不会自动跟着账号改名——这里把这个账号在「所有」旅程里的成员显示名称都一并同步过去
         const session = getUserSession();
         if (session) {
           await supabaseClient.from('members').update({ nickname: displayName }).eq('user_id', session.userId);
@@ -3200,7 +3206,7 @@ function initAccountPanel() {
         // 也能在真的打错目前密码时给出清楚的错误，而不是让人误以为密码已经改了
         const session = getUserSession();
         if (!session || !session.email) {
-          throw new Error('找不到目前登入的帐号邮箱');
+          throw new Error('找不到目前登入的账号邮箱');
         }
         const { error: verifyError } = await supabaseClient.auth.signInWithPassword({
           email: session.email,
@@ -3261,9 +3267,9 @@ function closeAccountEditForm(rowId, formId) {
 
 /**
  * 登出：先让整个 App 主体缩小、模糊、淡出，再清掉 Session、重新整理页面——
- * 之所以还是靠 reload 收尾（不是纯粹前端切换回登入画面），是为了确保上一个帐号
+ * 之所以还是靠 reload 收尾（不是纯粹前端切换回登入画面），是为了确保上一个账号
  * 留在记忆体里的所有资料（appState、currentTripId……）都被彻底清空，不会不小心
- * 露出到下一个登入的帐号；只是补一个动画，让这个瞬间不要那么突兀。
+ * 露出到下一个登入的账号；只是补一个动画，让这个瞬间不要那么突兀。
  * setTimeout 的时间刻意抓得比 CSS transition（0.45s）长一点，确保动画播完才 reload，
  * 不然动画会被硬生生截断，等于没有动画
  */
@@ -3407,7 +3413,7 @@ async function syncMembersState_() {
   appState.members = sortMembersAlphabetically(rows.map(displayNameOf));
   appState.memberIndex = memberIndex;
   // 每位成员是「什麼时候加入这趟旅程的」——金库份摊要用这个排除掉「加入之前」发生的
-  // 支出/打款/退款，不能让新成员被算到他还没加入时的旧帐上（见 computeMemberPoolShares_）
+  // 支出/打款/退款，不能让新成员被算到他还没加入时的旧账上（见 computeMemberPoolShares_）
   appState.memberJoinedAt = memberJoinedAt;
   appState.viewerName = viewerRow ? displayNameOf(viewerRow) : '';
   appState.unclaimedMembers = rows
@@ -3724,7 +3730,7 @@ function getPoolDeductShareAmount_(expense) {
 /**
  * 计算「某位成员」在搭伙金库里的三块份额：登记打款的「已付」、支出的「个人消费」、
  * 结程退余的「已收」——只算这位成员「加入这趟旅程之後」发生的交易，不会把他加入
- * 之前的旧帐算到他头上（新成员不该分摊到加入前就花掉的金库支出）。
+ * 之前的旧账算到他头上（新成员不该分摊到加入前就花掉的金库支出）。
  * Hero Card、成员详情页、个人 PDF、整体 PDF 报告，四个用到金库份摊的地方都共用
  * 这个函式，之後真要调整算法，只要改这一处，不会散落四份各自算、彼此对不上
  * @param {string} name 成员显示名称
@@ -4951,7 +4957,7 @@ function initExpenseSourceControl() {
 
 /**
  * 切换记账 Modal 的资金来源模式，同步分段控制的选取状态、提示文案，
- * 以及付款人/分帐方式/参与人这几个只有「正常记账」才需要的栏位显示与否
+ * 以及付款人/分账方式/参与人这几个只有「正常记账」才需要的栏位显示与否
  * @param {string} source 'normal' | 'deduct'
  */
 function setExpenseSourceControl(source) {
@@ -4979,7 +4985,7 @@ function setExpenseSourceControl(source) {
   if (payerField) payerField.classList.toggle('is-hidden', source === 'deduct');
   if (payerInput) payerInput.required = source !== 'deduct';
 
-  // 分帐方式／参与人：金库支出不需要拆帐——钱是从大家已经打进去的预付款直接扣，
+  // 分账方式／参与人：金库支出不需要拆账——钱是从大家已经打进去的预付款直接扣，
   // 不会在成员之间产生新的欠款
   const hideSplitAndParticipants = source !== 'normal';
   if (splitSection) splitSection.classList.toggle('is-hidden', hideSplitAndParticipants);
@@ -5001,7 +5007,7 @@ function setExpenseSourceControl(source) {
 }
 
 /**
- * 判断目前分帐模式是否需要每人各自输入一个数值
+ * 判断目前分账模式是否需要每人各自输入一个数值
  * （均分不需要；精确金额／百分比／份额都需要）
  * @return {boolean}
  */
@@ -5103,9 +5109,9 @@ function syncSelectAllState() {
 }
 
 /**
- * 渲染参与人清单（checkbox + 分帐数值输入框），资料来源为 appState.members
- * 输入框的 placeholder／单位后缀会依目前分帐模式（精确金额／百分比／份额）动态调整
- * @param {Object} [selectedCustomSplit] 编辑模式下，预先勾选与填入的分帐资料 { name: value }
+ * 渲染参与人清单（checkbox + 分账数值输入框），资料来源为 appState.members
+ * 输入框的 placeholder／单位后缀会依目前分账模式（精确金额／百分比／份额）动态调整
+ * @param {Object} [selectedCustomSplit] 编辑模式下，预先勾选与填入的分账资料 { name: value }
  * @param {Array<string>} [selectedParticipants] 编辑模式下，预先勾选的参与人名单
  */
 function renderParticipantList(selectedCustomSplit, selectedParticipants) {
@@ -5160,7 +5166,7 @@ function renderParticipantList(selectedCustomSplit, selectedParticipants) {
 }
 
 /**
- * 依目前分帐模式，开启/停用每位参与人的输入框，并调整 placeholder、单位后缀、
+ * 依目前分账模式，开启/停用每位参与人的输入框，并调整 placeholder、单位后缀、
  * 工具列（一键均分按钮）的显示方式
  */
 function toggleCustomSplitInputs() {
@@ -5206,7 +5212,7 @@ function toggleCustomSplitInputs() {
 }
 
 /**
- * 依目前分帐模式即时显示校验文字（已分配 X／总额 Y、已分配 X%／100%、或总份数）
+ * 依目前分账模式即时显示校验文字（已分配 X／总额 Y、已分配 X%／100%、或总份数）
  */
 function updateCustomSplitTotal() {
   const totalLabel = document.getElementById('customSplitTotal');
@@ -5397,7 +5403,7 @@ async function handleExpenseFormSubmit() {
 }
 
 async function handleExpenseFormSubmitInner_() {
-  // 金库支出：这种消费不需要拆帐、不影响成员间的结算，提前分流去呼叫 poolDeduct，
+  // 金库支出：这种消费不需要拆账、不影响成员间的结算，提前分流去呼叫 poolDeduct，
   // 不要往下走一般消费的欄位驗證與 addExpense（这笔钱还是会写进 Expenses 表，
   // 只是 SplitType='pool'，见後端 appendPoolFundedExpenseRow_）
   if (currentExpenseSource === 'deduct') {
@@ -5585,7 +5591,7 @@ async function handleExpenseFormSubmitInner_() {
 
 /**
  * 记账 Modal 在「金库支出」或「个人代垫归还」模式下的送出处理，取代 handleExpenseFormSubmit
- * 原本的 addExpense 流程——这两种钱不拆帐、不写进 Expenses 表，直接呼叫後端
+ * 原本的 addExpense 流程——这两种钱不拆账、不写进 Expenses 表，直接呼叫後端
  * poolDeduct／poolReimburse，只动到搭伙金库自己的余额与交易流水
  */
 async function handlePoolFundedExpenseSubmit_() {
@@ -5815,12 +5821,12 @@ function updateReceiptUploadHint(text) {
 
 
 /* ------------------------------------------------------------
-   8C. 智能记忆：记住每位付款人上次选的参与人／分帐方式
+   8C. 智能记忆：记住每位付款人上次选的参与人／分账方式
    ------------------------------------------------------------ */
 
 /**
  * 绑定「付款人」下拉选单的变更事件：新增消费（非编辑模式）时，
- * 自动带入这位付款人上次使用的分帐方式与参与人，减少重复勾选
+ * 自动带入这位付款人上次使用的分账方式与参与人，减少重复勾选
  */
 function initSmartMemory() {
   document.getElementById('expensePayer').addEventListener('change', (event) => {
@@ -5832,7 +5838,7 @@ function initSmartMemory() {
 }
 
 /**
- * 读取指定付款人上次使用的分帐方式与参与人，并套用到目前的表单
+ * 读取指定付款人上次使用的分账方式与参与人，并套用到目前的表单
  * @param {string} payer 付款人姓名
  */
 function applySmartMemoryForPayer(payer) {
@@ -5849,9 +5855,9 @@ function applySmartMemoryForPayer(payer) {
 }
 
 /**
- * 记住这位付款人这次使用的分帐方式与参与人，下次选到同一位付款人时自动带入
+ * 记住这位付款人这次使用的分账方式与参与人，下次选到同一位付款人时自动带入
  * @param {string} payer 付款人姓名
- * @param {string} splitType 分帐方式
+ * @param {string} splitType 分账方式
  * @param {Array<string>} participants 参与人名单
  */
 function rememberLastSplitForPayer(payer, splitType, participants) {
@@ -5861,7 +5867,7 @@ function rememberLastSplitForPayer(payer, splitType, participants) {
 }
 
 /**
- * 取得目前储存的「付款人 -> 上次分帐方式/参与人」记忆物件
+ * 取得目前储存的「付款人 -> 上次分账方式/参与人」记忆物件
  * @return {Object} { payerName: { splitType, participants }, ... }
  */
 function getLastSplitMemory() {
@@ -6192,7 +6198,7 @@ function syncRepaymentSelectAllState() {
 
 /**
  * 渲染「还款人」的可勾选清单，每个人都有独立的金额输入框
- * 用于多人合并还款的情境（例如夫妻其中一人一次转帐，帮两人一起还款）
+ * 用于多人合并还款的情境（例如夫妻其中一人一次转账，帮两人一起还款）
  */
 function renderRepaymentFromList() {
   const container = document.getElementById('repaymentFromList');
@@ -6330,9 +6336,9 @@ async function handleRepaymentFormSubmit() {
  * 所以平行送出多笔请求是安全的，不会有两笔纪录抢到同一个 ID 的问题
  */
 function handleSettleAllClick() {
-  // 跟「搭伙金库」这个虚拟结算参与者有关的转帐建议不能真的去记一笔还款——它不是
+  // 跟「搭伙金库」这个虚拟结算参与者有关的转账建议不能真的去记一笔还款——它不是
   // 真实成员，写入 Repayments 表会因为找不到对应的 MemberID 而失败，这里先滤掉，
-  // 只对真人对真人的转帐批次建立还款纪录
+  // 只对真人对真人的转账批次建立还款纪录
   const settlements = (appState.summary.settlements || []).filter((item) => !item.isPoolSettlement);
 
   if (settlements.length === 0) {
@@ -6422,7 +6428,7 @@ function getGreetingKey_() {
 }
 
 /**
- * 渲染 Dashboard 页最上面的欢迎词，用登入帐号的显示名称打招呼
+ * 渲染 Dashboard 页最上面的欢迎词，用登入账号的显示名称打招呼
  */
 function renderWelcomeBanner() {
   const el = document.getElementById('dashWelcomeText');
@@ -6499,7 +6505,7 @@ function revealTripHeaderText(el, newText) {
 }
 
 /**
- * Hero Card：登入帐号在这趟旅程里的个人净额总览（预计收回/需付、已付金额、
+ * Hero Card：登入账号在这趟旅程里的个人净额总览（预计收回/需付、已付金额、
  * 个人消费、已还款或已收金额）——找不到「你是谁」就显示空状态
  */
 function renderHeroCard() {
@@ -6630,7 +6636,7 @@ function hideBalanceMatrixToggle() {
 
 /**
  * 「谁欠谁」：依最少交易结算建议（appState.summary.settlements）列出每一对应该
- * 转帐的关系，跟登入帐号有关的那几笔会换成「XX 需要转给你」/「你需要转给 XX」
+ * 转账的关系，跟登入账号有关的那几笔会换成「XX 需要转给你」/「你需要转给 XX」
  * 的第一人称说法，其他人之间的欠款则显示「A 需要转给 B」
  */
 function renderBalanceMatrix() {
@@ -6639,7 +6645,7 @@ function renderBalanceMatrix() {
   const toggleBtn = document.getElementById('balanceMatrixToggleBtn');
   if (!container) return;
 
-  // 只显示跟登入帐号有关的那几笔（自己该付给谁、该跟谁收），不是「所有人跟所有人」
+  // 只显示跟登入账号有关的那几笔（自己该付给谁、该跟谁收），不是「所有人跟所有人」
   // 的还款建议——理由跟结算页面的「谁欠谁」清单一样，见 renderSummaryPage 的说明
   const viewerName = getViewerName();
   const settlements = allSettlements.filter((item) => item.from === viewerName || item.to === viewerName);
@@ -6665,7 +6671,7 @@ function renderBalanceMatrix() {
         ? t('dashboard.matrix.youOwe', { name: toDisplay })
         : t('dashboard.matrix.otherPair', { from: fromDisplay, to: toDisplay });
 
-    // 跟「搭伙金库」有关的转帐建议不是真人对真人，不提供「提醒」按钮
+    // 跟「搭伙金库」有关的转账建议不是真人对真人，不提供「提醒」按钮
     // （金库不会看 WhatsApp，提醒了也没有意义）
     const showRemindBtn = !isYouOwe && !item.isPoolSettlement;
 
@@ -7071,7 +7077,7 @@ function getHeroMascotCopy(status, forceNext) {
 
 /**
  * 点击 Hero Card 吉祥物的微交互：换一句文案 + 轻微弹跳动画，跟金库卡片的
- * onPoolMascotTap 是同一套互动手感，只是状态判断依据换成「登入帐号自己的净额」
+ * onPoolMascotTap 是同一套互动手感，只是状态判断依据换成「登入账号自己的净额」
  * @param {HTMLElement} mascotEl
  */
 function onHeroMascotTap(mascotEl) {
@@ -7127,7 +7133,7 @@ function renderDivvyPoolCard() {
 
   const status = getPoolStatus(pool);
   const themeClass = POOL_STATUS_THEME_CLASS[status] || POOL_STATUS_THEME_CLASS.collecting;
-  // 结程退余按钮只在「目前有余额可以退，而且这个帐号有管理权限（启动人或旅程建立者）」
+  // 结程退余按钮只在「目前有余额可以退，而且这个账号有管理权限（启动人或旅程建立者）」
   // 才出现——没有管理权限的参与者，卡片只能查看明细，不该看到一个点了会被後端拒绝的按钮
   const hasBalanceToSettle = pool.currencies.some((c) => c.balance > AMOUNT_TOLERANCE) && !!pool.canManagePool;
 
@@ -7238,7 +7244,7 @@ async function handlePoolSettle() {
 /**
  * 组出「结账海报」需要的资料结构：每个人在每种货币各退多少（公家的钱一律均分，
  * 所以同一货币下每个人的退款金额都一样）。同时依货币是否为旅程基准货币，标注
- * 这笔钱该怎麼处理——基准货币可以直接跟旅程内部的欠款互相抵扣，不用真的转帐；
+ * 这笔钱该怎麼处理——基准货币可以直接跟旅程内部的欠款互相抵扣，不用真的转账；
  * 外币则是实体现金，只能真的退还，两者在报告与画面上都要清楚区分
  * @param {Array<{currency, perPersonAmount, totalAmount, memberCount}>} refunds 後端算好的每货币退款
  * @param {Array<string>} members 目前的完整成员名单
@@ -7395,10 +7401,10 @@ function handlePoolEnableButtonClick() {
  * 设置页「搭伙鸭金库」面板，依权限与开启状态分三种呈现：
  *   1. 还没开始用：只显示「启动金库」按钮，任何成员都看得到、点得下去——
  *      谁先按、谁填了第一笔充值，谁就顺便成为这个金库的「启动人」（後端权限判断的依据）
- *   2. 已经开始用，但这个帐号不是启动人也不是旅程建立者：显示「金库已开启」+
+ *   2. 已经开始用，但这个账号不是启动人也不是旅程建立者：显示「金库已开启」+
  *      目前各货币余额的唯读摘要，不给充值表单／编辑按钮——充值与结程退余
  *      只有启动人或旅程建立者能做
- *   3. 已经开始用，而且这个帐号有管理权限：维持原本的完整表单（摘要 + 充值 + 编辑）
+ *   3. 已经开始用，而且这个账号有管理权限：维持原本的完整表单（摘要 + 充值 + 编辑）
  * 权限判断完全信任後端回传的 pool.canManagePool，不在前端自己重算一次
  * （後端才有真正的资料去源，前端重算容易漏掉边界情况、也可能跟後端实际允许的动作对不上）
  * 容错：容器不存在（旧版 index.html 还没加这段）时安全跳过
@@ -7426,7 +7432,7 @@ function renderPoolSettingsPanel() {
     return;
   }
 
-  // ---- 状态二：金库已开启，但这个帐号没有管理权限——唯读，不给表单 ----
+  // ---- 状态二：金库已开启，但这个账号没有管理权限——唯读，不给表单 ----
   if (pool && pool.enabled && !canManage) {
     container.innerHTML = `
       <div class="settings-row">
@@ -7838,7 +7844,7 @@ const EXPENSES_LIST_PAGE_SIZE = 40;
 let expensesListRenderedCount = EXPENSES_LIST_PAGE_SIZE;
 
 /**
- * 依目前的分类/分帐方式/关键字筛选条件，算出账目页要显示的消费清单（新到旧排序）
+ * 依目前的分类/分账方式/关键字筛选条件，算出账目页要显示的消费清单（新到旧排序）
  * @return {Array<Object>}
  */
 function getFilteredExpensesForList() {
@@ -7963,7 +7969,7 @@ function renderExpensesLoadMoreButton(container, totalCount) {
 
 /**
  * 打开「消费明细」Modal：显示这笔消费完整的分摊明细（每位参与人分摊多少，
- * 用跟表单同一套 calculateExpenseSplitClientSide 算，四种分帐方式都对得上）。
+ * 用跟表单同一套 calculateExpenseSplitClientSide 算，四种分账方式都对得上）。
  * 编辑/删除按钮只有「当事人」（expense.CanManage，后端依 CreatedByUserId 判断）才看得到，
  * 不是自己建立的消费，这里只能看不能动
  * @param {string} expenseId 消费纪录 ID
@@ -8109,7 +8115,7 @@ function renderSummaryPage() {
       </div>
     `).join('');
 
-    // 跟「搭伙金库」这个虚拟参与者有关的转帐建议不能真的去记还款——它不是真实成员，
+    // 跟「搭伙金库」这个虚拟参与者有关的转账建议不能真的去记还款——它不是真实成员，
     // 写入 Repayments 表会因为找不到对应的 MemberID 而失败，这里直接不绑点击事件
     container.querySelectorAll('.settlement-repay-btn').forEach((button) => {
       button.addEventListener('click', () => {
@@ -8334,7 +8340,7 @@ function renderMembersPage() {
 }
 
 /**
- * 渲染同行页顶端的「合并重复成员」提示banner：这趟旅程有还没连结帐号的旧成员时才显示，
+ * 渲染同行页顶端的「合并重复成员」提示banner：这趟旅程有还没连结账号的旧成员时才显示，
  * 没有的话就隐藏（不占位置、不打扰）
  */
 function renderDuplicateMemberBanner() {
@@ -8358,7 +8364,7 @@ function initDuplicateMemberBanner() {
 }
 
 /**
- * 打开「合并重复成员」Modal，列出这趟旅程里所有还没连结帐号的旧成员，
+ * 打开「合并重复成员」Modal，列出这趟旅程里所有还没连结账号的旧成员，
  * 让使用者从中挑出「这是我」，把旧纪录合并进自己身上
  */
 function openMergeMemberModal() {
@@ -8575,7 +8581,7 @@ function openMemberExpenseDetailModal(name) {
     .sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
   // 金库支出：钱已经由大家先打款进金库，视为「全员均摊」的个人消费，
-  // 这里也要跟拆帐消费合并显示，不然「同行」页面看到的个人消费会漏掉这一块
+  // 这里也要跟拆账消费合并显示，不然「同行」页面看到的个人消费会漏掉这一块
   // （PDF 报告、Hero Card 那边都已经是这样处理，这里补齐让三处一致）。
   // 金库户口的外币一律免换算：跟 PDF／Hero Card 用同一套「依币种分组」逻辑，
   // 不折算回基准货币、多币种时按币种并列显示（如「MYR 100.00 + CNY 50.00」）
@@ -8619,7 +8625,7 @@ function openMemberExpenseDetailModal(name) {
 
   let html = '';
 
-  // ---- 区块一：消费明细（拆帐消费 + 金库支出均摊份额，合并列出，最后接一个合计） ----
+  // ---- 区块一：消费明细（拆账消费 + 金库支出均摊份额，合并列出，最后接一个合计） ----
   if (relatedExpenses.length > 0 || poolDeductExpenses.length > 0) {
     html += `<p class="member-detail-section-label">${escapeHtml(t('memberDetail.expenseSectionLabel', { count: relatedExpenses.length + poolDeductExpenses.length }))}</p>`;
     html += relatedExpenses.map((expense) => renderMemberExpenseRow(expense, name, memberId)).join('');
@@ -8743,7 +8749,7 @@ function renderMemberRepaymentRow(repayment, name) {
 }
 
 /**
- * 前端版的分帐金额计算（仅用于消费明细 Modal 显示「这个人分摊了多少」，不影响 Backend 的真实结算）
+ * 前端版的分账金额计算（仅用于消费明细 Modal 显示「这个人分摊了多少」，不影响 Backend 的真实结算）
  * 逻辑与 Backend 的 calculateEqualSplit / calculateCustomSplit 完全一致
  * @param {Object} expense 消费纪录物件
  * @return {Object} { name: shareAmount, ... }
@@ -8892,7 +8898,7 @@ function renderCategorySelectOptions() {
 }
 
 /**
- * 依分帐方式回传要显示的徽章样式 class 与文字，四种模式各自有专属颜色
+ * 依分账方式回传要显示的徽章样式 class 与文字，四种模式各自有专属颜色
  * @param {string} splitType 'equal' | 'custom' | 'percentage' | 'shares'
  * @return {{className: string, label: string}}
  */
@@ -8905,8 +8911,8 @@ function getSplitTypeBadgeInfo(splitType) {
     case 'shares':
       return { className: 'badge-info', label: t('split.shares') };
     case 'pool':
-      // 金库支出／代垫归还不拆帐给任何人，之前落到 default 分支会被误标成「均分」，
-      // 明确给一个自己的标签，账目页跟 PDF 报告的拆帐栏位才不会显示错误资讯
+      // 金库支出／代垫归还不拆账给任何人，之前落到 default 分支会被误标成「均分」，
+      // 明确给一个自己的标签，账目页跟 PDF 报告的拆账栏位才不会显示错误资讯
       return { className: 'badge-info', label: t('pool.report.poolSplitBadge') };
     default:
       return { className: 'badge-success', label: t('badge.equal') };
@@ -9307,7 +9313,7 @@ function handleDeleteTripClick() {
 }
 
 /**
- * 退出旅程——用邀请码加入的人走这条路径，只影响自己：这个帐号之後不会再看到这趟旅程，
+ * 退出旅程——用邀请码加入的人走这条路径，只影响自己：这个账号之後不会再看到这趟旅程，
  * 但先前记的消费、其他人的资料都还会保留，之後也可以再用邀请码加入回来
  */
 function handleLeaveTripClick() {
@@ -9339,7 +9345,7 @@ function handleLeaveTripClick() {
 
 /**
  * 依 appState.canDeleteTrip 同步设置页危险区域按钮显示的文字——每次载入/切换旅程都要呼叫，
- * 同一个帐号在不同旅程里的身分可能不一样（这趟是建立者，那趟只是被邀请加入的）
+ * 同一个账号在不同旅程里的身分可能不一样（这趟是建立者，那趟只是被邀请加入的）
  */
 function renderDangerZoneButton() {
   const button = document.getElementById('deleteTripBtn');
@@ -9650,9 +9656,9 @@ function buildMemberReportBody(name) {
     settlementHtml = `<p class="pr-settled-note">${escapeHtml(t('personalReport.allSettled'))}</p>`;
   }
 
-  // ---------- 消费明细：个人拆帐份额 + 金库支出份额，合并成一张表 ----------
-  // 逻辑上都是「这个人实际吃/用掉了什么」，金库支出只是钱从公共帐户出，
-  // 跟拆帐消费本质相同，不需要分开列成两张表。表头统一为「日期 / 项目 / 类型 / 金额」，
+  // ---------- 消费明细：个人拆账份额 + 金库支出份额，合并成一张表 ----------
+  // 逻辑上都是「这个人实际吃/用掉了什么」，金库支出只是钱从公共账户出，
+  // 跟拆账消费本质相同，不需要分开列成两张表。表头统一为「日期 / 项目 / 类型 / 金额」，
   // 「类型」欄位统一采用「大类 · 子类别」格式（例如「消费 · 住宿」）
   let itemsHtml = '';
 
@@ -10137,7 +10143,7 @@ function buildPrintReportHtml() {
 
 /**
  * 组出「搭伙金库」报告章节：充值明细、支出明细（金库支出／代垫归还）、
- * 退余明细（结程後的每人退款明细）——这一段独立于一般消费的拆帐逻辑，金库支出这种
+ * 退余明细（结程後的每人退款明细）——这一段独立于一般消费的拆账逻辑，金库支出这种
  * 没有真人垫付的消费不会出现在任何一位成员的个人小节里，这里是它们唯一能被完整看到的地方
  * 没开金库的旅程回传空字串，报告里不会多出一个空章节
  * @return {string} HTML 字串
@@ -10178,7 +10184,7 @@ function buildPoolReportSection() {
 
   // 退款章节改看「有没有退款的历史纪录」，不是「目前刚好结清」——结程後还能继续
   // 充值开始新的一轮，isTripSettled 只反映「此时此刻」的余额状态，用它来决定这个
-  // 章节要不要出现的话，充值後历史上的退款记录反而会不见，报告应该是完整的流水帐
+  // 章节要不要出现的话，充值後历史上的退款记录反而会不见，报告应该是完整的流水账
   const allRefundTxs = (pool.transactions || []).filter((tx) => tx.type === 'refund');
   let refundSection = '';
   if (allRefundTxs.length > 0) {
@@ -10281,7 +10287,7 @@ function buildPoolReportSection() {
 }
 
 /**
- * 组出「消费明细清单」表格：这次旅程每一笔消费的完整纪录，依日期由旧到新排序（帐本形式）
+ * 组出「消费明细清单」表格：这次旅程每一笔消费的完整纪录，依日期由旧到新排序（账本形式）
  * @return {string} HTML 字串
  */
 function buildExpenseDetailReportTable() {
@@ -10429,7 +10435,7 @@ function cleanNumericString(value) {
 }
 
 /**
- * 产生这份报表的追踪 ID，方便日后对帐或引用时快速指认「是哪一次汇出的报表」
+ * 产生这份报表的追踪 ID，方便日后对账或引用时快速指认「是哪一次汇出的报表」
  * 注意：这是简单的可追溯性代号，不是加密杂凑（cryptographic hash），
  * 不能用来做防伪验证，纯粹是审计追溯用的报表编号
  * @return {string} 例如 "SM-A1B2C3-K9X2"
@@ -10720,10 +10726,10 @@ function buildMixedCurrencyBreakdown(baseCurrency, baseAmount, poolBreakdown) {
 }
 
 /**
- * 把「多个来源合并成一张表」的资料列（例如：拆帐消费 + 金库支出份额；或已付消费 +
+ * 把「多个来源合并成一张表」的资料列（例如：拆账消费 + 金库支出份额；或已付消费 +
  * 金库预付款 + 还款）依日期由旧到新重新排序，再接回 HTML 字串——各个来源原本各自
  * 依时间排序，但直接 concat 串接後，不同来源之间的时间顺序会被打散（例如金库支出
- * 全部排在拆帐消费後面），所以合并後一定要重新依日期整体排序一次，才能维持整份
+ * 全部排在拆账消费後面），所以合并後一定要重新依日期整体排序一次，才能维持整份
  * 明细「有日期栏位的都照时间顺序」的规则
  * @param {Array<{date: string, html: string}>} rows 待排序的资料列
  * @return {string} 排序後串接好的 HTML 字串
@@ -10774,7 +10780,7 @@ function formatMoneyWithConversion(amount, currency, snapshotRate) {
 }
 
 /**
- * 显示一笔「消费」的金额（完整全额，不是拆帐后的份额）——依 SplitType 自动判断要不要换算：
+ * 显示一笔「消费」的金额（完整全额，不是拆账后的份额）——依 SplitType 自动判断要不要换算：
  * 金库支出（SplitType='pool'）一律免换算，只显示原始币值；一般消费才照旧显示
  * 「原始 → 换算成基准货币」。任何要呈现 Expenses 资料列金额的地方都该呼叫这支，
  * 而不是直接呼叫 formatMoneyWithConversion，否则金库支出免换算的规则很容易漏掉

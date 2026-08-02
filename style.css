@@ -40,13 +40,15 @@
      语意色统一降低到 AA 可读的明度，不用高饱和霓虹色 */
   --accent: #0f766e;
   --accent-hover: #115e59;
-  --accent-soft: rgba(15, 118, 110, 0.08);
+  --accent-active: #134e4a;
+  --accent-soft: rgba(15, 118, 110, 0.10);
+  --accent-glow: rgba(15, 118, 110, 0.28);
   --success: #1f9d55;
-  --success-soft: rgba(31, 157, 85, 0.08);
+  --success-soft: rgba(31, 157, 85, 0.10);
   --danger: #d70015;
   --danger-soft: rgba(215, 0, 21, 0.08);
   --warning: #b45309;
-  --warning-soft: rgba(180, 83, 9, 0.10);
+  --warning-soft: rgba(180, 83, 9, 0.12);
 
   /* 阴影（柔和弥散，Apple 式极淡投影） */
   --shadow-xs: 0 1px 2px rgba(20, 20, 30, 0.03);
@@ -55,9 +57,9 @@
   --shadow-lg: 0 20px 48px rgba(20, 20, 30, 0.10);
 
   /* 圆角 */
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
+  --radius-sm: 12px;
+  --radius: 18px;
+  --radius-lg: 24px;
   --radius-full: 999px;
 
   /* 间距刻度 */
@@ -99,8 +101,8 @@
   --bg: #1f1e1c;
   --bg-subtle: #262523;
   --bg-elevated: #2d2c29;
-  --surface-glass: rgba(45, 44, 41, 0.68);
-  --surface-glass-strong: rgba(45, 44, 41, 0.9);
+  --surface-glass: rgba(45, 44, 41, 0.62);
+  --surface-glass-strong: rgba(45, 44, 41, 0.86);
   --border: rgba(250, 249, 245, 0.08);
   --border-strong: rgba(250, 249, 245, 0.15);
 
@@ -112,7 +114,9 @@
   /* 跟 --pool-teal 用同一个色值，卡片跟按钮/导览指示点是同一种青绿，视觉上是同一套色系 */
   --accent: #2dd4bf;
   --accent-hover: #5eead4;
+  --accent-active: #14b8a6;
   --accent-soft: rgba(45, 212, 191, 0.18);
+  --accent-glow: rgba(45, 212, 191, 0.35);
   /* 强调色本身偏亮，白字对比不够；改用深青墨色，比纯白字更有高级感，
      也呼应搭伙金库卡片的深靛蓝底色 */
   --text-on-accent: #0b2e2b;
@@ -1540,7 +1544,7 @@ html {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-bottom: 0.5px solid var(--hairline);
+  border-bottom: 0.5px solid var(--border);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
 }
@@ -2479,7 +2483,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   gap: var(--space-3);
   padding: var(--space-2) var(--space-2) var(--space-1);
   margin-top: var(--space-1);
-  border-top: 0.5px solid var(--hairline-strong);
+  border-top: 0.5px solid var(--border-strong);
 }
 
 .category-bar-total-label {
@@ -3859,26 +3863,9 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
    可安全追加在既有样式表最末端，靠 CSS 层叠顺序自然生效。
    ============================================================ */
 
-/* 19.1 精修设计 Token —— 色彩更克制、圆角更大、阴影分层、弹性缓动 --------- */
+/* 19.1 精修设计 Token —— 描边、阴影分层、弹性缓动、字距（品牌色/语意色/圆角已合并进顶层 tokens，见文件开头） --------- */
 :root {
-  /* 品牌色：呼应搭伙金库卡片的青绿，与顶层 --accent 保持同一色值，避免层叠顺序造成割裂 */
-  --accent: #0f766e;
-  --accent-hover: #115e59;
-  --accent-active: #134e4a;
-  --accent-soft: rgba(15, 118, 110, 0.10);
-  --accent-glow: rgba(15, 118, 110, 0.28);
-
-  /* 语意色：贴近系统色板，去除过度饱和；与顶层 tokens 保持一致 */
-  --success: #1f9d55;
-  --success-soft: rgba(31, 157, 85, 0.10);
-  --danger: #d70015;
-  --danger-soft: rgba(215, 0, 21, 0.08);
-  --warning: #b45309;
-  --warning-soft: rgba(180, 83, 9, 0.12);
-
   /* 发丝级描边：比 1px 更细腻，取代生硬的实色边框；暖灰中性色调，跟深色模式同一色温 */
-  --hairline: rgba(35, 32, 28, 0.09);
-  --hairline-strong: rgba(35, 32, 28, 0.15);
   --specular: rgba(255, 255, 255, 0.55);
 
   /* 分层阴影：环境光 + 关键光叠加，营造真实浮起感而非单层黑影 */
@@ -3894,11 +3881,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
     0 2px 6px rgba(16, 16, 20, 0.05),
     0 28px 68px rgba(16, 16, 20, 0.14);
 
-  /* 圆角：统一放大，呼应「留白即设计」的柔和质感 */
-  --radius-sm: 12px;
-  --radius: 18px;
-  --radius-lg: 24px;
-
   /* 物理弹性曲线：所有微交互统一使用，取代生硬的线性/ease-out */
   --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
 
@@ -3909,31 +3891,8 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 }
 
 [data-theme="dark"] {
-  /* 暖灰黑基底（Claude.ai 式），与浅色模式同一色温，层级靠面板亮度区分 */
-  --bg: #1f1e1c;
-  --bg-subtle: #262523;
-  --bg-elevated: #2d2c29;
-  --surface-glass: rgba(45, 44, 41, 0.6);
-  --surface-glass-strong: rgba(45, 44, 41, 0.82);
-
-  --hairline: rgba(250, 249, 245, 0.08);
-  --hairline-strong: rgba(250, 249, 245, 0.15);
-  --specular: rgba(255, 255, 255, 0.1);
-
-  /* 品牌强调色：搭伙金库卡片同款亮青绿，跟浅色模式的 --accent 同一色相不同明度 */
-  --accent: #2dd4bf;
-  --accent-hover: #5eead4;
-  --accent-active: #14b8a6;
-  --accent-soft: rgba(45, 212, 191, 0.18);
-  --accent-glow: rgba(45, 212, 191, 0.35);
-  --text-on-accent: #0b2e2b;
-
-  --success: #30d158;
-  --success-soft: rgba(48, 209, 88, 0.16);
-  --danger: #ff453a;
-  --danger-soft: rgba(255, 69, 58, 0.16);
-  --warning: #ff9f0a;
-  --warning-soft: rgba(255, 159, 10, 0.18);
+  /* 品牌/语意色、bg 系列已合并进文件开头的顶层 dark tokens；这里只保留分层阴影这组新增 token */
+  --specular: rgba(255, 255, 255, 0.09);
 
   --shadow-card:
     0 1px 1px rgba(0, 0, 0, 0.3),
@@ -3978,25 +3937,25 @@ body {
 }
 
 .app-header {
-  box-shadow: 0 0.5px 0 var(--hairline-strong), 0 1px 32px rgba(16, 16, 20, 0.03);
+  box-shadow: 0 0.5px 0 var(--border-strong), 0 1px 32px rgba(16, 16, 20, 0.03);
 }
 
 [data-theme="dark"] .app-header {
-  box-shadow: 0 0.5px 0 var(--hairline-strong), 0 1px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0.5px 0 var(--border-strong), 0 1px 32px rgba(0, 0, 0, 0.5);
 }
 
 .sidebar {
   border-right: none;
-  box-shadow: inset -0.5px 0 0 var(--hairline-strong);
+  box-shadow: inset -0.5px 0 0 var(--border-strong);
 }
 
 .side-drawer {
-  box-shadow: var(--shadow-float), inset -0.5px 0 0 var(--hairline-strong);
+  box-shadow: var(--shadow-float), inset -0.5px 0 0 var(--border-strong);
 }
 
 .mobile-tabbar {
   border-top: none;
-  box-shadow: inset 0 0.5px 0 var(--hairline-strong), 0 -12px 32px rgba(16, 16, 20, 0.04);
+  box-shadow: inset 0 0.5px 0 var(--border-strong), 0 -12px 32px rgba(16, 16, 20, 0.04);
 }
 
 .nav-indicator {
@@ -4020,7 +3979,7 @@ body {
 .member-stat-card,
 .member-card,
 .loading-card {
-  border: 0.5px solid var(--hairline);
+  border: 0.5px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card), inset 0 1px 0 var(--specular);
   transition: transform 0.5s var(--ease-spring),
@@ -4039,7 +3998,7 @@ body {
 .member-card-clickable:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-card-hover), inset 0 1px 0 var(--specular);
-  border-color: var(--hairline-strong);
+  border-color: var(--border-strong);
 }
 
 .stat-card-clickable:active,
@@ -4059,7 +4018,7 @@ body {
   background: var(--surface-glass-strong);
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
-  border: 0.5px solid var(--hairline-strong);
+  border: 0.5px solid var(--border-strong);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-float), inset 0 1px 0 var(--specular);
   transition: transform 0.5s var(--ease-spring), opacity 0.35s var(--ease-spring), filter 0.35s var(--ease-spring);
@@ -4084,7 +4043,7 @@ body {
 
 .modal-header,
 .modal-footer {
-  border-color: var(--hairline);
+  border-color: var(--border);
 }
 
 /* 19.6 按钮 —— 移除廉价边框，改用内发光高光 + 柔和投影 --------------------- */
@@ -4119,7 +4078,7 @@ body {
   background: var(--surface-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 0.5px solid var(--hairline-strong);
+  border: 0.5px solid var(--border-strong);
   box-shadow: inset 0 1px 0 var(--specular), 0 1px 2px rgba(16, 16, 20, 0.03);
 }
 
@@ -4156,7 +4115,7 @@ body {
 
 /* 19.7 Badge —— 取消实色硬边，改用内发光细描边，质感更轻盈 ------------------ */
 .badge {
-  box-shadow: inset 0 0 0 0.5px var(--hairline);
+  box-shadow: inset 0 0 0 0.5px var(--border);
   font-weight: 590;
 }
 
@@ -4170,7 +4129,7 @@ body {
 .select-control.text-input,
 .input-with-suffix,
 .search-box {
-  border-color: var(--hairline-strong);
+  border-color: var(--border-strong);
   transition: border-color 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-spring), background 0.3s var(--ease-spring);
 }
 
@@ -4183,7 +4142,7 @@ body {
 }
 
 .segmented-control {
-  border-color: var(--hairline);
+  border-color: var(--border);
 }
 
 .segmented-item {
@@ -4298,48 +4257,6 @@ body {
   transition: all var(--duration-tool) var(--ease-tool);
 }
 
-/* 21.2 按钮：拿掉高光渐层与彩色发光阴影，回到扁平实色 + 极浅投影 */
-.btn-primary {
-  background: var(--accent);
-  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08);
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
-  filter: none;
-  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.1);
-}
-
-.btn-primary:active,
-.btn:active {
-  transform: scale(0.98);
-}
-
-.btn-danger {
-  background: var(--danger);
-  box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08);
-}
-
-.btn-danger:hover {
-  background: var(--danger);
-  filter: brightness(1.08);
-}
-
-.btn-secondary {
-  background: var(--bg-elevated);
-  border: 0.5px solid var(--hairline-strong);
-  box-shadow: none;
-}
-
-.btn-secondary:hover {
-  background: var(--bg-subtle);
-  border-color: var(--hairline-strong);
-}
-
-.tab-item-fab {
-  box-shadow: 0 4px 12px rgba(16, 16, 20, 0.16);
-}
-
 /* 21.3 卡片：hover 幅度收敛，安静的浮起感取代明显位移 */
 .stat-card:hover,
 .stat-card-clickable:hover,
@@ -4352,7 +4269,7 @@ body {
 /* 21.4 徽章 / 分段控制：低饱和度粉彩底色 + 清晰细描边，质感克制但不是纯线框 */
 .badge {
   background: var(--bg-subtle);
-  box-shadow: inset 0 0 0 0.5px var(--hairline-strong);
+  box-shadow: inset 0 0 0 0.5px var(--border-strong);
   color: var(--text-secondary);
 }
 
@@ -4395,18 +4312,7 @@ body {
    不动既有版面结构与 JS 行为。
    ============================================================ */
 
-/* 22.1 深色基底：暖灰黑（Claude.ai 式）+ 品牌靛紫点缀，层级靠面板亮度区分 */
-[data-theme="dark"] {
-  --bg: #1f1e1c;
-  --bg-subtle: #262523;
-  --bg-elevated: #2d2c29;
-  --surface-glass: rgba(45, 44, 41, 0.62);
-  --surface-glass-strong: rgba(45, 44, 41, 0.86);
-
-  --hairline: rgba(250, 249, 245, 0.08);
-  --hairline-strong: rgba(250, 249, 245, 0.15);
-  --specular: rgba(255, 255, 255, 0.09);
-}
+/* 22.1 深色基底已合并进文件开头的顶层 dark tokens（bg / surface-glass / border / specular），此处不再重复声明 */
 
 /* 22.2 语意色：Muted Coral（欠款 / 应付）＋ Muted Sage（应收 / 债权），
    刻意降低饱和度与亮度，避免刺眼的大红大绿 */
@@ -4565,7 +4471,7 @@ body {
 
 .dash-switch-trip {
   background: var(--surface-glass);
-  border: 0.5px solid var(--hairline-strong);
+  border: 0.5px solid var(--border-strong);
 }
 
 /* 22.5 Hero Card：全宽核心卡片，浅色/深色模式两套完全不同的质感 ——
@@ -4810,7 +4716,7 @@ body {
   gap: 8px;
   padding: 13px var(--space-4);
   border-radius: var(--radius-full);
-  border: 0.5px solid var(--hairline-strong);
+  border: 0.5px solid var(--border-strong);
   background: var(--surface-glass);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -4859,7 +4765,7 @@ body {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) 0;
-  border-bottom: 0.5px solid var(--hairline);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .balance-matrix-row:last-child {
@@ -4903,7 +4809,7 @@ body {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) 0;
-  border-bottom: 0.5px solid var(--hairline);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .activity-row:last-child {
@@ -4996,7 +4902,7 @@ body {
   bottom: auto;
   width: calc(100% - 32px);
   border-radius: var(--radius-lg);
-  border-bottom: 0.5px solid var(--hairline-strong, var(--border));
+  border-bottom: 0.5px solid var(--border);
   transform: translate(-50%, calc(-50% + 12px)) scale(0.97) translateZ(0);
 }
 
@@ -5160,7 +5066,7 @@ body {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-card, 0 4px 16px rgba(16, 16, 20, 0.08));
-  border: 0.5px solid var(--hairline);
+  border: 0.5px solid var(--border);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
@@ -5351,7 +5257,7 @@ body {
 }
 
 .skeleton-row:not(:last-child) {
-  border-bottom: 0.5px solid var(--hairline);
+  border-bottom: 0.5px solid var(--border);
 }
 
 .skeleton-avatar {
