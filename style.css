@@ -648,9 +648,8 @@ html {
 /* 汉堡按钮现在是 .app-header 外面的独立元素（原因见 HTML 里的注解，跟
    headerActionBtn 同一个道理），手机/平板（<1024px）不管哪个尺寸都要自己
    给一个 fixed 位置，不能再依赖原本 .header-right 的 flex 排版。
-   自己补一层玻璃底色＋阴影：原本躲在 header 那条玻璃拟态长条里，不需要
-   自带背景也看得清楚；现在浮在内容正上方，视觉上要能跟底下捲动的内容
-   区分开来，不然会看起来像是浮在半空中的一个孤立圖示 */
+   静止时不带任何底色/阴影——纯粹三条线浮在内容正上方，越简约越好；
+   hover／按住才浮现玻璃底色＋阴影当互动回饋，不是一直顶着一颗圆框 */
 .drawer-open {
   display: inline-flex; /* 手机/平板（<1024px）显示；桌面版透过
                             @media (min-width: 1024px) 隐藏（用固定侧栏） */
@@ -658,6 +657,13 @@ html {
   top: calc(var(--space-4) + env(safe-area-inset-top));
   right: var(--space-4);
   z-index: 25;
+  background: none;
+  box-shadow: none;
+  transition: background var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.drawer-open:hover,
+.drawer-open:active {
   background: var(--surface-glass-strong);
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
@@ -1223,6 +1229,41 @@ html {
   margin-bottom: var(--space-5);
 }
 
+/* 成员消费明细页面：自己带一个「返回」+ 标题的迷你 header，取代原本 Modal
+   的关闭按钮——手机版整条 .app-header 藏起来了，这是唯一看得到标题/返回
+   入口的地方；桌面版则是叠在 .app-header 下面多一层，不冲突。
+   返回键跟标题分成上下两行，不是并排同一行——返回键先自己一行，标题/
+   副标题另起一行，视觉上更从容，不会挤在一起 */
+.member-detail-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.member-detail-page-header .icon-btn {
+  margin-right: auto;
+}
+
+.member-detail-page-header-text {
+  min-width: 0;
+}
+
+.member-detail-page-footer {
+  margin-top: var(--space-5);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 设置页拿掉卡片框之後，几个区块（账户资料／偏好设置／财务设置／旅程设置／
+   搭伙鸭金库）之间没有任何视觉分隔，会全部黏在一起分不出段落——用上边框
+   当分隔线，只加在「不是第一个」的 .panel 之间，不会在最上面多一条多余的线 */
+#page-settings > .panel + .panel {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-6);
+  margin-top: calc(-1 * var(--space-1));
+}
+
 .panel-flush {
   padding: 0;
   overflow: hidden;
@@ -1526,11 +1567,21 @@ html {
 /* 新增消费表单的「分类」pill 选择器——跟 .chip 视觉语言一致，但用 flex-wrap
    让按钮自然换行铺满，不是像分类筛选栏那样横向捲动（表单里一次看到全部选项，
    点一下就选好，比横向捲动找选项快） */
+/* 分类改成单排横向捲动，不再 wrap 换行——手机屏幕窄的时候，wrap 会挤成
+   两排甚至三排，佔掉表单不少高度；改成横向捲动只佔一排的高度，捲得到
+   全部选项，跟分类筛选栏（.chip-group）用同一种处理手法 */
 .category-pills {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: var(--space-2);
+  padding-bottom: 2px;
+}
+
+.category-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .category-pill {
@@ -2195,106 +2246,24 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   border-bottom: none;
 }
 
-/* 滑动显示动作——只有手机/平板（<1024px）生效，桌面版维持原本一直显示的
-   按钮/圖示，完全不套用这整组样式（见下面 @media min-width:1024px 那段）。
-   结构：.swipe-row-wrap 是可视窗口（overflow:hidden 裁掉还没滑出来的动作），
-   [data-swipe-row] 是会被 JS 位移的前景内容（本身要有不透明底色，不然
-   位移过程中会透出背景的动作圖示），.swipe-row-actions 贴着窗口左/右边、
-   叠在前景内容底下 */
-.swipe-row-wrap {
-  position: relative;
-  overflow: hidden;
+/* 点击整排触发动作（结算＝去还款，还款纪录＝开编辑/删除选单），不再靠滑动
+   手势——跟消费列表 .expense-row 同一套「整排可点＋结尾一个箭头」的写法，
+   不用另外套不透明底色去藏动作圖示，行的背景就能完全跟页面融在一起，
+   没有「桌面版/手机版长得不一样」或「背景色对不起来」这些问题 */
+.settlement-row.is-clickable {
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
 }
 
-.swipe-row-wrap:last-child .settlement-row {
-  border-bottom: none;
+.settlement-row.is-clickable:hover {
+  background: var(--bg-subtle);
 }
 
-[data-swipe-row] {
-  position: relative;
-  z-index: 1;
-}
-
-.swipe-row-actions {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  z-index: 0;
-}
-
-.swipe-row-actions--right {
-  right: 0;
-  padding-right: var(--space-3);
-}
-
-.swipe-row-actions--left {
-  left: 0;
-  padding-left: var(--space-3);
-}
-
-.swipe-action-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-soft);
-  color: var(--accent);
+.settlement-row-chevron {
   flex-shrink: 0;
-}
-
-.swipe-action-btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.swipe-action-btn.is-danger {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-/* 静态的滑动提示文字（不是动画教学，就是一直待在那里的小字），让使用者
-   不用真的滑一次才知道这里藏了个动作。原本每一行都重複放一次，密密麻麻
-   反而很乱、跟清单本身的资料抢版面——改成整个清单只在最上面放一次
-   （.swipe-hint-section），靠右对齐、字更小更淡，安安静静待在标题旁边 */
-.swipe-hint {
-  font-size: 11px;
+  width: 16px;
+  height: 16px;
   color: var(--text-tertiary);
-}
-
-.swipe-hint-section {
-  text-align: right;
-  padding: 0 var(--space-2) var(--space-2);
-  margin: 0;
-}
-
-@media (min-width: 1024px) {
-  .swipe-row-actions,
-  .swipe-hint {
-    display: none;
-  }
-}
-
-@media (max-width: 1023px) {
-  /* 桌面版专属的行内按钮/圖示在手机版藏起来，改用滑动才看得到的版本，
-     两组不会同时出现 */
-  .settlement-repay-btn-desktop-only,
-  .repayment-actions-desktop-only {
-    display: none;
-  }
-
-  [data-swipe-row] {
-    touch-action: pan-y; /* 告诉浏览器垂直捲动还是正常交给页面，水平位移才是 JS 要接手的部分 */
-    transition: transform 0.2s var(--ease-out);
-    /* 手机版才需要不透明底色——内容要能完全盖住底下还没滑出来的动作圖示，
-       不然静止时就会隐约透出圖示。桌面版没有这层需求，维持原本透明、
-       让玻璃拟态面板的底色透出来，不额外套色 */
-    background: var(--bg-elevated);
-  }
 }
 
 .settlement-repay-btn {
@@ -2363,27 +2332,35 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   margin: 0;
 }
 
+/* 成员原本是网格排列的卡片（每张自己有玻璃拟态底色/阴影），拿掉卡片框之後
+   改成单栏清单，靠 border-bottom 分隔——跟消费列表、结算/还款清单同一种
+   「线条隔开」处理方式，不再是网格卡片，所以桌面版原本的 2/3 栏
+   grid-template-columns 也一併移除（见下面 @media 那两处），全尺寸都是
+   同一栏 */
 .member-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
 }
 
 .member-card {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.member-grid > .member-card:last-child {
+  border-bottom: none;
 }
 
 .member-card-clickable {
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+  transition: background var(--duration-fast) var(--ease-out);
 }
 
 .member-card-clickable:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
+  background: var(--bg-subtle);
 }
 
 .member-card .avatar {
@@ -3247,20 +3224,102 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   color: var(--accent);
 }
 
-/* 中间的 FAB 现在放的是品牌 Logo（本身已经是深色圆角方块＋渐层配色），不再是
-   纯色圆底 + 白色加号图示——外层改成中性、比较浅的底色当画框，把 Logo 的
-   方块造型稳稳包在圆形容器正中央，不会跟 Logo 自己的颜色打架。点击后要做
-   什么由 JS 依目前所在页面动态决定（见 updateMobileFabForPage()），不是固定的
-   「新增消费」 */
+/* 中间的 FAB 现在放的是品牌 Logo（本身已经是深色圆角方块＋渐层配色）——
+   拿掉外层画框跟内距，纯粹就是 Logo 本身浮在导览列正中央，静止时完全没有
+   额外底色；hover 才浮现一圈跟目前深浅模式一致的淡底色当互动回饋（用
+   --bg-subtle，这个变数本身就跟着 [data-theme] 换深浅模式，不用另外
+   写两套颜色）。
+   点一下不再直接执行「新增消费」这类单一动作，改成跟 macOS 下载堆叠的
+   「扇形展开」一样，弹出四个圆形捷径（切换旅程／新增消费／汇出PDF／
+   新增成员）；目前所在页面对应的那个用 accent 色标出来，方便快速辨认
+   「这个是这页原本就有的动作」，其他三个也都能直接点——见 JS 的
+   initMobileFab() / updateMobileFabForPage() */
+.fab-fan {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-14px);
+}
+
+.fab-fan-items {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.fab-fan-item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: transform 0.4s var(--ease-spring), opacity 0.25s var(--ease-out);
+}
+
+.fab-fan-item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.fab-fan-item.is-current {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-lg, 0 12px 28px rgba(16, 16, 20, 0.2)), 0 0 0 3px var(--accent-soft);
+}
+
+/* 展开时四颗圆形捷径的落点，从 FAB 正中央呈扇形往上撑开——跟底部导览列
+   由左到右「概览/账目/…/结算/同行」的顺序对应，扇形最左边是切换旅程
+   （最接近「概览」那颗分页），最右边是新增成员（最接近「同行」），
+   空间上的对应关系比随便排列更直觉 */
+.fab-fan.is-open .fab-fan-item {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fab-fan.is-open .fab-fan-item[data-fab-action="dashboard"] {
+  transform: translate(calc(-50% - 95px), calc(-50% - 32px)) scale(1);
+  transition-delay: 0s;
+}
+
+.fab-fan.is-open .fab-fan-item[data-fab-action="expenses"] {
+  transform: translate(calc(-50% - 55px), calc(-50% - 80px)) scale(1);
+  transition-delay: 0.03s;
+}
+
+.fab-fan.is-open .fab-fan-item[data-fab-action="summary"] {
+  transform: translate(calc(-50% + 55px), calc(-50% - 80px)) scale(1);
+  transition-delay: 0.06s;
+}
+
+.fab-fan.is-open .fab-fan-item[data-fab-action="members"] {
+  transform: translate(calc(-50% + 95px), calc(-50% - 32px)) scale(1);
+  transition-delay: 0.09s;
+}
+
 .tab-item-fab {
+  position: relative;
+  z-index: 2;
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: var(--bg-elevated);
-  padding: 7px;
+  background: none;
+  padding: 0;
   justify-content: center;
-  box-shadow: var(--shadow-md);
-  transform: translateY(-14px);
+  transition: background var(--duration-fast) var(--ease-out), transform 0.3s var(--ease-spring);
 }
 
 .tab-item-fab svg {
@@ -3270,6 +3329,10 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
 .tab-item-fab:hover {
   background: var(--bg-subtle);
+}
+
+.fab-fan.is-open .tab-item-fab {
+  transform: rotate(45deg);
 }
 
 /* ------------------------------------------------------------
@@ -3317,10 +3380,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
   .form-grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .member-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .modal {
@@ -4166,10 +4225,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   .dashboard-grid {
     grid-template-columns: 1.3fr 1fr;
   }
-
-  .member-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 @media (min-width: 1280px) {
@@ -4299,7 +4354,6 @@ body {
 .glass-card,
 .stat-card,
 .member-stat-card,
-.member-card,
 .loading-card {
   border: 0.5px solid var(--border);
   border-radius: var(--radius-lg);
@@ -4316,15 +4370,13 @@ body {
 
 .stat-card:hover,
 .stat-card-clickable:hover,
-.member-stat-card-clickable:hover,
-.member-card-clickable:hover {
+.member-stat-card-clickable:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-card-hover), inset 0 1px 0 var(--specular);
   border-color: var(--border-strong);
 }
 
 .stat-card-clickable:active,
-.member-card-clickable:active,
 .member-stat-card-clickable:active {
   transform: translateY(-1px) scale(0.99);
 }
@@ -4427,12 +4479,11 @@ body {
 }
 
 .tab-item-fab {
-  box-shadow: inset 0 1px 0 var(--specular), 0 10px 22px rgba(16, 16, 20, 0.16);
   transition: transform 0.35s var(--ease-spring), background 0.3s var(--ease-spring);
 }
 
 .tab-item-fab:active {
-  transform: translateY(-14px) scale(0.92);
+  transform: scale(0.92);
 }
 
 /* 19.7 Badge —— 取消实色硬边，改用内发光细描边，质感更轻盈 ------------------ */
@@ -4582,8 +4633,7 @@ body {
 /* 21.3 卡片：hover 幅度收敛，安静的浮起感取代明显位移 */
 .stat-card:hover,
 .stat-card-clickable:hover,
-.member-stat-card-clickable:hover,
-.member-card-clickable:hover {
+.member-stat-card-clickable:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm), inset 0 1px 0 var(--specular);
 }

@@ -644,7 +644,7 @@
       </div>
 
       <!-- Balance Matrix：谁欠谁 -->
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <div>
             <h2 data-i18n="dashboard.matrixTitle">谁欠谁</h2>
@@ -664,7 +664,7 @@
       </div>
 
       <!-- Recent Activity：最近 3 笔消费 -->
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="dashboard.recentExpenses">近期账目</h2>
           <button class="link-btn" data-navigate="expenses" type="button" data-i18n="dashboard.viewAll">查看全部</button>
@@ -729,16 +729,9 @@
           <button class="chip is-active" data-category-filter="all" type="button" data-i18n="expenses.filterAll">全部</button>
           <!-- 分类筛选 chips 由 app.js 动态产生 -->
         </div>
-        <div class="toolbar-right">
-          <select class="select-control" id="splitTypeFilter" aria-label="依分账方式筛选">
-            <option value="all" data-i18n="expenses.filterSplitType">所有分账方式</option>
-            <option value="equal" data-i18n="expenses.filterEqual">平均分账</option>
-            <option value="custom" data-i18n="expenses.filterCustom">自订分账</option>
-          </select>
-        </div>
       </div>
 
-      <div class="glass-card panel panel-flush">
+      <div class="panel panel-flush">
         <div class="expense-list" id="expensesList">
           <!-- 消费列表由 app.js 动态产生 -->
         </div>
@@ -788,7 +781,7 @@
         </button>
       </div>
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="summary.balancePanel">每人收支</h2>
         </div>
@@ -803,15 +796,14 @@
         </div>
       </div>
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <div>
             <h2 data-i18n="summary.settlementPanel">最优结算</h2>
             <p class="panel-hint" style="margin-top: 2px;" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
           </div>
-          <button class="btn btn-secondary btn-sm" id="settleAllBtn" type="button" data-i18n="settlement.markAsPaid">一键结清</button>
+          <button class="link-btn" id="settleAllBtn" type="button" data-i18n="settlement.markAsPaid">一键结清</button>
         </div>
-        <p class="swipe-hint swipe-hint-section" data-i18n="settlement.swipeHint">← 左滑显示「去还款」</p>
         <div class="panel-body" id="settlementList">
           <div class="empty-state">
             <div class="empty-illustration" aria-hidden="true">
@@ -823,13 +815,12 @@
         </div>
       </div>
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="summary.repaymentPanel">还款纪录</h2>
-          <button class="btn btn-secondary btn-sm" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>
+          <button class="link-btn" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>
         </div>
         <p class="panel-hint" style="margin-bottom: var(--space-3);" data-i18n="summary.repaymentHint">记录谁已经实际把钱转给谁，系统会自动从上方余额中扣抵</p>
-        <p class="swipe-hint swipe-hint-section" data-i18n="repayment.swipeHint">右滑显示编辑／删除 →</p>
         <div class="panel-body" id="repaymentList">
           <div class="empty-state empty-state-compact">
             <div class="empty-illustration" aria-hidden="true">
@@ -899,7 +890,7 @@
     <section class="page is-hidden" id="page-settings" data-page-section="settings">
 
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="account.panelTitle">账户资料</h2>
         </div>
@@ -965,7 +956,7 @@
         </div>
       </div>
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="settings.preferencePanel">偏好设置</h2>
         </div>
@@ -991,7 +982,7 @@
         </div>
       </div>
 
-      <div class="glass-card panel">
+      <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="settings.financialPanel">财务设置</h2>
         </div>
@@ -1027,7 +1018,7 @@
            左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
            小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
            选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
-      <div class="glass-card panel" id="settingsTripSwitcherPanel">
+      <div class="panel" id="settingsTripSwitcherPanel">
         <div class="panel-header">
           <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
         </div>
@@ -1059,7 +1050,7 @@
 
       <!-- 搭伙金库 (Divvy Pool)：既有旅程在这里补开，或管理已开启的金库打款状态；
            内容由 renderPoolSettingsPanel() 全权接管 -->
-      <div class="glass-card panel" id="poolSettingsCard">
+      <div class="panel" id="poolSettingsCard">
         <div class="panel-header">
           <h2 data-i18n="pool.settings.enableTitle">搭伙鸭金库</h2>
         </div>
@@ -1079,6 +1070,30 @@
       </p>
     </section>
 
+    <!-- 成员消费明细：原本是 Modal，改成独立页面（可以用「返回」离开，不是关闭
+         Modal），点击「同行」页任一位成员会切换过来。不是底部导览五个分页之一，
+         靠 memberDetailBackBtn 的「返回」离开，不透过 navigateToPage() 切换 -->
+    <section class="page is-hidden" id="page-member-detail" data-page-section="member-detail">
+      <div class="member-detail-page-header">
+        <button class="icon-btn" id="memberDetailBackBtn" type="button" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="member-detail-page-header-text">
+          <h1 class="page-title" id="memberExpenseTitle">消费明细</h1>
+          <p class="page-subtitle" id="memberExpenseSubtitle" style="display: block;"></p>
+        </div>
+      </div>
+      <div id="memberExpenseList">
+        <!-- 该成员的消费明细由 app.js 动态产生 -->
+      </div>
+      <div class="member-detail-page-footer">
+        <button class="btn btn-secondary" type="button" id="exportMemberPdfBtn">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span data-i18n="summary.exportPdf">汇出 PDF</span>
+        </button>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -1092,32 +1107,48 @@
     <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
     <span data-i18n="nav.expensesShort">账目</span>
   </button>
-  <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" aria-label="操作">
-    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <linearGradient id="ddPurpleFab" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#1E1B4B"/>
-          <stop offset="100%" stop-color="#0F172A"/>
-        </linearGradient>
-        <linearGradient id="ddBeakFab" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FBBF24"/>
-          <stop offset="100%" stop-color="#F59E0B"/>
-        </linearGradient>
-        <linearGradient id="ddBarFab" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#38BDF8"/>
-          <stop offset="100%" stop-color="#818CF8"/>
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleFab)"/>
-      <g transform="rotate(-12, 50, 50)">
-        <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
-        <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
-        <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakFab)"/>
-        <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarFab)"/>
-        <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
-      </g>
-    </svg>
-  </button>
+  <div class="fab-fan" id="mobileFabFan">
+    <div class="fab-fan-items" id="fabFanItems">
+      <button class="fab-fan-item" type="button" data-fab-action="dashboard" aria-label="切换旅程">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M7 7H17L14 4M17 17H7L10 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="fab-fan-item" type="button" data-fab-action="expenses" aria-label="新增消费">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="fab-fan-item" type="button" data-fab-action="summary" aria-label="汇出PDF">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="fab-fan-item" type="button" data-fab-action="members" aria-label="新增成员">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="10" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19C4 15.5 6.5 13.3 10 13.3C13.5 13.3 16 15.5 16 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M18 8V14M15 11H21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" aria-label="操作">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="ddPurpleFab" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1E1B4B"/>
+            <stop offset="100%" stop-color="#0F172A"/>
+          </linearGradient>
+          <linearGradient id="ddBeakFab" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FBBF24"/>
+            <stop offset="100%" stop-color="#F59E0B"/>
+          </linearGradient>
+          <linearGradient id="ddBarFab" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#38BDF8"/>
+            <stop offset="100%" stop-color="#818CF8"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleFab)"/>
+        <g transform="rotate(-12, 50, 50)">
+          <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+          <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+          <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakFab)"/>
+          <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarFab)"/>
+          <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+        </g>
+      </svg>
+    </button>
+  </div>
   <button class="tab-item" data-page="summary" type="button">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span data-i18n="nav.summaryShort">结算</span>
@@ -1320,28 +1351,6 @@
   </div>
   <div class="modal-body" id="mergeMemberList">
     <!-- 待认领的旧成员清单由 app.js 动态产生 -->
-  </div>
-</div>
-
-<!-- 成员消费明细 Modal -->
-<div class="modal" id="memberExpenseModal" role="dialog" aria-modal="true" aria-labelledby="memberExpenseTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="memberExpenseTitle">消费明细</h2>
-      <p class="panel-hint" id="memberExpenseSubtitle"></p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="memberExpenseList">
-    <!-- 该成员的消费明细由 app.js 动态产生 -->
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-secondary" type="button" id="exportMemberPdfBtn">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span data-i18n="summary.exportPdf">汇出 PDF</span>
-    </button>
   </div>
 </div>
 
@@ -1687,6 +1696,25 @@
       <span class="btn-label" data-i18n="repayment.save">储存纪录</span>
       <span class="btn-spinner" aria-hidden="true"></span>
     </button>
+  </div>
+</div>
+
+<!-- 还款纪录动作选单：点击清单里任一笔还款纪录会弹出，选「编辑」或「删除」——
+     取代原本滑动才看得到圖示的做法，点击整排就跳出来，两个动作都在同一个
+     地方选，不用先猜要滑哪个方向 -->
+<div class="modal modal-sm" id="repaymentActionModal" role="dialog" aria-modal="true" aria-labelledby="repaymentActionTitle">
+  <div class="modal-header">
+    <h2 id="repaymentActionTitle" data-i18n="summary.repaymentPanel">还款纪录</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <p class="panel-hint" id="repaymentActionSubtitle"></p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" id="repaymentActionDeleteBtn" data-i18n="aria.delete">删除</button>
+    <button class="btn btn-primary" type="button" id="repaymentActionEditBtn" data-i18n="aria.edit">编辑</button>
   </div>
 </div>
 

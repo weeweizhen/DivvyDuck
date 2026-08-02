@@ -540,7 +540,6 @@ const STRINGS = {
     'settlement.allSettled.desc': '所有账目已经结清，大家两不相欠。',
     'settlement.markAsPaid': '一键结清',
     'settlement.goRepay': '去还款',
-    'settlement.swipeHint': '← 左滑显示「去还款」',
     'settlement.poolOffsetBadge': '金库抵扣',
     'settlement.settleAllConfirm': '这会把 {count} 笔建议（共 {total}）标记成「已还款」。请先确认转账都已经实际完成——搭伙鸭不会帮你转账，也无法验证钱有没有到账，标记错了要自己回来修改或删除。',
     'settlement.settleAllSuccess': '已全部结清',
@@ -742,7 +741,6 @@ const STRINGS = {
     'aria.delete': '删除',
     'aria.editRepayment': '编辑还款纪录',
     'aria.deleteRepayment': '删除还款纪录',
-    'repayment.swipeHint': '右滑显示编辑／删除 →',
     'aria.deleteMember': '删除成员',
     'repayment.paidTo': '还款给 {name}',
     'repayment.recordSuffix': '还款纪录',
@@ -1205,7 +1203,6 @@ const STRINGS = {
     'settlement.allSettled.desc': 'Everyone is settled up.',
     'settlement.markAsPaid': 'Settle All',
     'settlement.goRepay': 'Settle up',
-    'settlement.swipeHint': '← Swipe left for "Settle up"',
     'settlement.poolOffsetBadge': 'Pool offset',
     'summary.repaymentPanel': 'Repayment History',
     'summary.addRepayment': '+ Record Repayment',
@@ -1394,7 +1391,6 @@ const STRINGS = {
     'aria.delete': 'Delete',
     'aria.editRepayment': 'Edit repayment',
     'aria.deleteRepayment': 'Delete repayment',
-    'repayment.swipeHint': 'Swipe right for edit/delete →',
     'aria.deleteMember': 'Delete member',
     'repayment.paidTo': 'Paid to {name}',
     'repayment.recordSuffix': 'Repayment',
@@ -1875,6 +1871,7 @@ function startAppAfterAuth() {
   initNavigation();
   initModals();
   initMobileFab();
+  document.getElementById('memberDetailBackBtn').addEventListener('click', closeMemberDetailPage_);
   initSegmentedControl();
   initSmartMemory();
   initExpenseDraftAutosave();
@@ -2928,7 +2925,16 @@ function renderTripPickerList() {
     return;
   }
 
-  listEl.innerHTML = appState.trips.map((trip) => {
+  // 第一个永远是目前正在看的旅程，其余照建立时间新到旧排——比原始抓回来的
+  // 顺序（建立时间由旧到新）更符合「先看到目前这趟，接下来是最近开的那几趟」
+  // 的直觉，不用在一長串旅程里自己找目前是哪一个
+  const currentTrip = appState.trips.find((trip) => trip.id === currentTripId);
+  const otherTrips = appState.trips
+    .filter((trip) => trip.id !== currentTripId)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const orderedTrips = currentTrip ? [currentTrip, ...otherTrips] : otherTrips;
+
+  listEl.innerHTML = orderedTrips.map((trip) => {
     const isActive = trip.id === currentTripId;
     return `
       <div class="trip-picker-row ${isActive ? 'is-active' : ''}">
@@ -4864,6 +4870,11 @@ function navigateToPage(pageId) {
     return;
   }
 
+  const fanWrap = document.getElementById('mobileFabFan');
+  if (fanWrap) {
+    fanWrap.classList.remove('is-open'); // 切页的话，展开中的扇形捷径没意义了，一併收起来
+  }
+
   document.querySelectorAll('.page').forEach((section) => {
     section.classList.toggle('is-hidden', section.getAttribute('data-page-section') !== pageId);
   });
@@ -4903,45 +4914,34 @@ function updateHeaderForPage(pageId) {
 }
 
 /**
- * 手机版底部导览中间那颗 FAB，现在放的是品牌 Logo，不是固定的「新增消费」——
- * 点了会做什么依「目前在哪一页」而定（实际动作在 initMobileFab() 的点击
- * 事件里），这里只负责更新 aria-label，让不同页面至少在无障碍朗读上
- * 说得出「这颗按钮现在是做什么用的」，不是每页都念同一句「新增消费」
+ * 手机版底部导览中间那颗 FAB，现在放的是品牌 Logo，点了会展开四个圆形捷径
+ * （见 initMobileFab()），不是直接执行单一动作——这里负责标出「目前所在
+ * 页面对应哪一个捷径」，帮那颗加上 .is-current 高亮，让使用者一眼就认得
+ * 出「这个是这页原本就有的动作」，其他三个也都还是能直接点
  * @param {string} pageId
  */
 function updateMobileFabForPage(pageId) {
-  const fabBtn = document.getElementById('mobileFabBtn');
-  if (!fabBtn) {
-    return;
-  }
-  const labelMap = {
-    dashboard: t('tripPicker.title'),
-    expenses: t('header.addExpense'),
-    summary: t('summary.exportPdf'),
-    members: t('members.addBtn')
-  };
-  fabBtn.setAttribute('aria-label', labelMap[pageId] || t('tripPicker.title'));
+  document.querySelectorAll('.fab-fan-item').forEach((item) => {
+    item.classList.toggle('is-current', item.getAttribute('data-fab-action') === pageId);
+  });
 }
 
 /**
- * 中间 FAB 的点击行为——依「目前显示的是哪一页」分派到四种不同动作：
- * 概览＝切换旅程、账目＝新增消费（原本就是这颗按钮的功能）、结算＝汇出 PDF、
- * 同行＝新增成员。用「目前哪个 .page 没被隐藏」判断目前在哪页，比另外维护
- * 一个「目前页面」的全域变数简单——navigateToPage() 本来就是靠切换
- * .is-hidden 来切页，这里直接读同一份 DOM 状态，不会跟实际画面对不上。
- * 新增消费／新增成员沿用跟原本 data-open-modal 委派处理一样的「没选旅程
- * 就跳提示」防呆，不因为改成 FAB 专属的点击事件就少了这层保护
+ * 中间 FAB 现在点了会「扇形展开」四个捷径（切换旅程／新增消费／汇出PDF／
+ * 新增成员），不是直接执行目前页面对应的那个动作——跟 macOS 下载堆叠展开
+ * 成扇形选项那个手感一样。点 Logo 本身开合，点空白处（fan 展开时）也会
+ * 收合，点任一颗捷径就执行对应动作并收合。新增消费／新增成员沿用跟原本
+ * data-open-modal 委派处理一样的「没选旅程就跳提示」防呆
  */
 function initMobileFab() {
+  const fanWrap = document.getElementById('mobileFabFan');
   const fabBtn = document.getElementById('mobileFabBtn');
-  if (!fabBtn) {
+  if (!fanWrap || !fabBtn) {
     return;
   }
 
-  fabBtn.addEventListener('click', () => {
-    const visiblePage = document.querySelector('.page:not(.is-hidden)');
-    const pageId = visiblePage ? visiblePage.getAttribute('data-page-section') : 'dashboard';
-
+  const closeFan = () => fanWrap.classList.remove('is-open');
+  const runFabAction = (pageId) => {
     switch (pageId) {
       case 'expenses':
         if (!currentTripId) {
@@ -4965,6 +4965,25 @@ function initMobileFab() {
       default:
         openTripPickerModal();
         break;
+    }
+  };
+
+  fabBtn.addEventListener('click', () => {
+    fanWrap.classList.toggle('is-open');
+  });
+
+  fanWrap.querySelectorAll('.fab-fan-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      closeFan();
+      runFabAction(item.getAttribute('data-fab-action'));
+    });
+  });
+
+  // 点空白处（fan 已经展开的情况下）直接收合，不用特地再点一次 Logo 关掉——
+  // 跟大部分下拉/弹出选单同一种「点外面自动关闭」的习惯
+  document.addEventListener('click', (event) => {
+    if (fanWrap.classList.contains('is-open') && !fanWrap.contains(event.target)) {
+      closeFan();
     }
   });
 }
@@ -8093,11 +8112,6 @@ function initExpenseFilters() {
     currentSearchKeyword = event.target.value.trim().toLowerCase();
     renderExpensesTable();
   }, 180));
-
-  document.getElementById('splitTypeFilter').addEventListener('change', (event) => {
-    currentSplitTypeFilter = event.target.value;
-    renderExpensesTable();
-  });
 }
 
 function renderCategoryFilterChips() {
@@ -8349,90 +8363,6 @@ function openExpenseDetailModal(expenseId) {
    12. 渲染：Summary 页
    ------------------------------------------------------------ */
 
-/**
- * 通用的「滑动显示动作」手势——只在手机/平板（<1024px）生效，桌面版完全
- * 不套用（连事件都不绑），维持原本一直显示的按钮/圖示不变。
- * @param {HTMLElement} container 装着一批 [data-swipe-row] 的容器（例如整个列表）
- * @param {'left'|'right'} direction 手指滑动的方向：'left' 代表内容往左移、
- *   动作露在右边（例如「去还款」）；'right' 代表内容往右移、动作露在左边
- *   （例如还款纪录的编辑/删除）
- */
-function initSwipeReveal(container, direction) {
-  if (window.innerWidth >= 1024) {
-    return; // 桌面版维持原本一直显示的按钮，不套用滑动手势
-  }
-
-  const ACTION_WIDTH = 64; // 跟 .swipe-row-actions 实际撑开的宽度大致对应，抓个滑动开合的距离
-  const sign = direction === 'left' ? -1 : 1;
-
-  container.querySelectorAll('[data-swipe-row]').forEach((row) => {
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let dragging = false;
-    let isHorizontal = null; // 第一次移动时才判断这次手势是水平滑动还是垂直捲动
-
-    row.addEventListener('touchstart', (event) => {
-      startX = event.touches[0].clientX;
-      startY = event.touches[0].clientY;
-      dragging = true;
-      isHorizontal = null;
-      row.style.transition = 'none';
-    }, { passive: true });
-
-    row.addEventListener('touchmove', (event) => {
-      if (!dragging) {
-        return;
-      }
-      const deltaX = event.touches[0].clientX - startX;
-      const deltaY = event.touches[0].clientY - startY;
-
-      if (isHorizontal === null) {
-        // 移动幅度还很小的时候先不判断，避免手抖误判；累积到有意义的距离
-        // 才决定这次手势算水平滑动还是垂直捲动，两者互斥，避免同时误触
-        if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) {
-          return;
-        }
-        isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
-      }
-
-      if (!isHorizontal) {
-        return; // 判定是垂直捲动，交还给页面正常捲动，这里不再处理
-      }
-
-      // 只接受跟 sign 同方向的位移，从已经开启的位置（currentX 起点）继续拖，
-      // 另一个方向最多拖回到 0（不能整排被拖到反方向去）
-      const base = currentX;
-      const proposed = base + deltaX;
-      const clamped = sign < 0
-        ? Math.min(0, Math.max(proposed, -ACTION_WIDTH))
-        : Math.max(0, Math.min(proposed, ACTION_WIDTH));
-      row.style.transform = `translateX(${clamped}px)`;
-      row.dataset.swipeDragging = String(clamped);
-    }, { passive: true });
-
-    row.addEventListener('touchend', () => {
-      dragging = false;
-      row.style.transition = '';
-      const dragged = Number(row.dataset.swipeDragging || 0);
-      const shouldOpen = Math.abs(dragged) > ACTION_WIDTH / 2;
-      currentX = shouldOpen ? sign * ACTION_WIDTH : 0;
-      row.style.transform = `translateX(${currentX}px)`;
-    }, { passive: true });
-
-    // 已经滑开的那排，直接点内容本身（不是点动作按钮）就收合回去，
-    // 不用特地再滑一次关闭，符合大部分滑动清单（例如 Mail App）的习惯
-    row.addEventListener('click', (event) => {
-      if (currentX !== 0) {
-        event.preventDefault();
-        event.stopPropagation();
-        currentX = 0;
-        row.style.transform = 'translateX(0)';
-      }
-    }, { capture: true });
-  });
-}
-
 function renderSummaryPage() {
   togglePageEmptyHero_('summaryEmptyHero', 'summaryNormalContent', false);
 
@@ -8484,42 +8414,38 @@ function renderSummaryPage() {
     renderEmptyBlock('settlementList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
   } else {
     const container = document.getElementById('settlementList');
-    // 桌面版维持原本「一直显示的按钮」；手机/平板改成左滑才看得到的圖示按钮
-    // （见 .swipe-row-actions），两组按钮都渲染出来，靠 CSS 依尺寸各自藏一组，
-    // 不是靠 JS 判断尺寸决定要不要渲染——这样换尺寸/转屏幕都不用重新整理
-    container.innerHTML = settlements.map((item, index) => `
-      <div class="swipe-row-wrap">
-        <div class="settlement-row" data-swipe-row>
-          <div class="settlement-flow">
-            <span>${escapeHtml(getExpensePayerDisplay(item.from))}</span>
-            <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span>${escapeHtml(getExpensePayerDisplay(item.to))}</span>
-          </div>
-          <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
-          ${item.isPoolSettlement
-            ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
-            : `<button class="btn btn-secondary btn-sm settlement-repay-btn settlement-repay-btn-desktop-only" type="button" data-settlement-index="${index}">${escapeHtml(t('settlement.goRepay'))}</button>`}
+    // 点击整排直接去还款（不再是滑动才看得到的按钮）——「搭伙金库」这个虚拟
+    // 参与者的转账建议不能真的去记还款，那一排不给点击样式、也不绑事件
+    container.innerHTML = settlements.map((item, index) => {
+      const isPool = item.isPoolSettlement;
+      return `
+      <div class="settlement-row${isPool ? '' : ' is-clickable'}" ${isPool ? '' : `data-settlement-index="${index}" role="button" tabindex="0" aria-label="${escapeHtml(t('settlement.goRepay'))}"`}>
+        <div class="settlement-flow">
+          <span>${escapeHtml(getExpensePayerDisplay(item.from))}</span>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>${escapeHtml(getExpensePayerDisplay(item.to))}</span>
         </div>
-        ${item.isPoolSettlement ? '' : `
-        <div class="swipe-row-actions swipe-row-actions--right">
-          <button class="swipe-action-btn settlement-repay-btn" type="button" data-settlement-index="${index}" aria-label="${escapeHtml(t('settlement.goRepay'))}">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L20 4L14 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-        `}
+        <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
+        ${isPool
+          ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
+          : `<svg class="settlement-row-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
       </div>
-    `).join('');
+    `;
+    }).join('');
 
-    // 跟「搭伙金库」这个虚拟参与者有关的转账建议不能真的去记还款——它不是真实成员，
-    // 写入 Repayments 表会因为找不到对应的 MemberID 而失败，这里直接不绑点击事件
-    container.querySelectorAll('.settlement-repay-btn').forEach((button) => {
-      button.addEventListener('click', () => {
-        const item = settlements[Number(button.getAttribute('data-settlement-index'))];
-        openRepaymentModalPrefilled(item.from, item.to, item.amount);
+    const goRepay = (row) => {
+      const item = settlements[Number(row.getAttribute('data-settlement-index'))];
+      openRepaymentModalPrefilled(item.from, item.to, item.amount);
+    };
+    container.querySelectorAll('.settlement-row.is-clickable').forEach((row) => {
+      row.addEventListener('click', () => goRepay(row));
+      row.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          goRepay(row);
+        }
       });
     });
-
-    initSwipeReveal(container, 'left');
   }
 
   renderRepaymentList();
@@ -8538,53 +8464,68 @@ function renderRepaymentList() {
   }
 
   const container = document.getElementById('repaymentList');
-  // 桌面版维持原本一直显示的编辑/删除圖示；手机/平板改成右滑才看得到——
-  // 两组都渲染出来，靠 CSS 依尺寸各自藏一组（同settlement那组的做法）
-  container.innerHTML = repayments.map((item) => `
-    <div class="swipe-row-wrap">
-      <div class="settlement-row" data-swipe-row>
-        <div class="settlement-flow">
-          <span>${escapeHtml(item.FromMember)}</span>
-          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>${escapeHtml(item.ToMember)}</span>
-        </div>
-        <p class="settlement-amount mono">${formatMoney(item.Amount)}</p>
-        ${item.CanManage ? `
-        <button class="icon-btn repayment-actions-desktop-only" type="button" data-edit-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.editRepayment'))}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.7 16.5L16 5.2C16.6 4.6 17.6 4.6 18.2 5.2L19.3 6.3C19.9 6.9 19.9 7.9 19.3 8.5L8 19.8L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="icon-btn repayment-actions-desktop-only" type="button" data-delete-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.deleteRepayment'))}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        ` : ''}
+  // 点击整排（只有当事人 CanManage 才能点）开一个小选单选「编辑」或「删除」，
+  // 不再是滑动才看得到的圖示——不能管的那排就是纯展示，不给点击样式
+  container.innerHTML = repayments.map((item) => {
+    const clickable = item.CanManage;
+    return `
+    <div class="settlement-row${clickable ? ' is-clickable' : ''}" ${clickable ? `data-repayment-id="${escapeHtml(item.ID)}" role="button" tabindex="0"` : ''}>
+      <div class="settlement-flow">
+        <span>${escapeHtml(item.FromMember)}</span>
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>${escapeHtml(item.ToMember)}</span>
       </div>
-      ${item.CanManage ? `
-      <div class="swipe-row-actions swipe-row-actions--left">
-        <button class="swipe-action-btn" type="button" data-edit-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.editRepayment'))}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.7 16.5L16 5.2C16.6 4.6 17.6 4.6 18.2 5.2L19.3 6.3C19.9 6.9 19.9 7.9 19.3 8.5L8 19.8L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        </button>
-        <button class="swipe-action-btn is-danger" type="button" data-delete-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.deleteRepayment'))}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      ` : ''}
+      <p class="settlement-amount mono">${formatMoney(item.Amount)}</p>
+      ${clickable ? `<svg class="settlement-row-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
-  container.querySelectorAll('[data-edit-repayment]').forEach((button) => {
-    button.addEventListener('click', () => openEditRepaymentModal(button.getAttribute('data-edit-repayment')));
-  });
-
-  container.querySelectorAll('[data-delete-repayment]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const repaymentId = button.getAttribute('data-delete-repayment');
-      const repayment = appState.repayments.find((item) => item.ID === repaymentId);
-      const label = repayment ? `${repayment.FromMember} → ${repayment.ToMember}` : repaymentId;
-      handleDeleteRepaymentClick(repaymentId, label);
+  container.querySelectorAll('.settlement-row.is-clickable[data-repayment-id]').forEach((row) => {
+    const open = () => openRepaymentActionModal(row.getAttribute('data-repayment-id'));
+    row.addEventListener('click', open);
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        open();
+      }
     });
   });
+}
 
-  initSwipeReveal(container, 'right');
+/**
+ * 点击还款纪录那一排跳出来的小选单——「编辑」直接沿用既有的编辑表单，
+ * 「删除」沿用既有的二次确认流程，这里只负责「点了要做什么」的第一层选择
+ * @param {string} repaymentId
+ */
+function openRepaymentActionModal(repaymentId) {
+  const repayment = appState.repayments.find((item) => item.ID === repaymentId);
+  if (!repayment) {
+    showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
+    return;
+  }
+
+  document.getElementById('repaymentActionSubtitle').textContent =
+    `${repayment.FromMember} → ${repayment.ToMember} · ${formatMoney(repayment.Amount)}`;
+
+  const editBtn = document.getElementById('repaymentActionEditBtn');
+  const freshEditBtn = editBtn.cloneNode(true);
+  editBtn.parentNode.replaceChild(freshEditBtn, editBtn);
+  freshEditBtn.addEventListener('click', () => {
+    closeActiveModal();
+    openEditRepaymentModal(repaymentId);
+  });
+
+  const deleteBtn = document.getElementById('repaymentActionDeleteBtn');
+  const freshDeleteBtn = deleteBtn.cloneNode(true);
+  deleteBtn.parentNode.replaceChild(freshDeleteBtn, deleteBtn);
+  freshDeleteBtn.addEventListener('click', () => {
+    closeActiveModal();
+    const label = `${repayment.FromMember} → ${repayment.ToMember}`;
+    handleDeleteRepaymentClick(repaymentId, label);
+  });
+
+  openModal('repaymentActionModal');
 }
 
 /**
@@ -8717,7 +8658,7 @@ function renderMembersPage() {
   container.innerHTML = members.map((name) => {
     const status = getMemberStatusBadge(name);
     return `
-    <div class="glass-card member-card member-card-clickable" data-member-card="${escapeHtml(name)}" role="button" tabindex="0">
+    <div class="member-card member-card-clickable" data-member-card="${escapeHtml(name)}" role="button" tabindex="0">
       <div class="avatar">${escapeHtml(getInitials(name))}</div>
       <div class="member-card-info">
         <p class="member-card-name">${escapeHtml(name)}</p>
@@ -8741,7 +8682,7 @@ function renderMembersPage() {
   });
 
   container.querySelectorAll('[data-member-card]').forEach((card) => {
-    const openHandler = () => openMemberExpenseDetailModal(card.getAttribute('data-member-card'));
+    const openHandler = () => openMemberDetailPage(card.getAttribute('data-member-card'));
     card.addEventListener('click', openHandler);
     card.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -8980,12 +8921,15 @@ function openCategoryStatsModal() {
 }
 
 /**
- * 打开「成员消费明细」Modal，列出指定成员所有相关的纪录
+ * 切换到「成员消费明细」页面，列出指定成员所有相关的纪录——原本是 Modal，
+ * 现在是独立页面（用 openMemberDetailPage/closeMemberDetailPage 这组函式
+ * 手动切换 .is-hidden，不透过 navigateToPage()，因为这不是底部导览五个
+ * 分页之一，不需要更新 nav 高亮/header 标题那一整套逻辑）
  * 包含：消费（他当付款人垫的 / 他有分摊到的），以及他自己付出去的还款纪录
  * （只记录「付给谁」，不记录「收到谁的」——那属于对方自己的还款纪录）
  * @param {string} name 成员姓名
  */
-function openMemberExpenseDetailModal(name) {
+function openMemberDetailPage(name) {
   currentMemberDetailName = name;
   const memberId = appState.memberIndex && appState.memberIndex.byName[name];
 
@@ -9032,7 +8976,7 @@ function openMemberExpenseDetailModal(name) {
         <p>${escapeHtml(t('memberDetail.empty.desc'))}</p>
       </div>
     `;
-    openModal('memberExpenseModal');
+    showMemberDetailPage_();
     return;
   }
 
@@ -9069,7 +9013,30 @@ function openMemberExpenseDetailModal(name) {
   }
 
   listContainer.innerHTML = html;
-  openModal('memberExpenseModal');
+  showMemberDetailPage_();
+}
+
+/**
+ * 实际切换到成员消费明细页面：藏掉其他 .page、显示这个、捲回顶端——
+ * 跟 navigateToPage() 分开一支，因为这个页面不在 PAGE_IDS 里，不需要
+ * 更新 nav 高亮/header 标题/FAB 那一整套逻辑
+ */
+function showMemberDetailPage_() {
+  document.querySelectorAll('.page').forEach((section) => {
+    section.classList.add('is-hidden');
+  });
+  document.getElementById('page-member-detail').classList.remove('is-hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/**
+ * 「返回」离开成员消费明细页面，回到「同行」页——不是 Modal 的关闭，
+ * 是切页，所以直接呼叫 navigateToPage('members') 把 nav 高亮/header
+ * 标题/FAB 都恢复成「同行」页该有的状态
+ */
+function closeMemberDetailPage_() {
+  document.getElementById('page-member-detail').classList.add('is-hidden');
+  navigateToPage('members');
 }
 
 /**
