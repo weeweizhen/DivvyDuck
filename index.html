@@ -565,8 +565,8 @@
                 <div class="empty-illustration" aria-hidden="true">
                   <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M24 33L29 38L40 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
-                <h3 data-i18n="hero.noViewerTitle">还没设定你是谁</h3>
-                <p data-i18n="hero.noViewerDesc">这个账号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
+                <h3 id="heroEmptyStateTitle" data-i18n="hero.noViewerTitle">还没设定你是谁</h3>
+                <p id="heroEmptyStateDesc" data-i18n="hero.noViewerDesc">这个账号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
               </div>
               <div class="hero-content is-hidden" id="heroContent">
                 <div class="hero-card-top">
@@ -640,8 +640,22 @@
         </button>
       </div>
 
+      <!-- 完全没有消费纪录时，「谁欠谁」跟「近期账目」两个面板都不会有东西可以
+           显示，与其各自放一个小空状态、看起来像坏掉一样，不如直接换成一个
+           大范围的引导区块——Hero Card／快速操作还是留着（净额显示会自己
+           换成「还没有消费」的样子，见 renderHeroCard()），只是底下这段换掉 -->
+      <div class="empty-state" id="dashNoExpensesBlock" style="display: none;">
+        <div class="empty-illustration" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none"><rect x="14" y="10" width="36" height="46" rx="6" stroke="currentColor" stroke-width="2"/><path d="M22 24H42M22 32H42M22 40H34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3 data-i18n="empty.noExpenses.title">还没有任何消费纪录</h3>
+        <p data-i18n="empty.noExpenses.desc">记第一笔消费，开始一起记账。</p>
+        <button class="btn btn-primary btn-sm" type="button" data-open-modal="addExpenseModal" data-i18n="header.addExpense">记一笔</button>
+      </div>
+
+      <div id="dashTripDataSections">
       <!-- Balance Matrix：谁欠谁 -->
-      <div class="panel">
+      <div class="panel" id="balanceMatrixPanel">
         <div class="panel-header">
           <div>
             <h2 data-i18n="dashboard.matrixTitle">谁欠谁</h2>
@@ -676,6 +690,7 @@
             <button class="btn btn-primary btn-sm" type="button" data-open-modal="addExpenseModal" data-i18n="header.addExpense">记一笔</button>
           </div>
         </div>
+      </div>
       </div>
 
       </div>
@@ -770,6 +785,19 @@
         <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
       </div>
 
+      <!-- 旅程本身是有的，只是完全还没有任何消费纪录——用跟其他地方（账目页、
+           概览页）一致的「小圖示 + 文字」空状态就好，不需要另外套一个像
+           「根本没有旅程」那种整页大 Logo 的欢迎画面，那个视觉份量太重了，
+           这里只是暂时没资料，不是引导使用者做重大决定 -->
+      <div class="empty-state" id="summaryNoDataBlock" style="display: none;">
+        <div class="empty-illustration" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none"><rect x="14" y="10" width="36" height="46" rx="6" stroke="currentColor" stroke-width="2"/><path d="M22 24H42M22 32H42M22 40H34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3 data-i18n="empty.noExpenses.title">还没有任何消费纪录</h3>
+        <p data-i18n="empty.noExpenses.desc">记第一笔消费，开始一起记账。</p>
+        <button class="btn btn-primary btn-sm" type="button" data-open-modal="addExpenseModal" data-i18n="header.addExpense">记一笔</button>
+      </div>
+
       <div class="page-normal-content" id="summaryNormalContent">
       <div class="toolbar" id="summaryExportToolbar">
         <button class="btn btn-secondary btn-sm" id="exportPdfBtn" type="button">
@@ -812,7 +840,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="repaymentPanel">
         <div class="panel-header">
           <h2 data-i18n="summary.repaymentPanel">还款纪录</h2>
           <button class="link-btn" type="button" data-open-modal="addRepaymentModal" data-i18n="summary.addRepayment">+ 记录还款</button>

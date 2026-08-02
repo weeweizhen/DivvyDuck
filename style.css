@@ -3213,7 +3213,17 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-weight: 600;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
-  transition: color var(--duration-fast) var(--ease-out);
+  transition: color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), filter var(--duration-fast) var(--ease-out);
+}
+
+/* 扇形展开时，底部导览列其他四个分页图示（概览/账目/结算/同行）也跟着
+   一起压暗压糊，只留 Logo／扇形本身清楚——不是只有页面内容被朦胧罩住，
+   整个底部感觉起来都「让出空间」给扇形，最左（切换行程）跟最右（设置）
+   两颗胶囊才会有种「盖过」导览列的效果，跟最早期的版本一样 */
+.mobile-tabbar.is-fan-open .tab-item:not(.tab-item-fab) {
+  opacity: 0.28;
+  filter: blur(2px);
+  pointer-events: none;
 }
 
 .tab-item svg {
@@ -3246,9 +3256,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   right: 0;
   height: 100vh;
   height: 100dvh;
-  background: rgba(10, 10, 14, 0.38);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* 之前 0.38 不透明度在深色模式下够暗，但浅色模式的页面底色本来就比较亮，
+     同样 38% 的深色蒙层混完还是偏灰、不够暗，导致没被强调色标出来的那几颗
+     胶囊（白底白字）几乎融进背景里，要仔细看才找得到。加重到 0.62、模糊
+     也加大，不管浅色/深色模式蒙层本身都要够暗，胶囊的白色文字才能稳定
+     维持对比度，不用看模式脸色 */
+  background: rgba(8, 8, 12, 0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration-fast) var(--ease-out);
@@ -3262,10 +3277,11 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
 .fab-fan {
   position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-14px);
+  transform: translateY(-24px);
 }
 
 .fab-fan-items {
@@ -3305,7 +3321,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   justify-content: center;
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .fab-fan-item-icon svg {
@@ -3340,27 +3356,27 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="dashboard"] {
-  transform: translate(calc(-50% - 125px), calc(-50% - 60px)) scale(1);
+  transform: translate(calc(-50% - 170px), calc(-50% - 65px)) scale(1);
   transition-delay: 0s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="expenses"] {
-  transform: translate(calc(-50% - 80px), calc(-50% - 105px)) scale(1);
+  transform: translate(calc(-50% - 90px), calc(-50% - 115px)) scale(1);
   transition-delay: 0.025s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="summary"] {
-  transform: translate(-50%, calc(-50% - 125px)) scale(1);
+  transform: translate(-50%, calc(-50% - 145px)) scale(1);
   transition-delay: 0.05s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="members"] {
-  transform: translate(calc(-50% + 80px), calc(-50% - 105px)) scale(1);
+  transform: translate(calc(-50% + 90px), calc(-50% - 115px)) scale(1);
   transition-delay: 0.075s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="settings"] {
-  transform: translate(calc(-50% + 125px), calc(-50% - 60px)) scale(1);
+  transform: translate(calc(-50% + 170px), calc(-50% - 65px)) scale(1);
   transition-delay: 0.1s;
 }
 

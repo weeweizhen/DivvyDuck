@@ -4640,12 +4640,24 @@ const PAGE_EMPTY_HERO_MAP = [
  */
 function renderNoTripState() {
   PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => togglePageEmptyHero_(heroId, normalId, true));
+  // 「完全没有旅程」跟「有旅程但还没有消费纪录」是两组互斥的 Hero，切到
+  // 「没有旅程」这组的时候，另一组如果还留着 is-hidden 拿掉的状态，
+  // 两个 Hero 会同时露出来，这里保险起见都藏掉
+  document.getElementById('summaryNoDataBlock')?.style.setProperty('display', 'none');
+  document.getElementById('dashNoExpensesBlock')?.style.setProperty('display', 'none');
 }
 
 function renderApiErrorState(message) {
   PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => togglePageEmptyHero_(heroId, normalId, false));
 
   const title = t('system.loadFailed');
+  // balanceMatrixPanel／settlementPanel 平常「没资料」的时候会被藏起来（见
+  // renderBalanceMatrix() / renderSummaryPage()）——这里是要显示错误讯息，
+  // 不是「没资料」，要先确保面板本身是打开的，不然错误讯息会被塞进一个
+  // 已经隐藏的面板里，使用者根本看不到
+  document.getElementById('balanceMatrixPanel')?.classList.remove('is-hidden');
+  document.getElementById('settlementPanel')?.classList.remove('is-hidden');
+  document.getElementById('repaymentPanel')?.classList.remove('is-hidden');
   renderEmptyBlock('recentActivityList', title, message);
   renderEmptyBlock('balanceMatrixList', title, message);
   hideBalanceMatrixToggle();
@@ -4901,6 +4913,7 @@ function navigateToPage(pageId) {
   if (fanBackdrop) {
     fanBackdrop.classList.remove('is-open');
   }
+  document.getElementById('mobileTabbar')?.classList.remove('is-fan-open');
 
   document.querySelectorAll('.page').forEach((section) => {
     section.classList.toggle('is-hidden', section.getAttribute('data-page-section') !== pageId);
@@ -4964,6 +4977,7 @@ function initMobileFab() {
   const fanWrap = document.getElementById('mobileFabFan');
   const fabBtn = document.getElementById('mobileFabBtn');
   const backdrop = document.getElementById('fabFanBackdrop');
+  const tabbar = document.getElementById('mobileTabbar');
   if (!fanWrap || !fabBtn) {
     return;
   }
@@ -4973,11 +4987,17 @@ function initMobileFab() {
     if (backdrop) {
       backdrop.classList.remove('is-open');
     }
+    if (tabbar) {
+      tabbar.classList.remove('is-fan-open');
+    }
   };
   const openFan = () => {
     fanWrap.classList.add('is-open');
     if (backdrop) {
       backdrop.classList.add('is-open');
+    }
+    if (tabbar) {
+      tabbar.classList.add('is-fan-open');
     }
   };
   const runFabAction = (pageId) => {
@@ -6789,8 +6809,20 @@ function renderDashboard() {
   renderDashboardHeader();
   renderHeroCard();
   renderDivvyPoolCard();
-  renderBalanceMatrix();
-  renderRecentActivity();
+
+  // 这趟旅程完全没有任何消费纪录的话，「谁欠谁」「近期账目」两个面板都不会
+  // 有东西可以显示——与其各自放一个小空状态，不如直接换成一整块「还没有
+  // 消费纪录」的引导，Hero Card／快速操作还是留着，只是底下这段换掉
+  const noExpensesBlock = document.getElementById('dashNoExpensesBlock');
+  const dataSection = document.getElementById('dashTripDataSections');
+  const hasNoExpenses = appState.expenses.length === 0;
+  if (noExpensesBlock) noExpensesBlock.style.display = hasNoExpenses ? '' : 'none';
+  if (dataSection) dataSection.style.display = hasNoExpenses ? 'none' : '';
+
+  if (!hasNoExpenses) {
+    renderBalanceMatrix();
+    renderRecentActivity();
+  }
 }
 
 /**
@@ -6897,6 +6929,21 @@ function renderHeroCard() {
   const item = viewerName ? balances.find((b) => b.name === viewerName) : null;
 
   if (!viewerName || !item) {
+    document.getElementById('heroEmptyStateTitle').textContent = t('hero.noViewerTitle');
+    document.getElementById('heroEmptyStateDesc').textContent = t('hero.noViewerDesc');
+    emptyState.classList.remove('is-hidden');
+    content.classList.add('is-hidden');
+    content.classList.remove('is-skeleton');
+    syncDashCardHeights();
+    return;
+  }
+
+  // 有连结成员身份，但这趟旅程还没有任何消费纪录——这跟「结清了」不一样，
+  // 不该让 Hero Card 显示一堆 MYR 0.00（看起来像是有过账目、只是刚好扯平），
+  // 沿用同一个空状态框架、换一组「还没有消费纪录」的文案
+  if (appState.expenses.length === 0) {
+    document.getElementById('heroEmptyStateTitle').textContent = t('empty.noExpenses.title');
+    document.getElementById('heroEmptyStateDesc').textContent = t('empty.noExpenses.desc');
     emptyState.classList.remove('is-hidden');
     content.classList.add('is-hidden');
     content.classList.remove('is-skeleton');
@@ -7022,6 +7069,7 @@ function renderBalanceMatrix() {
   const allSettlements = (appState.summary && appState.summary.settlements) || [];
   const container = document.getElementById('balanceMatrixList');
   const toggleBtn = document.getElementById('balanceMatrixToggleBtn');
+  const panel = document.getElementById('balanceMatrixPanel');
   if (!container) return;
 
   // 只显示跟登入账号有关的那几笔（自己该付给谁、该跟谁收），不是「所有人跟所有人」
@@ -7030,16 +7078,13 @@ function renderBalanceMatrix() {
   const settlements = allSettlements.filter((item) => item.from === viewerName || item.to === viewerName);
 
   if (settlements.length === 0) {
-    if (appState.expenses.length === 0) {
-      // 这趟旅程还没有任何消费纪录，不是「结清了」——用「还没有消费纪录」
-      // 这组文案更准确，避免让人誤以为曾经有过账目
-      renderEmptyBlock('balanceMatrixList', t('empty.noExpenses.title'), t('empty.noExpenses.desc'));
-    } else {
-      renderEmptyBlock('balanceMatrixList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
-    }
-    if (toggleBtn) toggleBtn.classList.add('is-hidden');
+    // 不管是「还没有消费」还是「都已经结清」，这个 section 本来就是拿来提示
+    // 「该转帐给谁」用的——没有要转帐的对象，放一个空状态占位置没有意义，
+    // 直接整块藏起来，跟结算页面「最优结算」结清後隐藏是同一个道理
+    if (panel) panel.classList.add('is-hidden');
     return;
   }
+  if (panel) panel.classList.remove('is-hidden');
 
   const MAX_COLLAPSED = 3;
   const isLong = settlements.length > MAX_COLLAPSED;
@@ -8290,7 +8335,7 @@ function renderExpensesTable(resetPage = true) {
     renderEmptyBlock(
       'expensesList',
       hasAnyExpense ? t('empty.noMatchingExpenses.title') : t('empty.noExpenses.title'),
-      hasAnyExpense ? t('empty.noMatchingExpenses.desc') : t('empty.noExpensesYet.desc2'),
+      hasAnyExpense ? t('empty.noMatchingExpenses.desc') : t('empty.noExpenses.desc'),
       hasAnyExpense ? undefined : 'addExpenseModal',
       hasAnyExpense ? undefined : t('header.addExpense')
     );
@@ -8443,6 +8488,18 @@ function openExpenseDetailModal(expenseId) {
 function renderSummaryPage() {
   togglePageEmptyHero_('summaryEmptyHero', 'summaryNormalContent', false);
 
+  // 旅程本身是有的，只是完全还没有任何消费纪录——换成小巧的引导区块，
+  // 「每人收支」「最优结算」「还款记录」三个面板都还没有意义可言，不要
+  // 让人对着三个各自空空的面板
+  const noDataBlock = document.getElementById('summaryNoDataBlock');
+  const normalContent = document.getElementById('summaryNormalContent');
+  const hasNoExpenses = appState.expenses.length === 0;
+  if (noDataBlock) noDataBlock.style.display = hasNoExpenses ? '' : 'none';
+  if (normalContent) normalContent.classList.toggle('is-hidden', hasNoExpenses);
+  if (hasNoExpenses) {
+    return;
+  }
+
   const balances = appState.summary.balances || [];
   const settlements = appState.summary.settlements || [];
 
@@ -8486,18 +8543,14 @@ function renderSummaryPage() {
 
   // 结算页面的「建议还款」显示完整清单（所有人跟所有人），不像 Dashboard 首页的
   // 「谁欠谁」那样只筛跟自己有关的——这里是给管理这趟旅程的人看全貌用的，
-  // Dashboard 首页那个才是给个人快速看「我该处理什么」用的，两处用途不同
+  // Dashboard 首页那个才是给个人快速看「我该处理什么」用的，两处用途不同。
+  // 走到这里一定是「有消费纪录」（没有消费纪录的话，函式最前面已经 return 了），
+  // 所以 settlements.length===0 只可能是「都已经结清」，不用再判断一次
   const settlementPanel = document.getElementById('settlementPanel');
-  const hasAnyExpense = appState.expenses.length > 0;
-  if (settlements.length === 0 && hasAnyExpense) {
+  if (settlements.length === 0) {
     // 有消费纪录、但大家都已经结清——这个 section 已经没有任何要处理的事，
     // 直接整块藏起来，不留一个「都平衡了」的空状态占位置
     if (settlementPanel) settlementPanel.classList.add('is-hidden');
-  } else if (settlements.length === 0) {
-    // 这趟旅程还没有任何消费纪录，不是「结清了」——用「还没有消费纪录」
-    // 这组文案更准确，避免让人誤以为曾经有过账目
-    if (settlementPanel) settlementPanel.classList.remove('is-hidden');
-    renderEmptyBlock('settlementList', t('empty.noExpenses.title'), t('empty.noExpenses.desc'));
   } else {
     if (settlementPanel) settlementPanel.classList.remove('is-hidden');
     const container = document.getElementById('settlementList');
@@ -8544,11 +8597,16 @@ function renderSummaryPage() {
  */
 function renderRepaymentList() {
   const repayments = [...appState.repayments].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+  const repaymentPanel = document.getElementById('repaymentPanel');
 
   if (repayments.length === 0) {
-    renderEmptyBlock('repaymentList', t('empty.noRepayment.title'), t('empty.noRepayment.desc'));
+    // 还没有任何一笔实际转帐纪录——不留这个 section 的空状态占位置，
+    // 要还款可以直接从上面「最优结算」的建议里点，真正记录了一笔之後
+    // 这个 section 才会冒出来，跟「最优结算」结清後隐藏是同一种处理方式
+    if (repaymentPanel) repaymentPanel.classList.add('is-hidden');
     return;
   }
+  if (repaymentPanel) repaymentPanel.classList.remove('is-hidden');
 
   const container = document.getElementById('repaymentList');
   // 点击整排（只有当事人 CanManage 才能点）开一个小选单选「编辑」或「删除」，
