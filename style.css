@@ -645,9 +645,23 @@ html {
    动画性能考量：只用 transform: translateX(...) 做滑出/收起，
    完全不碰 width/left/margin，避免触发浏览器重排（Reflow）。
    ------------------------------------------------------------ */
+/* 汉堡按钮现在是 .app-header 外面的独立元素（原因见 HTML 里的注解，跟
+   headerActionBtn 同一个道理），手机/平板（<1024px）不管哪个尺寸都要自己
+   给一个 fixed 位置，不能再依赖原本 .header-right 的 flex 排版。
+   自己补一层玻璃底色＋阴影：原本躲在 header 那条玻璃拟态长条里，不需要
+   自带背景也看得清楚；现在浮在内容正上方，视觉上要能跟底下捲动的内容
+   区分开来，不然会看起来像是浮在半空中的一个孤立圖示 */
 .drawer-open {
-  display: inline-flex; /* 手机/平板（<1024px）显示在右上角，取代旅程切换器；
-                            桌面版透过 @media (min-width: 1024px) 隐藏（用固定侧栏） */
+  display: inline-flex; /* 手机/平板（<1024px）显示；桌面版透过
+                            @media (min-width: 1024px) 隐藏（用固定侧栏） */
+  position: fixed;
+  top: calc(var(--space-4) + env(safe-area-inset-top));
+  right: var(--space-4);
+  z-index: 25;
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-md, 0 6px 20px rgba(16, 16, 20, 0.14));
 }
 
 .drawer-close {
@@ -1515,6 +1529,7 @@ html {
 .category-pills {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-2);
 }
 
@@ -2178,6 +2193,102 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
 .settlement-row:last-child {
   border-bottom: none;
+}
+
+/* 滑动显示动作——只有手机/平板（<1024px）生效，桌面版维持原本一直显示的
+   按钮/圖示，完全不套用这整组样式（见下面 @media min-width:1024px 那段）。
+   结构：.swipe-row-wrap 是可视窗口（overflow:hidden 裁掉还没滑出来的动作），
+   [data-swipe-row] 是会被 JS 位移的前景内容（本身要有不透明底色，不然
+   位移过程中会透出背景的动作圖示），.swipe-row-actions 贴着窗口左/右边、
+   叠在前景内容底下 */
+.swipe-row-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-row-wrap:last-child .settlement-row {
+  border-bottom: none;
+}
+
+[data-swipe-row] {
+  position: relative;
+  z-index: 1;
+}
+
+.swipe-row-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 0;
+}
+
+.swipe-row-actions--right {
+  right: 0;
+  padding-right: var(--space-3);
+}
+
+.swipe-row-actions--left {
+  left: 0;
+  padding-left: var(--space-3);
+}
+
+.swipe-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.swipe-action-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.swipe-action-btn.is-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* 静态的滑动提示文字（不是动画教学，就是一直待在那里的小字），让使用者
+   不用真的滑一次才知道这里藏了个动作 */
+.swipe-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 3px 0 var(--space-1);
+}
+
+@media (min-width: 1024px) {
+  .swipe-row-actions,
+  .swipe-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* 桌面版专属的行内按钮/圖示在手机版藏起来，改用滑动才看得到的版本，
+     两组不会同时出现 */
+  .settlement-repay-btn-desktop-only,
+  .repayment-actions-desktop-only {
+    display: none;
+  }
+
+  [data-swipe-row] {
+    touch-action: pan-y; /* 告诉浏览器垂直捲动还是正常交给页面，水平位移才是 JS 要接手的部分 */
+    transition: transform 0.2s var(--ease-out);
+    /* 手机版才需要不透明底色——内容要能完全盖住底下还没滑出来的动作圖示，
+       不然静止时就会隐约透出圖示。桌面版没有这层需求，维持原本透明、
+       让玻璃拟态面板的底色透出来，不额外套色 */
+    background: var(--bg-elevated);
+  }
 }
 
 .settlement-repay-btn {
@@ -3130,24 +3241,29 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   color: var(--accent);
 }
 
+/* 中间的 FAB 现在放的是品牌 Logo（本身已经是深色圆角方块＋渐层配色），不再是
+   纯色圆底 + 白色加号图示——外层改成中性、比较浅的底色当画框，把 Logo 的
+   方块造型稳稳包在圆形容器正中央，不会跟 Logo 自己的颜色打架。点击后要做
+   什么由 JS 依目前所在页面动态决定（见 updateMobileFabForPage()），不是固定的
+   「新增消费」 */
 .tab-item-fab {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: var(--bg-elevated);
+  padding: 7px;
   justify-content: center;
   box-shadow: var(--shadow-md);
   transform: translateY(-14px);
 }
 
 .tab-item-fab svg {
-  width: 22px;
-  height: 22px;
+  width: 100%;
+  height: 100%;
 }
 
 .tab-item-fab:hover {
-  background: var(--accent-hover);
+  background: var(--bg-subtle);
 }
 
 /* ------------------------------------------------------------
@@ -5117,12 +5233,14 @@ body {
 /* 23.2 headerActionBtn 现在是 .app-header 外面的独立元素（原因见 HTML 里的注解：
    backdrop-filter 会让 fixed 定位跑掉），所以不管哪个尺寸都要自己给一个 fixed 位置，
    不能再依赖原本 .header-right 的 flex 排版。
-   预设（手机／平板，<1024px）：钉在原本 header 的右侧、垂直置中，视觉上跟以前长在
-   header 里没有差别——这个尺寸下只有「同行」页的「新增成员」会显示，
-   「记一笔」被下面 23.3 的规则隐藏掉，底部导览列已经有 ➕ 了。 */
+   预设（手机／平板，<1024px）：顶部标题列已经整条藏起来了，汉堡按钮改成浮在
+   右上角的独立圆形按钮（见 .drawer-open）——这颗要是跟汉堡按钮同一个右上角
+   高度，两个按钮会直接叠在一起，所以往下移一个按钮高度＋间距，跟汉堡按钮
+   垂直排成一排，不抢同一块空间。这个尺寸下只有「同行」页的「新增成员」会
+   显示，「记一笔」被下面 23.3 的规则隐藏掉，底部导览列已经有 ➕ 了。 */
 #headerActionBtn {
   position: fixed;
-  top: calc((var(--header-height) - 40px) / 2);
+  top: calc(var(--space-4) + env(safe-area-inset-top) + 44px + var(--space-3));
   right: var(--space-4);
   z-index: 21;
 }
@@ -5135,6 +5253,30 @@ body {
    headerActionBtn 的显示是由 JS 内联样式(display:inline-flex)控制，
    这里用 !important 才能在小屏幕下盖过内联样式。 */
 @media (max-width: 1023px) {
+  /* 顶部标题列在手机/平板整条藏起来——原本这条只剩「页面标题」跟隐藏的旅程
+     切换器，标题跟底部导览列、页面本身的内容其实是重复资讯，藏起来画面
+     更简约；汉堡按钮已经搬到 .app-header 外面变成独立浮动按钮（见
+     .drawer-open），不受影响 */
+  .app-header {
+    display: none;
+  }
+
+  /* 原本 .app-main 的顶部留白是让内容跟「header 那一整条」保持距离，header
+     藏起来之後还是要留一截，一来要空出安全区（瀏海/状态列），二来要空出
+     浮动汉堡按钮的高度，不然第一屏内容会直接顶到按钮下面，甚至被盖住 */
+  .app-main {
+    padding-top: calc(var(--space-4) + env(safe-area-inset-top) + 44px + var(--space-4));
+  }
+
+  /* 结算页顶部「汇出 PDF」、同行页顶部「新增成员」这两颗按钮在手机版藏起来——
+     底部导览中间的 FAB 现在切到对应页面就是做这两件事，两个入口并存是多余的。
+     只藏手机/平板尺寸：桌面版没有底部导览、也没有这颗 FAB，这两颗按钮在
+     桌面版仍是唯一的入口，不能动 */
+  #summaryExportToolbar,
+  .members-toolbar {
+    display: none;
+  }
+
   #headerActionBtn[data-open-modal="addExpenseModal"] {
     display: none !important;
   }

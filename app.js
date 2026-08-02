@@ -540,6 +540,7 @@ const STRINGS = {
     'settlement.allSettled.desc': '所有账目已经结清，大家两不相欠。',
     'settlement.markAsPaid': '一键结清',
     'settlement.goRepay': '去还款',
+    'settlement.swipeHint': '← 左滑显示「去还款」',
     'settlement.poolOffsetBadge': '金库抵扣',
     'settlement.settleAllConfirm': '这会把 {count} 笔建议（共 {total}）标记成「已还款」。请先确认转账都已经实际完成——搭伙鸭不会帮你转账，也无法验证钱有没有到账，标记错了要自己回来修改或删除。',
     'settlement.settleAllSuccess': '已全部结清',
@@ -741,6 +742,7 @@ const STRINGS = {
     'aria.delete': '删除',
     'aria.editRepayment': '编辑还款纪录',
     'aria.deleteRepayment': '删除还款纪录',
+    'repayment.swipeHint': '右滑显示编辑／删除 →',
     'aria.deleteMember': '删除成员',
     'repayment.paidTo': '还款给 {name}',
     'repayment.recordSuffix': '还款纪录',
@@ -1203,6 +1205,7 @@ const STRINGS = {
     'settlement.allSettled.desc': 'Everyone is settled up.',
     'settlement.markAsPaid': 'Settle All',
     'settlement.goRepay': 'Settle up',
+    'settlement.swipeHint': '← Swipe left for "Settle up"',
     'settlement.poolOffsetBadge': 'Pool offset',
     'summary.repaymentPanel': 'Repayment History',
     'summary.addRepayment': '+ Record Repayment',
@@ -1391,6 +1394,7 @@ const STRINGS = {
     'aria.delete': 'Delete',
     'aria.editRepayment': 'Edit repayment',
     'aria.deleteRepayment': 'Delete repayment',
+    'repayment.swipeHint': 'Swipe right for edit/delete →',
     'aria.deleteMember': 'Delete member',
     'repayment.paidTo': 'Paid to {name}',
     'repayment.recordSuffix': 'Repayment',
@@ -1870,6 +1874,7 @@ function isPasswordRecoveryRedirect() {
 function startAppAfterAuth() {
   initNavigation();
   initModals();
+  initMobileFab();
   initSegmentedControl();
   initSmartMemory();
   initExpenseDraftAutosave();
@@ -1902,6 +1907,7 @@ function startAppAfterAuth() {
   enableEasyDatePicker('expenseDate');
   enableEasyDatePicker('repaymentDate');
   updateHeaderForPage('dashboard'); // 修正：首次载入时也要设定 Header 按钮，否则「新增消费」点不了
+  updateMobileFabForPage('dashboard'); // 同上，FAB 的 aria-label 首次载入也要设定一次
   positionNavIndicator();
   renderWelcomeBanner(); // 不必等旅程资料载入完成，登入了就先打招呼
 
@@ -4867,6 +4873,7 @@ function navigateToPage(pageId) {
   });
 
   updateHeaderForPage(pageId);
+  updateMobileFabForPage(pageId);
   positionNavIndicator();
 
   // 注意：捲动的其实是 window／body，不是 #appMain 自己（它没有独立的 overflow，
@@ -4893,6 +4900,73 @@ function updateHeaderForPage(pageId) {
   } else {
     actionBtn.style.display = 'none';
   }
+}
+
+/**
+ * 手机版底部导览中间那颗 FAB，现在放的是品牌 Logo，不是固定的「新增消费」——
+ * 点了会做什么依「目前在哪一页」而定（实际动作在 initMobileFab() 的点击
+ * 事件里），这里只负责更新 aria-label，让不同页面至少在无障碍朗读上
+ * 说得出「这颗按钮现在是做什么用的」，不是每页都念同一句「新增消费」
+ * @param {string} pageId
+ */
+function updateMobileFabForPage(pageId) {
+  const fabBtn = document.getElementById('mobileFabBtn');
+  if (!fabBtn) {
+    return;
+  }
+  const labelMap = {
+    dashboard: t('tripPicker.title'),
+    expenses: t('header.addExpense'),
+    summary: t('summary.exportPdf'),
+    members: t('members.addBtn')
+  };
+  fabBtn.setAttribute('aria-label', labelMap[pageId] || t('tripPicker.title'));
+}
+
+/**
+ * 中间 FAB 的点击行为——依「目前显示的是哪一页」分派到四种不同动作：
+ * 概览＝切换旅程、账目＝新增消费（原本就是这颗按钮的功能）、结算＝汇出 PDF、
+ * 同行＝新增成员。用「目前哪个 .page 没被隐藏」判断目前在哪页，比另外维护
+ * 一个「目前页面」的全域变数简单——navigateToPage() 本来就是靠切换
+ * .is-hidden 来切页，这里直接读同一份 DOM 状态，不会跟实际画面对不上。
+ * 新增消费／新增成员沿用跟原本 data-open-modal 委派处理一样的「没选旅程
+ * 就跳提示」防呆，不因为改成 FAB 专属的点击事件就少了这层保护
+ */
+function initMobileFab() {
+  const fabBtn = document.getElementById('mobileFabBtn');
+  if (!fabBtn) {
+    return;
+  }
+
+  fabBtn.addEventListener('click', () => {
+    const visiblePage = document.querySelector('.page:not(.is-hidden)');
+    const pageId = visiblePage ? visiblePage.getAttribute('data-page-section') : 'dashboard';
+
+    switch (pageId) {
+      case 'expenses':
+        if (!currentTripId) {
+          showToast('error', t('toast.pleaseSelectTrip'), t('toast.pleaseSelectTripForExpense'));
+          return;
+        }
+        resetExpenseForm();
+        openModal('addExpenseModal');
+        break;
+      case 'summary':
+        exportSummaryPdf();
+        break;
+      case 'members':
+        if (!currentTripId) {
+          showToast('error', t('toast.pleaseSelectTrip'), t('toast.pleaseSelectTripForMember'));
+          return;
+        }
+        openModal('addMemberModal');
+        break;
+      case 'dashboard':
+      default:
+        openTripPickerModal();
+        break;
+    }
+  });
 }
 
 function positionNavIndicator() {
@@ -8275,6 +8349,90 @@ function openExpenseDetailModal(expenseId) {
    12. 渲染：Summary 页
    ------------------------------------------------------------ */
 
+/**
+ * 通用的「滑动显示动作」手势——只在手机/平板（<1024px）生效，桌面版完全
+ * 不套用（连事件都不绑），维持原本一直显示的按钮/圖示不变。
+ * @param {HTMLElement} container 装着一批 [data-swipe-row] 的容器（例如整个列表）
+ * @param {'left'|'right'} direction 手指滑动的方向：'left' 代表内容往左移、
+ *   动作露在右边（例如「去还款」）；'right' 代表内容往右移、动作露在左边
+ *   （例如还款纪录的编辑/删除）
+ */
+function initSwipeReveal(container, direction) {
+  if (window.innerWidth >= 1024) {
+    return; // 桌面版维持原本一直显示的按钮，不套用滑动手势
+  }
+
+  const ACTION_WIDTH = 64; // 跟 .swipe-row-actions 实际撑开的宽度大致对应，抓个滑动开合的距离
+  const sign = direction === 'left' ? -1 : 1;
+
+  container.querySelectorAll('[data-swipe-row]').forEach((row) => {
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let dragging = false;
+    let isHorizontal = null; // 第一次移动时才判断这次手势是水平滑动还是垂直捲动
+
+    row.addEventListener('touchstart', (event) => {
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+      dragging = true;
+      isHorizontal = null;
+      row.style.transition = 'none';
+    }, { passive: true });
+
+    row.addEventListener('touchmove', (event) => {
+      if (!dragging) {
+        return;
+      }
+      const deltaX = event.touches[0].clientX - startX;
+      const deltaY = event.touches[0].clientY - startY;
+
+      if (isHorizontal === null) {
+        // 移动幅度还很小的时候先不判断，避免手抖误判；累积到有意义的距离
+        // 才决定这次手势算水平滑动还是垂直捲动，两者互斥，避免同时误触
+        if (Math.abs(deltaX) < 6 && Math.abs(deltaY) < 6) {
+          return;
+        }
+        isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+      }
+
+      if (!isHorizontal) {
+        return; // 判定是垂直捲动，交还给页面正常捲动，这里不再处理
+      }
+
+      // 只接受跟 sign 同方向的位移，从已经开启的位置（currentX 起点）继续拖，
+      // 另一个方向最多拖回到 0（不能整排被拖到反方向去）
+      const base = currentX;
+      const proposed = base + deltaX;
+      const clamped = sign < 0
+        ? Math.min(0, Math.max(proposed, -ACTION_WIDTH))
+        : Math.max(0, Math.min(proposed, ACTION_WIDTH));
+      row.style.transform = `translateX(${clamped}px)`;
+      row.dataset.swipeDragging = String(clamped);
+    }, { passive: true });
+
+    row.addEventListener('touchend', () => {
+      dragging = false;
+      row.style.transition = '';
+      const dragged = Number(row.dataset.swipeDragging || 0);
+      const shouldOpen = Math.abs(dragged) > ACTION_WIDTH / 2;
+      currentX = shouldOpen ? sign * ACTION_WIDTH : 0;
+      row.style.transform = `translateX(${currentX}px)`;
+    }, { passive: true });
+
+    // 已经滑开的那排，直接点内容本身（不是点动作按钮）就收合回去，
+    // 不用特地再滑一次关闭，符合大部分滑动清单（例如 Mail App）的习惯
+    row.addEventListener('click', (event) => {
+      if (currentX !== 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        currentX = 0;
+        row.style.transform = 'translateX(0)';
+      }
+    }, { capture: true });
+  });
+}
+
 function renderSummaryPage() {
   togglePageEmptyHero_('summaryEmptyHero', 'summaryNormalContent', false);
 
@@ -8326,17 +8484,30 @@ function renderSummaryPage() {
     renderEmptyBlock('settlementList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
   } else {
     const container = document.getElementById('settlementList');
+    // 桌面版维持原本「一直显示的按钮」；手机/平板改成左滑才看得到的圖示按钮
+    // （见 .swipe-row-actions），两组按钮都渲染出来，靠 CSS 依尺寸各自藏一组，
+    // 不是靠 JS 判断尺寸决定要不要渲染——这样换尺寸/转屏幕都不用重新整理
     container.innerHTML = settlements.map((item, index) => `
-      <div class="settlement-row">
-        <div class="settlement-flow">
-          <span>${escapeHtml(getExpensePayerDisplay(item.from))}</span>
-          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>${escapeHtml(getExpensePayerDisplay(item.to))}</span>
+      <div class="swipe-row-wrap">
+        <div class="settlement-row" data-swipe-row>
+          <div class="settlement-flow">
+            <span>${escapeHtml(getExpensePayerDisplay(item.from))}</span>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>${escapeHtml(getExpensePayerDisplay(item.to))}</span>
+          </div>
+          <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
+          ${item.isPoolSettlement
+            ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
+            : `<button class="btn btn-secondary btn-sm settlement-repay-btn settlement-repay-btn-desktop-only" type="button" data-settlement-index="${index}">${escapeHtml(t('settlement.goRepay'))}</button>`}
         </div>
-        <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
-        ${item.isPoolSettlement
-          ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
-          : `<button class="btn btn-secondary btn-sm settlement-repay-btn" type="button" data-settlement-index="${index}">${escapeHtml(t('settlement.goRepay'))}</button>`}
+        ${item.isPoolSettlement ? '' : `
+        <div class="swipe-row-actions swipe-row-actions--right">
+          <button class="swipe-action-btn settlement-repay-btn" type="button" data-settlement-index="${index}" aria-label="${escapeHtml(t('settlement.goRepay'))}">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L20 4L14 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p class="swipe-hint">${escapeHtml(t('settlement.swipeHint'))}</p>
+        `}
       </div>
     `).join('');
 
@@ -8348,6 +8519,8 @@ function renderSummaryPage() {
         openRepaymentModalPrefilled(item.from, item.to, item.amount);
       });
     });
+
+    initSwipeReveal(container, 'left');
   }
 
   renderRepaymentList();
@@ -8366,21 +8539,36 @@ function renderRepaymentList() {
   }
 
   const container = document.getElementById('repaymentList');
+  // 桌面版维持原本一直显示的编辑/删除圖示；手机/平板改成右滑才看得到——
+  // 两组都渲染出来，靠 CSS 依尺寸各自藏一组（同settlement那组的做法）
   container.innerHTML = repayments.map((item) => `
-    <div class="settlement-row">
-      <div class="settlement-flow">
-        <span>${escapeHtml(item.FromMember)}</span>
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>${escapeHtml(item.ToMember)}</span>
+    <div class="swipe-row-wrap">
+      <div class="settlement-row" data-swipe-row>
+        <div class="settlement-flow">
+          <span>${escapeHtml(item.FromMember)}</span>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12H20M14 6L20 12L14 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>${escapeHtml(item.ToMember)}</span>
+        </div>
+        <p class="settlement-amount mono">${formatMoney(item.Amount)}</p>
+        ${item.CanManage ? `
+        <button class="icon-btn repayment-actions-desktop-only" type="button" data-edit-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.editRepayment'))}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.7 16.5L16 5.2C16.6 4.6 17.6 4.6 18.2 5.2L19.3 6.3C19.9 6.9 19.9 7.9 19.3 8.5L8 19.8L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn repayment-actions-desktop-only" type="button" data-delete-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.deleteRepayment'))}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        ` : ''}
       </div>
-      <p class="settlement-amount mono">${formatMoney(item.Amount)}</p>
       ${item.CanManage ? `
-      <button class="icon-btn" type="button" data-edit-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.editRepayment'))}">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.7 16.5L16 5.2C16.6 4.6 17.6 4.6 18.2 5.2L19.3 6.3C19.9 6.9 19.9 7.9 19.3 8.5L8 19.8L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="icon-btn" type="button" data-delete-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.deleteRepayment'))}">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="swipe-row-actions swipe-row-actions--left">
+        <button class="swipe-action-btn" type="button" data-edit-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.editRepayment'))}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20L4.7 16.5L16 5.2C16.6 4.6 17.6 4.6 18.2 5.2L19.3 6.3C19.9 6.9 19.9 7.9 19.3 8.5L8 19.8L4 20Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="swipe-action-btn is-danger" type="button" data-delete-repayment="${escapeHtml(item.ID)}" aria-label="${escapeHtml(t('aria.deleteRepayment'))}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <p class="swipe-hint">${escapeHtml(t('repayment.swipeHint'))}</p>
       ` : ''}
     </div>
   `).join('');
@@ -8397,6 +8585,8 @@ function renderRepaymentList() {
       handleDeleteRepaymentClick(repaymentId, label);
     });
   });
+
+  initSwipeReveal(container, 'right');
 }
 
 /**
@@ -9696,21 +9886,27 @@ function maybeShowPrintQualityHint_() {
   showToast('info', t('report.printQualityHintTitle'), t('report.printQualityHintMsg'));
 }
 
+/**
+ * 结算页「汇出 PDF」的实际动作——拆成独立具名函式，桌面版的 exportPdfBtn
+ * 跟手机版 FAB（结算页时）现在都会呼叫到同一份逻辑，不用各自维护一份
+ */
+async function exportSummaryPdf() {
+  if (!currentTripId || appState.expenses.length === 0) {
+    showToast('error', t('toast.noDataToExport'), t('toast.noDataToExportMsg'));
+    return;
+  }
+
+  await autoFetchMissingRatesForExport();
+
+  document.getElementById('printReport').innerHTML = buildPrintReportHtml();
+
+  const tripName = getTripName(currentTripId) || t('report.untitledTrip');
+  maybeShowPrintQualityHint_();
+  printWithFilename(`${sanitizeForFilename(tripName)} Expenses Report`);
+}
+
 function initPdfExport() {
-  document.getElementById('exportPdfBtn').addEventListener('click', async () => {
-    if (!currentTripId || appState.expenses.length === 0) {
-      showToast('error', t('toast.noDataToExport'), t('toast.noDataToExportMsg'));
-      return;
-    }
-
-    await autoFetchMissingRatesForExport();
-
-    document.getElementById('printReport').innerHTML = buildPrintReportHtml();
-
-    const tripName = getTripName(currentTripId) || t('report.untitledTrip');
-    maybeShowPrintQualityHint_();
-    printWithFilename(`${sanitizeForFilename(tripName)} Expenses Report`);
-  });
+  document.getElementById('exportPdfBtn').addEventListener('click', exportSummaryPdf);
 }
 
 /**

@@ -448,13 +448,18 @@
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
         </button>
       </div>
-      <!-- 汉堡按钮：手机/平板（<1024px）显示在右上角，取代旅程切换器（旅程切换搬到
-           这个全屏导览选单里，或去设置页的旅程切换面板）；桌面版一律隐藏，用固定侧栏 -->
-      <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
     </div>
   </header>
+
+  <!-- 汉堡按钮跟 headerActionBtn 一样，刻意放在 .app-header 外面：手机/平板（<1024px）
+       现在整条顶部标题列都藏起来了（见 style.css .app-header 的响应式规则），改成
+       浮在内容右上角的独立圆形按钮，取代原本长在 header 里的排版方式；桌面版一律隐藏，
+       用固定侧栏。放在 .app-header 外面还有个附带好处：不受 header 的 backdrop-filter
+       影响 fixed 定位基准（原因同 headerActionBtn 那段注解），桌面版底下就不用另外
+       处理这个问题 -->
+  <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
 
   <!-- headerActionBtn 刻意放在 .app-header 外面（不是它的子层级）：.app-header 有
        backdrop-filter（玻璃拟态效果），CSS 规范上 backdrop-filter／filter／transform
@@ -776,8 +781,7 @@
       </div>
 
       <div class="page-normal-content" id="summaryNormalContent">
-      <div class="toolbar">
-        <p class="panel-hint" style="font-size: 13px;" data-i18n="summary.exportHint">汇出完整报告，包含总开销与每位成员的消费明细</p>
+      <div class="toolbar" id="summaryExportToolbar">
         <button class="btn btn-secondary btn-sm" id="exportPdfBtn" type="button">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span data-i18n="summary.exportPdf">汇出 PDF</span>
@@ -1086,8 +1090,31 @@
     <svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
     <span data-i18n="nav.expensesShort">账目</span>
   </button>
-  <button class="tab-item tab-item-fab" data-open-modal="addExpenseModal" type="button" aria-label="新增消费">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+  <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" aria-label="操作">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="ddPurpleFab" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1E1B4B"/>
+          <stop offset="100%" stop-color="#0F172A"/>
+        </linearGradient>
+        <linearGradient id="ddBeakFab" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FBBF24"/>
+          <stop offset="100%" stop-color="#F59E0B"/>
+        </linearGradient>
+        <linearGradient id="ddBarFab" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#38BDF8"/>
+          <stop offset="100%" stop-color="#818CF8"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleFab)"/>
+      <g transform="rotate(-12, 50, 50)">
+        <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+        <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+        <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakFab)"/>
+        <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarFab)"/>
+        <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+      </g>
+    </svg>
   </button>
   <button class="tab-item" data-page="summary" type="button">
     <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1130,8 +1157,7 @@
       </div>
 
       <div class="form-field form-field-full">
-        <label data-i18n="expense.categoryLabel">分类</label>
-        <div class="category-pills" id="expenseCategoryPills"></div>
+        <div class="category-pills" id="expenseCategoryPills" role="group" aria-label="分类"></div>
         <input type="hidden" id="expenseCategory">
       </div>
 
@@ -1156,7 +1182,7 @@
         <input type="text" id="expenseDescription" class="text-input" placeholder="例如：晚餐、油钱、酒店订金…" data-i18n-placeholder="expense.descriptionPlaceholder">
       </div>
 
-      <div class="form-field">
+      <div class="form-field form-field-full">
         <label for="expenseDate" data-i18n="expense.dateLabel">日期</label>
         <input type="date" id="expenseDate" class="text-input" lang="en-GB">
       </div>
