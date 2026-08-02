@@ -545,9 +545,6 @@
         </div>
         <div class="dash-header-right">
           <div class="avatar-stack" id="avatarStack"></div>
-          <button class="icon-btn dash-switch-trip" id="dashSwitchTripBtn" type="button" aria-label="切换旅程">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M7 7H17M17 7L13 3M17 7L13 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 17H7M7 17L11 13M7 17L11 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
         </div>
       </div>
 
@@ -796,7 +793,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="settlementPanel">
         <div class="panel-header">
           <div>
             <h2 data-i18n="summary.settlementPanel">最优结算</h2>
@@ -1109,17 +1106,25 @@
   </button>
   <div class="fab-fan" id="mobileFabFan">
     <div class="fab-fan-items" id="fabFanItems">
-      <button class="fab-fan-item" type="button" data-fab-action="dashboard" aria-label="切换旅程">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M7 7H17L14 4M17 17H7L10 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button class="fab-fan-item" type="button" data-fab-action="dashboard" aria-label="切换行程">
+        <span class="fab-fan-item-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 7H17L14 4M17 17H7L10 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="fab-fan-item-label" data-i18n="fab.switchTrip">切换行程</span>
       </button>
       <button class="fab-fan-item" type="button" data-fab-action="expenses" aria-label="新增消费">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="fab-fan-item-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        <span class="fab-fan-item-label" data-i18n="fab.addExpense">新增消费</span>
       </button>
-      <button class="fab-fan-item" type="button" data-fab-action="summary" aria-label="汇出PDF">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <button class="fab-fan-item" type="button" data-fab-action="summary" aria-label="导出报告">
+        <span class="fab-fan-item-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+        <span class="fab-fan-item-label" data-i18n="fab.exportReport">导出报告</span>
       </button>
       <button class="fab-fan-item" type="button" data-fab-action="members" aria-label="新增成员">
-        <svg viewBox="0 0 24 24" fill="none"><circle cx="10" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19C4 15.5 6.5 13.3 10 13.3C13.5 13.3 16 15.5 16 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M18 8V14M15 11H21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span class="fab-fan-item-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="10" cy="9" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M4 19C4 15.5 6.5 13.3 10 13.3C13.5 13.3 16 15.5 16 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M18 8V14M15 11H21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <span class="fab-fan-item-label" data-i18n="members.addBtn">新增成员</span>
+      </button>
+      <button class="fab-fan-item" type="button" data-fab-action="settings" aria-label="设置">
+        <span class="fab-fan-item-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5V5.5M12 18.5V20.5M20.5 12H18.5M5.5 12H3.5M17.8 6.2L16.4 7.6M7.6 16.4L6.2 17.8M17.8 17.8L16.4 16.4M7.6 7.6L6.2 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <span class="fab-fan-item-label" data-i18n="nav.settings">设置</span>
       </button>
     </div>
     <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" aria-label="操作">
@@ -1160,6 +1165,11 @@
   <!-- 「设置」不再放在底部导览：手机版左上角已经有汉堡选单可以进设置页
        （见 #drawerNav 里同样带 data-page="settings" 的项目），这里留着会重复 -->
 </nav>
+
+<!-- 扇形展开时垫在底下的朦胧遮罩——展开的胶囊本身没有实色底，直接叠在
+     页面内容（可能很花、很亮）上面文字会看不清楚，垫一层半透明+模糊的
+     遮罩，扇形跟文字才能维持清楚的对比度 -->
+<div class="fab-fan-backdrop" id="fabFanBackdrop"></div>
 
 <!-- ============================================================
      Modals

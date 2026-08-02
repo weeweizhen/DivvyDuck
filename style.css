@@ -804,7 +804,7 @@ html {
   height: 56px;
   width: auto;
   min-width: 220px;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-3);
   padding: 0 var(--space-5);
   border-radius: var(--radius-full);
@@ -812,6 +812,15 @@ html {
   font-weight: 700;
   color: var(--text-primary);
   transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.side-drawer .drawer-nav .nav-item .nav-icon {
+  flex-shrink: 0;
+}
+
+.side-drawer .drawer-nav .nav-item .nav-label {
+  flex: 1;
+  text-align: center;
 }
 
 .side-drawer .drawer-nav .nav-item.is-active {
@@ -1232,17 +1241,13 @@ html {
 /* 成员消费明细页面：自己带一个「返回」+ 标题的迷你 header，取代原本 Modal
    的关闭按钮——手机版整条 .app-header 藏起来了，这是唯一看得到标题/返回
    入口的地方；桌面版则是叠在 .app-header 下面多一层，不冲突。
-   返回键跟标题分成上下两行，不是并排同一行——返回键先自己一行，标题/
-   副标题另起一行，视觉上更从容，不会挤在一起 */
+   标题/副标题自己一整块，返回键在手机版另外抽出来变成固定定位，跟汉堡
+   按钮同一行高度、左右对称（返回在左、汉堡在右），不占页面内容的排版位置 */
 .member-detail-page-header {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
-}
-
-.member-detail-page-header .icon-btn {
-  margin-right: auto;
 }
 
 .member-detail-page-header-text {
@@ -1526,6 +1531,7 @@ html {
 .chip-group {
   display: flex;
   flex-wrap: nowrap;
+  justify-content: center;
   gap: var(--space-2);
   /* 类别多的时候（尤其手机版）改成一行内横向滑动，不要越叠越多行、把下面
      的内容往下挤；滑动手感比较像原生 App 的标签列，而不是文字换行 */
@@ -1573,6 +1579,7 @@ html {
 .category-pills {
   display: flex;
   flex-wrap: nowrap;
+  justify-content: center;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -2259,13 +2266,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   background: var(--bg-subtle);
 }
 
-.settlement-row-chevron {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  color: var(--text-tertiary);
-}
-
 .settlement-repay-btn {
   flex-shrink: 0;
   white-space: nowrap;
@@ -2277,7 +2277,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   gap: var(--space-2);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
   min-width: 0;
 }
 
@@ -2291,6 +2291,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 .settlement-amount {
   font-weight: 700;
   color: var(--text-primary);
+  font-size: 13px;
 }
 
 /* ------------------------------------------------------------
@@ -3234,6 +3235,31 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
    新增成员）；目前所在页面对应的那个用 accent 色标出来，方便快速辨认
    「这个是这页原本就有的动作」，其他三个也都能直接点——见 JS 的
    initMobileFab() / updateMobileFabForPage() */
+/* 扇形展开时的朦胧遮罩——半透明深色 + 模糊，垫在扇形捷径底下、盖住原本
+   页面内容，让胶囊本身跟文字标签维持清楚的对比度，不会被底下五颜六色的
+   内容盖过去看不清楚。z-index 比 .mobile-tabbar（z-index:30）低，
+   遮罩不会盖住导览列/FAB 本身，只挡在它们跟一般页面内容之间 */
+.fab-fan-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(10, 10, 14, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  z-index: 28;
+}
+
+.fab-fan-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .fab-fan {
   position: relative;
   display: flex;
@@ -3251,12 +3277,28 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   z-index: 1;
 }
 
+/* 圖示圆圈本身不大（跟原本圆点版一样小），文字标签放在圆圈外面、下方，
+   不是塞进一个加大的胶囊画框——单靠圖示猜不出「这颗是做什么的」，加上
+   文字才看得懂，但画框本身还是维持小巧 */
 .fab-fan-item {
   position: absolute;
   top: 0;
   left: 0;
-  width: 42px;
-  height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: transform 0.4s var(--ease-spring), opacity 0.25s var(--ease-out);
+}
+
+.fab-fan-item-icon {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3264,50 +3306,62 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   background: var(--bg-elevated);
   color: var(--text-secondary);
   box-shadow: var(--shadow-md);
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.3);
-  transition: transform 0.4s var(--ease-spring), opacity 0.25s var(--ease-out);
 }
 
-.fab-fan-item svg {
-  width: 18px;
-  height: 18px;
+.fab-fan-item-icon svg {
+  width: 17px;
+  height: 17px;
 }
 
-.fab-fan-item.is-current {
+.fab-fan-item-label {
+  font-size: 10px;
+  font-weight: 650;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.fab-fan-item.is-current .fab-fan-item-icon {
   background: var(--accent);
   color: var(--text-on-accent);
   box-shadow: var(--shadow-lg, 0 12px 28px rgba(16, 16, 20, 0.2)), 0 0 0 3px var(--accent-soft);
 }
 
-/* 展开时四颗圆形捷径的落点，从 FAB 正中央呈扇形往上撑开——跟底部导览列
-   由左到右「概览/账目/…/结算/同行」的顺序对应，扇形最左边是切换旅程
-   （最接近「概览」那颗分页），最右边是新增成员（最接近「同行」），
-   空间上的对应关系比随便排列更直觉 */
+.fab-fan-item.is-current .fab-fan-item-label {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 展开时五颗胶囊的落点，从 FAB 正中央呈扇形往上撑开——跟底部导览列由左到右
+   「概览/账目/…/结算/同行」的顺序对应，扇形最左边是切换旅程（最接近
+   「概览」那颗分页），最右边是设置，空间上的对应关系比随便排列更直觉 */
 .fab-fan.is-open .fab-fan-item {
   opacity: 1;
   pointer-events: auto;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="dashboard"] {
-  transform: translate(calc(-50% - 95px), calc(-50% - 32px)) scale(1);
+  transform: translate(calc(-50% - 125px), calc(-50% - 60px)) scale(1);
   transition-delay: 0s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="expenses"] {
-  transform: translate(calc(-50% - 55px), calc(-50% - 80px)) scale(1);
-  transition-delay: 0.03s;
+  transform: translate(calc(-50% - 80px), calc(-50% - 105px)) scale(1);
+  transition-delay: 0.025s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="summary"] {
-  transform: translate(calc(-50% + 55px), calc(-50% - 80px)) scale(1);
-  transition-delay: 0.06s;
+  transform: translate(-50%, calc(-50% - 125px)) scale(1);
+  transition-delay: 0.05s;
 }
 
 .fab-fan.is-open .fab-fan-item[data-fab-action="members"] {
-  transform: translate(calc(-50% + 95px), calc(-50% - 32px)) scale(1);
-  transition-delay: 0.09s;
+  transform: translate(calc(-50% + 80px), calc(-50% - 105px)) scale(1);
+  transition-delay: 0.075s;
+}
+
+.fab-fan.is-open .fab-fan-item[data-fab-action="settings"] {
+  transform: translate(calc(-50% + 125px), calc(-50% - 60px)) scale(1);
+  transition-delay: 0.1s;
 }
 
 .tab-item-fab {
@@ -5331,6 +5385,24 @@ body {
   #summaryExportToolbar,
   .members-toolbar {
     display: none;
+  }
+
+  /* 成员消费明细页的「返回」在手机版改成固定定位，跟汉堡按钮同一行高度、
+     左右对称（返回在左，汉堡在右）——不是跟着内容一起捲动的按钮，这样
+     不管捲到哪里都找得到返回入口，跟汉堡按钮的行为一致 */
+  #memberDetailBackBtn {
+    position: fixed;
+    top: calc(var(--space-4) + env(safe-area-inset-top));
+    left: var(--space-4);
+    z-index: 25;
+  }
+
+  #memberDetailBackBtn:hover,
+  #memberDetailBackBtn:active {
+    background: var(--surface-glass-strong);
+    backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-md, 0 6px 20px rgba(16, 16, 20, 0.14));
   }
 
   #headerActionBtn[data-open-modal="addExpenseModal"] {

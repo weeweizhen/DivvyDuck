@@ -600,6 +600,9 @@ const STRINGS = {
 
     // 选择旅程
     'tripPicker.title': '选择旅程',
+    'fab.switchTrip': '切换行程',
+    'fab.addExpense': '新增消费',
+    'fab.exportReport': '导出报告',
     'tripPicker.addBtn': '＋ 新增旅程',
 
     // 设置页
@@ -1257,6 +1260,9 @@ const STRINGS = {
 
     // Trip picker
     'tripPicker.title': 'Select Trip',
+    'fab.switchTrip': 'Switch Trip',
+    'fab.addExpense': 'Add Expense',
+    'fab.exportReport': 'Export Report',
     'tripPicker.addBtn': '+ New Trip',
 
     'settings.preferencePanel': 'Preferences',
@@ -1962,20 +1968,33 @@ async function bootstrapApp() {
 /**
  * 从 Supabase 撈取「自己有加入的旅程」清单——不用自己过滤，RLS 规则（is_trip_member）
  * 已经保证只会撈到自己相关的旅程
- * @return {Array<{id, name, createdAt, baseCurrency, inviteCode, createdBy}>}
+ * @return {Array<{id, name, createdAt, updatedAt, baseCurrency, inviteCode, createdBy}>}
  */
 async function fetchTrips_() {
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from('trips')
-    .select('id, name, created_at, base_currency, invite_code, created_by')
+    .select('id, name, created_at, updated_at, base_currency, invite_code, created_by')
     .eq('deleted', false)
     .order('created_at', { ascending: true });
-  if (error) throw error;
+
+  if (error) {
+    // updated_at 这个欄位如果後端资料表是旧版 schema、还没加上，上面那次查询会报错——
+    // 降级成不带这个欄位重查一次，旅程清单至少还读得出来，只是「排序换成最后更新
+    // 时间」这个功能会退回照建立时间排（下面 updatedAt 会 fallback 回 createdAt）
+    const fallback = await supabaseClient
+      .from('trips')
+      .select('id, name, created_at, base_currency, invite_code, created_by')
+      .eq('deleted', false)
+      .order('created_at', { ascending: true });
+    if (fallback.error) throw fallback.error;
+    data = fallback.data;
+  }
 
   return (data || []).map((row) => ({
     id: row.id,
     name: row.name,
     createdAt: row.created_at,
+    updatedAt: row.updated_at || row.created_at,
     baseCurrency: row.base_currency,
     inviteCode: row.invite_code,
     createdBy: row.created_by
@@ -2925,13 +2944,13 @@ function renderTripPickerList() {
     return;
   }
 
-  // 第一个永远是目前正在看的旅程，其余照建立时间新到旧排——比原始抓回来的
-  // 顺序（建立时间由旧到新）更符合「先看到目前这趟，接下来是最近开的那几趟」
-  // 的直觉，不用在一長串旅程里自己找目前是哪一个
+  // 第一个永远是目前正在看的旅程，其余照最后更新时间新到旧排（改名字／
+  // 修改设定都算更新）——比原始抓回来的顺序（建立时间由旧到新）更符合
+  // 「先看到目前这趟，接下来是最近异动过的那几趟」的直觉
   const currentTrip = appState.trips.find((trip) => trip.id === currentTripId);
   const otherTrips = appState.trips
     .filter((trip) => trip.id !== currentTripId)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   const orderedTrips = currentTrip ? [currentTrip, ...otherTrips] : otherTrips;
 
   listEl.innerHTML = orderedTrips.map((trip) => {
@@ -3034,7 +3053,11 @@ async function handleRenameTripFormSubmit() {
     if (error) throw error;
 
     const tripInList = appState.trips.find((item) => item.id === currentTripId);
-    if (tripInList) tripInList.name = newName;
+    if (tripInList) {
+      tripInList.name = newName;
+      tripInList.updatedAt = new Date().toISOString(); // 後端有 updated_at 触发器的话本来就会更新，
+      // 这里先在本地也同步一次，改名字之後不用整个重新整理，排序就能立刻反映最新异动
+    }
 
     closeActiveModal();
     renderTripSelect();
@@ -4871,8 +4894,12 @@ function navigateToPage(pageId) {
   }
 
   const fanWrap = document.getElementById('mobileFabFan');
+  const fanBackdrop = document.getElementById('fabFanBackdrop');
   if (fanWrap) {
     fanWrap.classList.remove('is-open'); // 切页的话，展开中的扇形捷径没意义了，一併收起来
+  }
+  if (fanBackdrop) {
+    fanBackdrop.classList.remove('is-open');
   }
 
   document.querySelectorAll('.page').forEach((section) => {
@@ -4936,11 +4963,23 @@ function updateMobileFabForPage(pageId) {
 function initMobileFab() {
   const fanWrap = document.getElementById('mobileFabFan');
   const fabBtn = document.getElementById('mobileFabBtn');
+  const backdrop = document.getElementById('fabFanBackdrop');
   if (!fanWrap || !fabBtn) {
     return;
   }
 
-  const closeFan = () => fanWrap.classList.remove('is-open');
+  const closeFan = () => {
+    fanWrap.classList.remove('is-open');
+    if (backdrop) {
+      backdrop.classList.remove('is-open');
+    }
+  };
+  const openFan = () => {
+    fanWrap.classList.add('is-open');
+    if (backdrop) {
+      backdrop.classList.add('is-open');
+    }
+  };
   const runFabAction = (pageId) => {
     switch (pageId) {
       case 'expenses':
@@ -4961,6 +5000,9 @@ function initMobileFab() {
         }
         openModal('addMemberModal');
         break;
+      case 'settings':
+        navigateToPage('settings');
+        break;
       case 'dashboard':
       default:
         openTripPickerModal();
@@ -4969,7 +5011,11 @@ function initMobileFab() {
   };
 
   fabBtn.addEventListener('click', () => {
-    fanWrap.classList.toggle('is-open');
+    if (fanWrap.classList.contains('is-open')) {
+      closeFan();
+    } else {
+      openFan();
+    }
   });
 
   fanWrap.querySelectorAll('.fab-fan-item').forEach((item) => {
@@ -6361,6 +6407,29 @@ function handleDeleteMemberClick(name) {
  * （安全拦截），确认没问题后才真正开启 Modal
  * @param {{from?: string, to?: string, amount?: number}} [prefill] 预先带入的还款人／收款人／金额
  */
+/**
+ * 把「记录还款」表单清空回初始状态——勾选框全部取消、金额欄位清空并停用、
+ * 收款人下拉收回「请选择」。每次打开这个表单前都要先呼叫，不然如果上一次
+ * 是「点了某笔建议还款、勾了还款人、又按取消」，上一次勾的还款人会一直
+ * 留在表单上，這次重新点開別的建議时只有收款人被换掉，还款人却是舊資料
+ * 疊上去，兩筆资料对不起来
+ */
+function resetRepaymentForm() {
+  document.querySelectorAll('#repaymentFromList .repayment-from-checkbox').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+  document.querySelectorAll('#repaymentFromList .repayment-from-amount').forEach((input) => {
+    input.value = '';
+    input.disabled = true;
+  });
+  const toSelect = document.getElementById('repaymentTo');
+  if (toSelect) {
+    toSelect.value = '';
+  }
+  updateRepaymentFromTotal();
+  syncRepaymentSelectAllState();
+}
+
 function openAddRepaymentModal(prefill) {
   if (!currentTripId) {
     showToast('error', t('toast.pleaseSelectTrip'), t('toast.pleaseSelectTripForRepayment'));
@@ -6374,6 +6443,7 @@ function openAddRepaymentModal(prefill) {
       async () => {
         closeActiveModal();
         openModal('addRepaymentModal');
+        resetRepaymentForm();
         applyRepaymentPrefill(prefill);
       },
       {
@@ -6386,6 +6456,7 @@ function openAddRepaymentModal(prefill) {
   }
 
   openModal('addRepaymentModal');
+  resetRepaymentForm();
   applyRepaymentPrefill(prefill);
 }
 
@@ -6959,7 +7030,13 @@ function renderBalanceMatrix() {
   const settlements = allSettlements.filter((item) => item.from === viewerName || item.to === viewerName);
 
   if (settlements.length === 0) {
-    renderEmptyBlock('balanceMatrixList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
+    if (appState.expenses.length === 0) {
+      // 这趟旅程还没有任何消费纪录，不是「结清了」——用「还没有消费纪录」
+      // 这组文案更准确，避免让人誤以为曾经有过账目
+      renderEmptyBlock('balanceMatrixList', t('empty.noExpenses.title'), t('empty.noExpenses.desc'));
+    } else {
+      renderEmptyBlock('balanceMatrixList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
+    }
     if (toggleBtn) toggleBtn.classList.add('is-hidden');
     return;
   }
@@ -8410,9 +8487,19 @@ function renderSummaryPage() {
   // 结算页面的「建议还款」显示完整清单（所有人跟所有人），不像 Dashboard 首页的
   // 「谁欠谁」那样只筛跟自己有关的——这里是给管理这趟旅程的人看全貌用的，
   // Dashboard 首页那个才是给个人快速看「我该处理什么」用的，两处用途不同
-  if (settlements.length === 0) {
-    renderEmptyBlock('settlementList', t('settlement.allSettled.title'), t('settlement.allSettled.desc'));
+  const settlementPanel = document.getElementById('settlementPanel');
+  const hasAnyExpense = appState.expenses.length > 0;
+  if (settlements.length === 0 && hasAnyExpense) {
+    // 有消费纪录、但大家都已经结清——这个 section 已经没有任何要处理的事，
+    // 直接整块藏起来，不留一个「都平衡了」的空状态占位置
+    if (settlementPanel) settlementPanel.classList.add('is-hidden');
+  } else if (settlements.length === 0) {
+    // 这趟旅程还没有任何消费纪录，不是「结清了」——用「还没有消费纪录」
+    // 这组文案更准确，避免让人誤以为曾经有过账目
+    if (settlementPanel) settlementPanel.classList.remove('is-hidden');
+    renderEmptyBlock('settlementList', t('empty.noExpenses.title'), t('empty.noExpenses.desc'));
   } else {
+    if (settlementPanel) settlementPanel.classList.remove('is-hidden');
     const container = document.getElementById('settlementList');
     // 点击整排直接去还款（不再是滑动才看得到的按钮）——「搭伙金库」这个虚拟
     // 参与者的转账建议不能真的去记还款，那一排不给点击样式、也不绑事件
@@ -8428,7 +8515,7 @@ function renderSummaryPage() {
         <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
         ${isPool
           ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
-          : `<svg class="settlement-row-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+          : ''}
       </div>
     `;
     }).join('');
@@ -8476,7 +8563,6 @@ function renderRepaymentList() {
         <span>${escapeHtml(item.ToMember)}</span>
       </div>
       <p class="settlement-amount mono">${formatMoney(item.Amount)}</p>
-      ${clickable ? `<svg class="settlement-row-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` : ''}
     </div>
   `;
   }).join('');
@@ -8865,28 +8951,31 @@ function openAllExpensesModal() {
 }
 
 /**
- * 打开「建议还款」Modal，内容跟结算总览页的「最佳还款建议」一致，
- * 每一笔都能直接点「去还款」预填还款表单
+ * 打开「建议还款」Modal，内容跟结算总览页的「最佳还款建议」一致——但这里
+ * 纯粹是给使用者快速看一眼「最少转账次数该怎么转」，不提供「去还款」的
+ * 点击动作（真的要记录还款，去结算页那边点），单纯展示用
  */
 function openSettlementSuggestionsModal() {
   const settlements = appState.summary.settlements || [];
   const listContainer = document.getElementById('settlementSuggestionsList');
 
   if (settlements.length === 0) {
+    const emptyTitle = appState.expenses.length === 0 ? t('empty.noExpenses.title') : t('settlementModal.empty.title');
+    const emptyDesc = appState.expenses.length === 0 ? t('empty.noExpenses.desc') : t('settlementModal.empty.desc');
     listContainer.innerHTML = `
       <div class="empty-state empty-state-compact">
         <div class="empty-illustration" aria-hidden="true">
           <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M26 32L30 36L38 27" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <h3>${escapeHtml(t('settlementModal.empty.title'))}</h3>
-        <p>${escapeHtml(t('settlementModal.empty.desc'))}</p>
+        <h3>${escapeHtml(emptyTitle)}</h3>
+        <p>${escapeHtml(emptyDesc)}</p>
       </div>
     `;
     openModal('settlementSuggestionsModal');
     return;
   }
 
-  listContainer.innerHTML = settlements.map((item, index) => `
+  listContainer.innerHTML = settlements.map((item) => `
     <div class="settlement-row">
       <div class="settlement-flow">
         <span>${escapeHtml(getExpensePayerDisplay(item.from))}</span>
@@ -8896,16 +8985,9 @@ function openSettlementSuggestionsModal() {
       <p class="settlement-amount mono">${formatMoney(item.amount)}</p>
       ${item.isPoolSettlement
         ? `<span class="badge badge-info">${escapeHtml(t('settlement.poolOffsetBadge'))}</span>`
-        : `<button class="btn btn-secondary btn-sm settlement-repay-btn" type="button" data-settlement-index="${index}">${escapeHtml(t('settlement.goRepay'))}</button>`}
+        : ''}
     </div>
   `).join('');
-
-  listContainer.querySelectorAll('.settlement-repay-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      const item = settlements[Number(button.getAttribute('data-settlement-index'))];
-      openRepaymentModalPrefilled(item.from, item.to, item.amount);
-    });
-  });
 
   openModal('settlementSuggestionsModal');
 }
