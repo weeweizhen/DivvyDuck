@@ -2258,12 +2258,18 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 }
 
 /* 静态的滑动提示文字（不是动画教学，就是一直待在那里的小字），让使用者
-   不用真的滑一次才知道这里藏了个动作 */
+   不用真的滑一次才知道这里藏了个动作。原本每一行都重複放一次，密密麻麻
+   反而很乱、跟清单本身的资料抢版面——改成整个清单只在最上面放一次
+   （.swipe-hint-section），靠右对齐、字更小更淡，安安静静待在标题旁边 */
 .swipe-hint {
   font-size: 11px;
   color: var(--text-tertiary);
-  text-align: center;
-  padding: 3px 0 var(--space-1);
+}
+
+.swipe-hint-section {
+  text-align: right;
+  padding: 0 var(--space-2) var(--space-2);
+  margin: 0;
 }
 
 @media (min-width: 1024px) {

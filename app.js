@@ -8506,7 +8506,6 @@ function renderSummaryPage() {
             <svg viewBox="0 0 24 24" fill="none"><path d="M4 12L20 4L14 20L11 13L4 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
           </button>
         </div>
-        <p class="swipe-hint">${escapeHtml(t('settlement.swipeHint'))}</p>
         `}
       </div>
     `).join('');
@@ -8568,7 +8567,6 @@ function renderRepaymentList() {
           <svg viewBox="0 0 24 24" fill="none"><path d="M5 7H19M9.5 7V4.8C9.5 4.4 9.8 4 10.3 4H13.7C14.2 4 14.5 4.4 14.5 4.8V7M17.5 7L16.9 18.5C16.9 19.3 16.2 20 15.4 20H8.6C7.8 20 7.1 19.3 7.1 18.5L6.5 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-      <p class="swipe-hint">${escapeHtml(t('repayment.swipeHint'))}</p>
       ` : ''}
     </div>
   `).join('');
