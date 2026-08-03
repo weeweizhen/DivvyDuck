@@ -1234,7 +1234,14 @@ html {
 }
 
 .page {
-  animation: fadeSlideIn var(--duration-slow) var(--ease-out);
+  /* 切页（概览→同行……）目前只有「进场」这个动作有动画：换页当下旧页面
+     直接 display:none 消失、新页面重新进入渲染树，浏览器会自动重播这个
+     animation（display:none → 显示，CSS animation 一定会重新触发，不像
+     transition 需要额外的样式变化才会启动，这里不用改 JS 也能生效）。
+     用 --ease-pop 換掉原本的 --ease-out，滑入＋轻微放大到 100% 的尾段会
+     带一点回弹，感觉像页面「稳稳地弹回定位」，不是平淡地滑到底就停 */
+  animation: fadeSlideIn 0.42s var(--ease-pop);
+  will-change: transform, opacity;
 }
 
 .page.is-hidden {
@@ -3229,10 +3236,18 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 .tab-item svg {
   width: 22px;
   height: 22px;
+  transition: transform 0.35s var(--ease-pop);
 }
 
 .tab-item.is-active {
   color: var(--accent);
+}
+
+.tab-item.is-active svg {
+  /* 切到这个分页的当下，图示轻轻放大回弹一下，跟内容区的 fadeSlideIn
+     同时发生，两个动作对在一起，「点分页」跟「页面换了」才会感觉是
+     同一个连贯的动作，不是文字/图示颜色变了、内容自己换了的两件事 */
+  transform: scale(1.12);
 }
 
 /* 中间的 FAB 现在放的是品牌 Logo（本身已经是深色圆角方块＋渐层配色）——
@@ -3266,8 +3281,8 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
    20. 动画关键帧
    ------------------------------------------------------------ */
 @keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes spin {
