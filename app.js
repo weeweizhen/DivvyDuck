@@ -4679,7 +4679,8 @@ function closeDrawer() {
 /**
  * 绑定三个手势：
  *   1. 下拉刷新——页面卷到最顶端时，在内容区往下拖，放开就重新整批载入目前旅程的资料
- *   2. 右边缘左滑——从萤幕最右边缘开始左滑，滑够距离就打开侧滑导览（等同点汉堡按钮）
+ *   2. 右半屏左滑——从萤幕右半边开始左滑（不用死贴最右边缘），滑够距离就打开
+ *      侧滑导览（等同点汉堡按钮）
  *   3. 导览打开时向右滑——导览现在是全屏的，没有实体关闭按钮，从萤幕任何位置开始
  *      向右滑（不用像开启那样限定要贴著边缘）就能关闭，方向跟「打开」正好相反、
  *      符合直觉（导览是从右边推进来的，往右推回去就是关掉）
@@ -4695,7 +4696,8 @@ function closeDrawer() {
  * 手势的重点本来就是过程中的反馈。
  */
 function initTouchGestures() {
-  const EDGE_ZONE_PX = 10; // 只有从最右边 10px 内按下去，才算「边缘」滑动的候选（开启导览用）
+  const EDGE_ZONE_RATIO = 0.5; // 起点只要落在萤幕右半（不用死贴最右边缘）就算开启导览的候选，
+                                // 原本是 10px 的窄边缘，太难点中，划好几次才有一次被 sense 到
   const DIRECTION_LOCK_PX = 10; // 移动超过这个距离才判断方向，避免手抖误判
   const DRAWER_OPEN_THRESHOLD_PX = 70;
   const DRAWER_CLOSE_THRESHOLD_PX = 70;
@@ -4724,6 +4726,25 @@ function initTouchGestures() {
     return modalStack.length > 0;
   }
 
+  function isInsideHorizontalScroller(target) {
+    // 卡片轮播（.dash-card-track）、分类筛选（.chip-group／.category-pills）
+    // 这些元素自己就靠左滑/右滑捲动，而且很可能整条／整张卡都落在萤幕右半——
+    // 扩大边缘滑动的候选范围之后，如果不排除掉这些元素，在上面左滑会两边
+    // 抢手势（该捲的卡片没捲动，导览却被打开了）。不特別列 class 名单，
+    // 直接检查「是否真的能横向捲动」，之後新增的横向清单也会自动被涵盖到
+    let el = target;
+    while (el && el !== document.body) {
+      if (el.scrollWidth > el.clientWidth + 1) {
+        const overflowX = getComputedStyle(el).overflowX;
+        if (overflowX === 'auto' || overflowX === 'scroll') {
+          return true;
+        }
+      }
+      el = el.parentElement;
+    }
+    return false;
+  }
+
   function setPtrPull(distance) {
     ptrIndicator.style.height = `${distance}px`;
     const progress = Math.min(1, distance / PTR_THRESHOLD_PX);
@@ -4742,9 +4763,13 @@ function initTouchGestures() {
       lastX: t.clientX,
       lastY: t.clientY,
       mode: null,
-      // 开启导览要贴著最右边缘按下去才算数；导览已经开著时要关闭，不用贴边，
-      // 从萤幕任何位置开始向右滑都算（导览这时候盖满全屏，随便按都是按在它上面）
-      canEdgeSwipe: !sideMenu.classList.contains('is-open') && t.clientX >= window.innerWidth - EDGE_ZONE_PX,
+      // 开启导览：起点落在萤幕右半就算数，不用死贴最右边缘，但要排除掉
+      // 横向捲动元素（卡片轮播／分类筛选），避免抢走它们自己的左滑手势；
+      // 导览已经开著时要关闭，不用贴边，从萤幕任何位置开始向右滑都算
+      // （导览这时候盖满一大块画面，随便按都是按在它上面）
+      canEdgeSwipe: !sideMenu.classList.contains('is-open') &&
+        t.clientX >= window.innerWidth * (1 - EDGE_ZONE_RATIO) &&
+        !isInsideHorizontalScroller(t.target),
       canCloseDrawer: sideMenu.classList.contains('is-open'),
       canPullToRefresh: !sideMenu.classList.contains('is-open') && window.scrollY <= 0
     };

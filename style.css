@@ -80,6 +80,11 @@
 
   /* 动画 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* 带一点点回弹的「定住」曲线，
+    专门给抽屉／弹窗／Toast 这类「弹出」动作用——比 --ease-spring 更有实际的
+    弹性手感（--ease-spring 名字虽然叫 spring，实际是没有回弹的纯 ease-out 曲线，
+    很多颜色/边框过渡也在共用它，改成会回弹的曲线会让那些非位移类的过渡看起来
+    很奇怪，所以另外开一个专门给「移动/缩放」类动画用） */
   --duration-fast: 140ms;
   --duration-base: 220ms;
   --duration-slow: 360ms;
@@ -413,7 +418,7 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: height 0.25s var(--ease-out);
+  transition: height 0.32s var(--ease-spring);
 }
 
 .ptr-indicator.is-dragging {
@@ -688,7 +693,7 @@ html {
   -webkit-backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-micro) var(--ease-out);
+  transition: opacity 0.35s var(--ease-spring);
   z-index: 400;
 }
 
@@ -701,11 +706,12 @@ html {
   position: fixed;
   top: 0;
   right: 0;
-  /* 原本是左侧窄面板（left:0 + max-width:84vw），现在改成从右侧滑入的全屏导览，
-     不再限制宽度，撑满整个视窗宽度 */
+  /* 原本是左侧窄面板（left:0 + max-width:84vw），后来一度改成从右侧滑入的
+     全屏导览；现在收回成 3/4 屏宽——留一条能看到底下页面／点击关闭的缝，
+     手感更接近原生 App 的侧滑导览，也不会让「打开导览」感觉像跳转到新页面 */
   height: 100vh;
   height: 100dvh;
-  width: 100%;
+  width: 75%;
   display: flex;
   flex-direction: column;
   padding: calc(var(--space-5) + env(safe-area-inset-top)) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));
@@ -716,10 +722,12 @@ html {
   z-index: 410;
   overflow: hidden;
   /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层。
-     从右侧推入，所以关闭状态是往右边（正值）位移，不是原本左侧面板的负值位移 */
+     从右侧推入，所以关闭状态是往右边（正值）位移，不是原本左侧面板的负值位移。
+     用专属的 --ease-pop（真的会回弹一下）取代 --ease-spring（那个其实没有回弹，
+     只是取了个 spring 的名字），滑到底会有轻微的「弹一下再定住」手感 */
   transform: translateX(100%) translateZ(0);
   will-change: transform;
-  transition: transform var(--duration-micro) var(--ease-out);
+  transition: transform 0.42s var(--ease-pop);
 }
 
 .side-drawer.is-open {
@@ -2936,7 +2944,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   opacity: 0;
   pointer-events: none;
   will-change: opacity;
-  transition: opacity var(--duration-micro) var(--ease-out);
+  transition: opacity 0.35s var(--ease-spring);
   z-index: 40;
 }
 
@@ -3057,11 +3065,13 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-border-highlight);
   pointer-events: auto;
   will-change: transform, opacity;
-  animation: toastIn var(--duration-micro) var(--ease-out);
+  animation: toastIn 0.45s var(--ease-pop);
 }
 
 .toast.is-leaving {
-  animation: toastOut var(--duration-micro) var(--ease-out) forwards;
+  /* 收起用加速曲线（ease-in），跟弹出的弹性曲线相反方向——弹出是「慢慢定住」，
+     收起该是「越来越快地消失」，两种手感对调才符合直觉，不是套同一条曲线了事 */
+  animation: toastOut 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .toast-icon {
@@ -3131,7 +3141,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   z-index: 80;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-out);
+  transition: opacity 0.3s var(--ease-spring);
 }
 
 .loading-overlay.is-visible {
@@ -4312,7 +4322,11 @@ body {
   border: 0.5px solid var(--border-strong);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-float), inset 0 1px 0 var(--specular);
-  transition: transform 0.5s var(--ease-spring), opacity 0.35s var(--ease-spring), filter 0.35s var(--ease-spring);
+  /* transform 用 --ease-pop（真的会回弹）、时间也拉长一点，让「弹出」的尾段
+     看得出来是弹性地定住，不是硬停；opacity/filter 保持比较快、不回弹——
+     内容淡入本来就该比位移快结束，两者故意不同步，弹窗才不会看起来像
+     「整块一起僵硬地跳出来」 */
+  transition: transform 0.55s var(--ease-pop), opacity 0.3s var(--ease-out), filter 0.3s var(--ease-out);
 }
 
 @media (min-width: 720px) {
