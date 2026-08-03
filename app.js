@@ -4745,10 +4745,30 @@ function initTouchGestures() {
     return false;
   }
 
-  function setPtrPull(distance) {
+  // touchmove 触发频率很高（部分手机可到 100+ 次/秒），而 height 是会触发
+  // 版面重排（layout）的属性——过去这里是收到一次 touchmove 就同步写一次
+  // style.height，等于每次触摸移动都强制浏览器立刻重新计算一次版面，这正是
+  // 下拉刷新手感发死、卡顿的主因。这里改成只记录「最新目标值」，实际写入
+  // DOM 的动作交给 requestAnimationFrame 做节流——不管 touchmove 触发几次，
+  // 每一帧最多只真正重排一次，帧率立刻贴齐画面刷新率，手感会明显更跟手。
+  let pendingPtrDistance = null;
+  let ptrRafId = null;
+
+  function applyPendingPtrPull() {
+    ptrRafId = null;
+    if (pendingPtrDistance === null) return;
+    const distance = pendingPtrDistance;
+    pendingPtrDistance = null;
     ptrIndicator.style.height = `${distance}px`;
     const progress = Math.min(1, distance / PTR_THRESHOLD_PX);
     ptrArrow.style.transform = `rotate(${progress * 180}deg)`;
+  }
+
+  function setPtrPull(distance) {
+    pendingPtrDistance = distance;
+    if (ptrRafId === null) {
+      ptrRafId = requestAnimationFrame(applyPendingPtrPull);
+    }
   }
 
   document.addEventListener('touchstart', (event) => {

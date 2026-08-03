@@ -419,6 +419,12 @@ html {
   align-items: center;
   justify-content: center;
   transition: height 0.32s var(--ease-spring);
+  /* height 变化本来就会触发重排，但預设情况下浏览器不知道这个重排的影响
+     范围有多大，保守起见会连带重新计算它之後所有兄弟元素、甚至更外层的
+     版面。contain: layout style 明确告诉浏览器「这个元素内部的版面变化
+     不会影响外部版面的计算方式」，把重排的代价限制在这个元素自己身上，
+     手机下拉的手感会更顺、不再牵动整页重算 */
+  contain: layout style;
 }
 
 .ptr-indicator.is-dragging {
@@ -4250,8 +4256,13 @@ body {
 .side-drawer,
 .mobile-tabbar {
   background: var(--surface-glass-strong);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  /* 原本这里写死 blur(28px)，会盖掉 :root 里 --glass-blur-strong 的数值，
+     手机版调低模糊半径的设定对这几个元素完全不生效——而 .mobile-tabbar
+     偏偏是手机上「固定在画面底部、页面怎么滚它都不动」的元素，捲动时
+     每一帧都要重新计算它背后内容的模糊，是手机滚动卡顿最直接的来源之一。
+     改用变量后，手机版会自动套用较轻的模糊，桌面版数值不变 */
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(190%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(190%);
   border-color: transparent;
 }
 
@@ -5324,6 +5335,23 @@ body {
      动态对齐到同一高度，这条只是把「没有金库卡片、或金库卡片也很矮」时的下限调整） */
   .dash-card-slider .hero-card {
     min-height: 180px !important;
+  }
+
+  /* 手机 GPU 处理毛玻璃模糊的能力比桌面弱很多，而 .glass-card 几乎贴满每一页
+     （消费清单、成员卡片、旅程卡片……同屏可能同时有十几张），加上切页/开窗时
+     这些卡片还要跟着做位移缩放动画——「模糊 + 同时动画」的组合是手机上最容易
+     掉帧、看起来僵硬卡顿的原因。这里把手机版的模糊半径调低（视觉上几乎看不出
+     差异，但要合成的像素范围小很多，GPU 负担明显降低），桌面维持原本数值不变 */
+  :root {
+    --glass-blur: 10px;
+    --glass-blur-strong: 14px;
+  }
+
+  /* background-attachment: fixed 在部分手机浏览器（尤其较旧的 iOS Safari）
+     不会被真正提升成独立合成层，捲动时反而会跟着重绘背景，拖慢整体捲动帧率。
+     手机版改回 scroll（背景跟着内容一起捲动），桌面不受影响 */
+  body {
+    background-attachment: scroll;
   }
 }
 
