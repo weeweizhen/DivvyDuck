@@ -723,11 +723,15 @@ html {
   overflow: hidden;
   /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层。
      从右侧推入，所以关闭状态是往右边（正值）位移，不是原本左侧面板的负值位移。
-     用专属的 --ease-pop（真的会回弹一下）取代 --ease-spring（那个其实没有回弹，
-     只是取了个 spring 的名字），滑到底会有轻微的「弹一下再定住」手感 */
+     这里改回不带回弹的纯减速曲线（--ease-out）——回弹曲线（--ease-pop）套在
+     modal 那种小幅缩放（97%→100%，只差 3%）上很细腻，但抽屉是整片面板从
+     100% 滑到 0%，同一条曲线会「滑过头」再弹回来，超出的量换算成实际位移
+     是画面宽度的一半以上，肉眼看起来就是很浮夸地冲过头再靠回来，位移越大
+     回弹越离谱，不适合用在这种大幅度滑动上；改用纯减速、时间拉长一点，
+     滑到底是顺順地慢下来定住，没有多余的来回 */
   transform: translateX(100%) translateZ(0);
   will-change: transform;
-  transition: transform 0.42s var(--ease-pop);
+  transition: transform 0.4s var(--ease-out);
 }
 
 .side-drawer.is-open {
@@ -1239,9 +1243,13 @@ html {
      animation（display:none → 显示，CSS animation 一定会重新触发，不像
      transition 需要额外的样式变化才会启动，这里不用改 JS 也能生效）。
      用 --ease-pop 換掉原本的 --ease-out，滑入＋轻微放大到 100% 的尾段会
-     带一点回弹，感觉像页面「稳稳地弹回定位」，不是平淡地滑到底就停 */
+     带一点回弹，感觉像页面「稳稳地弹回定位」，不是平淡地滑到底就停。
+     注意：不能加 will-change: transform（或任何形式的 transform）在这层——
+     成员消费明细页的「返回」键（#memberDetailBackBtn）是 position:fixed，
+     藏在 .page 底下当子元素；只要祖先有 transform 或 will-change:transform，
+     fixed 子元素就会改成相对那个祖先定位，不再相对整个视口，会跟同样
+     fixed、但不在 .page 里面的汉堡按钮对不齐 */
   animation: fadeSlideIn 0.42s var(--ease-pop);
-  will-change: transform, opacity;
 }
 
 .page.is-hidden {
