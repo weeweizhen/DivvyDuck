@@ -1554,7 +1554,11 @@ html {
 .chip-group {
   display: flex;
   flex-wrap: nowrap;
-  justify-content: center;
+  /* "center" 在东西没超出的时候没问题，但一超出，浏览器是把整段可捲动的
+     内容置中，导致一开始（还没手动滑动前）左右两端就已经各自「切」掉一半
+     胶囊，不是滑到底才切到——用 safe center：塞得下就置中，塞不下自动退回
+     从头对齐（flex-start），两种情况都不会切到一半 */
+  justify-content: safe center;
   gap: var(--space-2);
   /* 类别多的时候（尤其手机版）改成一行内横向滑动，不要越叠越多行、把下面
      的内容往下挤；滑动手感比较像原生 App 的标签列，而不是文字换行 */
@@ -1562,6 +1566,8 @@ html {
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* Firefox */
+  /* 捲动一定要停在「某个胶囊完整对齐边缘」的位置，不会停在切一半的地方 */
+  scroll-snap-type: x mandatory;
 }
 
 .chip-group::-webkit-scrollbar {
@@ -1580,6 +1586,8 @@ html {
   transition: all var(--duration-fast) var(--ease-out);
   flex-shrink: 0; /* 讓每个标签维持自己原本的宽度，用横向捲动而不是被压缩变形 */
   white-space: nowrap;
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 快速滑动也一定逐个胶囊停，不会飞过好几个直接停在切一半的地方 */
 }
 
 .chip:hover {
@@ -1602,12 +1610,15 @@ html {
 .category-pills {
   display: flex;
   flex-wrap: nowrap;
-  justify-content: center;
+  /* 同 .chip-group 的道理：塞得下就置中，塞不下（手机上很常见）自动退回
+     从头对齐，不会一超出就两端各切一半胶囊 */
+  justify-content: safe center;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   gap: var(--space-2);
   padding-bottom: 2px;
+  scroll-snap-type: x mandatory;
 }
 
 .category-pills::-webkit-scrollbar {
@@ -1625,6 +1636,9 @@ html {
   color: var(--text-secondary);
   transition: all var(--duration-fast) var(--ease-out);
   white-space: nowrap;
+  flex-shrink: 0; /* 讓每个胶囊维持原本宽度，不会被硬挤压变形 */
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* 快速滑动也一定逐个胶囊停，不会飞过去停在切一半的地方 */
 }
 
 .category-pill:hover {
