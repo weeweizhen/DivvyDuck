@@ -11,6 +11,45 @@
 const PAGE_IDS = ['dashboard', 'expenses', 'summary', 'members', 'settings'];
 
 /**
+ * 三套导览（桌面侧栏 #sidebarNav、手机抽屉 #drawerNav、手机底部导览 #mobileTabbar）
+ * 共用的唯一资料源——原本三处各自手刻一份几乎一样的 HTML，图示 SVG 被複製了
+ * 三次，「结算」「同行」这两个图示还因为各自维护，底部导览列那份漏掉了装饰线条，
+ * 长得跟侧栏不一样；手机抽屉那份甚至整个没有图示。见 renderMainNav()
+ * @typedef {{page: string, labelKey: string, icon: string, tabbarHidden?: boolean}} NavItem
+ * @type {NavItem[]}
+ */
+const NAV_ITEMS = [
+  {
+    page: 'dashboard',
+    labelKey: 'nav.dashboard',
+    icon: '<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/></svg>'
+  },
+  {
+    page: 'expenses',
+    labelKey: 'nav.expenses',
+    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 3.5H18V20.5L15.5 19L13 20.5L10.5 19L8 20.5L6 19V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8H15M9 11.5H15M9 15H12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+  },
+  {
+    page: 'summary',
+    labelKey: 'nav.summary',
+    icon: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5V20.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M6 8L12 3.5L18 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 8H8.5L6 14.5C6 14.5 4.8 16 6 16.8C6.9 17.4 8.5 17 8.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15.5 8H20.5L18 14.5C18 14.5 16.8 16 18 16.8C18.9 17.4 20.5 17 20.5 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  {
+    page: 'members',
+    labelKey: 'nav.members',
+    icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8.5" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19C3.5 15.5 6 13.5 9 13.5C12 13.5 14.5 15.5 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M15.5 6.5C16.9 6.8 18 8 18 9.5C18 11 16.9 12.2 15.5 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16.5 13.7C18.9 14.2 20.5 15.9 20.5 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  },
+  {
+    page: 'settings',
+    labelKey: 'nav.settings',
+    icon: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5V5.5M12 18.5V20.5M20.5 12H18.5M5.5 12H3.5M17.8 6.2L16.4 7.6M7.6 16.4L6.2 17.8M17.8 17.8L16.4 16.4M7.6 7.6L6.2 6.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    // 手机版左上角已经有汉堡选单可以进设置页，底部导览列不需要重複放
+    tabbarHidden: true
+  }
+];
+
+
+/**
  * 依目前语言取得指定页面的标题与副标题
  * @param {string} pageId 页面代号
  * @return {{title: string, subtitle: string}}
@@ -274,8 +313,10 @@ const STRINGS = {
     'nav.summary': '结算',
     'nav.members': '同行',
     'nav.settings': '设置',
-    'nav.expensesShort': '账目',
-    'nav.summaryShort': '结算',
+    // 原本 expensesShort/summaryShort 两个「短标签」是给底部导览用的，但值
+    // 其实一直跟完整版一模一样（从没真的缩短过），且 members 从来没补过对应的
+    // short key——三处导览统一改成共用同一份 NAV_ITEMS 资料後，直接一律用
+    // 完整标签，不再维护这组形同虚设的短版本（见 renderMainNav()）
 
     // 页首标题 / 副标题（每个页面）
     'page.dashboard.title': '概览',
@@ -289,7 +330,7 @@ const STRINGS = {
     'page.settings.title': '设置',
     'page.settings.subtitle': '外观、分类与连线',
     'header.addExpense': '记一笔',
-    'header.searchPlaceholder': '搜寻账目…',
+    'header.searchPlaceholder': '搜寻说明、金额、分类、成员、日期…',
 
     // Dashboard 统计卡
     'stat.totalExpense': '总消费',
@@ -540,8 +581,10 @@ const STRINGS = {
 
     // 还款 Modal
     'repaymentModal.title': '记录还款',
-    'repayment.toLabel': '收款人（实际收到钱的人）',
-    'repayment.fromLabel': '还款人（可勾选多人，各自填金额，例如夫妻一起还）',
+    // label 精简：多选、各自填金额这件事 UI 本身（checkbox + 金额输入框）已经表达
+    // 清楚了，不需要在 label 里重複解释
+    'repayment.toLabel': '收款人',
+    'repayment.fromLabel': '还款人',
     'repayment.selectMember': '选择成员',
     'repayment.dateLabel': '日期',
     'repayment.remarkPlaceholder': '例如：现金 / 转账',
@@ -924,8 +967,6 @@ const STRINGS = {
     'nav.summary': 'Settle',
     'nav.members': 'Members',
     'nav.settings': 'Settings',
-    'nav.expensesShort': 'Expenses',
-    'nav.summaryShort': 'Settle',
 
     'page.dashboard.title': 'Overview',
     'page.dashboard.subtitle': 'Your trip, at a glance',
@@ -938,7 +979,7 @@ const STRINGS = {
     'page.settings.title': 'Settings',
     'page.settings.subtitle': 'Appearance, categories, connection',
     'header.addExpense': 'Add Expense',
-    'header.searchPlaceholder': 'Search expenses…',
+    'header.searchPlaceholder': 'Search description, amount, category, member, date…',
 
     'stat.totalExpense': 'Total Spent',
     'stat.totalExpenseMeta': 'Every record combined',
@@ -1170,8 +1211,10 @@ const STRINGS = {
     'empty.noRepayment.desc': 'Once someone pays back, log it above.',
 
     'repaymentModal.title': 'Record Repayment',
-    'repayment.toLabel': 'To (who actually received the money)',
-    'repayment.fromLabel': 'From (check multiple, enter each amount — e.g. a couple paying together)',
+    // Shortened labels: the UI itself (checkbox + amount input) already makes clear
+    // that this supports multi-select with per-person amounts, no need to spell it out
+    'repayment.toLabel': 'To',
+    'repayment.fromLabel': 'From',
     'repayment.selectMember': 'Select member',
     'repayment.dateLabel': 'Date',
     'repayment.remarkPlaceholder': 'e.g. cash / bank transfer',
@@ -1712,6 +1755,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 用 try/catch 包住，最糟只是某个次要功能没初始化成功，也绝对不能让整个 App 连
   // 登入画面都进不去
   try {
+    renderMainNav();
     initSupabaseAuthListener();
     initLanguageToggle();
     applyLanguage();
@@ -1813,6 +1857,7 @@ function isPasswordRecoveryRedirect() {
 function startAppAfterAuth() {
   initNavigation();
   initModals();
+  initAppHistoryNavigation();
   document.getElementById('memberDetailBackBtn').addEventListener('click', closeMemberDetailPage_);
   initSegmentedControl();
   initSmartMemory();
@@ -1830,7 +1875,6 @@ function startAppAfterAuth() {
   initReceiptViewer();
   initDangerZone();
   initSettleAllButton();
-  initDashboardHeader();
   initQuickActionsDock();
   initDuplicateMemberBanner();
   initPdfExport();
@@ -2750,7 +2794,14 @@ function initOfflineHandling() {
 /**
  * 实际执行「切换旅程」的动作——原本是 initTripSwitcher() 里的一个闭包，只有
  * 下拉选单的 change 事件能呼叫到；现在旅程选择改成 tripPickerModal 里点列表，
- * 拆成外层函式让 Modal 那边也能直接呼叫同一套逻辑，不用另外重写一次
+ * 拆成外层函式让 Modal 那边也能直接呼叫同一套逻辑，不用另外重写一次。
+ *
+ * 内容区会先短暂淡出、换上骨架屏後再淡入，给「切换了」这件事一点视觉过场——
+ * 不是全屏 Logo 那种「进入 App」的仪式感（开机动画 MIN_DISPLAY_MS 高达 2 秒，
+ * 一天切换十几次旅程的话完全受不了），单纯是避免文字/数字在换资料的当下
+ * 一格一格硬切，看起来更像一次有意识的转场。刻意不等 loadTripData() 载入
+ * 完成才淡回来：骨架屏本身就是「资料还在路上」的提示，网路慢的时候应该
+ * 看到骨架屏在转，而不是让整个内容区空白卡住等资料
  * @param {string} newTripId
  */
 async function switchCurrentTrip(newTripId) {
@@ -2759,7 +2810,10 @@ async function switchCurrentTrip(newTripId) {
   applyTripMeta_(currentTripId);
   setTripSelectValues(currentTripId);
 
+  await fadeOutAppMain_();
   renderDashboardSkeleton();
+  fadeInAppMain_();
+
   try {
     await loadTripData();
     // 切换成功不再跳 Toast——切换后画面本身就会显示该旅程的资料（Hero Card／消费列表／
@@ -2768,6 +2822,34 @@ async function switchCurrentTrip(newTripId) {
     showToast('error', t('toast.switchFailed'), error.message);
     clearHeroCardSkeletonToEmpty_();
     renderApiErrorState(error.message);
+  }
+}
+
+const APP_MAIN_FADE_MS = 150; // 淡出/淡入各半，加总落在任务要求的「300ms 以内」
+
+/**
+ * 让 #appMain（当前分页的内容区，不含 header/侧栏这些「外壳」）短暂淡出，
+ * 用于切换旅程这类「资料要整批换掉」的场合。尊重 prefers-reduced-motion——
+ * 开启的话直接跳过，不做动画也不额外等待
+ * @return {Promise<void>}
+ */
+function fadeOutAppMain_() {
+  const contentEl = document.getElementById('appMain');
+  if (!contentEl || prefersReducedMotion_()) {
+    return Promise.resolve();
+  }
+  contentEl.classList.add('is-content-switching');
+  return wait(APP_MAIN_FADE_MS);
+}
+
+/**
+ * fadeOutAppMain_() 的另一半——不需要等它跑完，淡入跟後续的资料载入是
+ * 两件互不阻塞的事（见 switchCurrentTrip() 的说明）
+ */
+function fadeInAppMain_() {
+  const contentEl = document.getElementById('appMain');
+  if (contentEl) {
+    contentEl.classList.remove('is-content-switching');
   }
 }
 
@@ -2875,8 +2957,10 @@ function renderTripPillSwitcher() {
 
 /**
  * 渲染 tripPickerModal 里的旅程清单——每趟旅程一行，点名字那块直接切换，
- * 目前这趟额外多一颗铅笔小按钮可以改名字（沿用既有的 renameTripModal，
- * 靠通用的 data-open-modal 监听器处理，这里不用再重複写开 Modal 的逻辑）。
+ * 每一行都带一颗铅笔小按钮可以改名字（不限「目前这趟」，任何一行都能直接改，
+ * 不用先切换过去才能改名），沿用既有的 renameTripModal，靠通用的 data-open-modal
+ * 监听器处理，这里不用再重複写开 Modal 的逻辑；按钮上带 data-rename-trip-id
+ * 标明「这一行要改的是哪趟」，监听器靠这个属性分辨目标，不是永远预设 currentTripId。
  * 「新增旅程」原本是选单旁边独立的「+」图示按钮，现在收进这个 Modal 底部，
  * 跟清单放在一起，逻辑上都是「管理我的旅程」这件事
  */
@@ -2908,11 +2992,9 @@ function renderTripPickerList() {
           <span class="avatar">${escapeHtml(getInitials(trip.name))}</span>
           <span class="trip-picker-row-name">${escapeHtml(trip.name)}</span>
         </button>
-        ${isActive ? `
-          <button type="button" class="icon-btn trip-picker-edit-btn" data-open-modal="renameTripModal" aria-label="更改旅程名称">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        ` : ''}
+        <button type="button" class="icon-btn trip-picker-edit-btn" data-open-modal="renameTripModal" data-rename-trip-id="${escapeHtml(trip.id)}" aria-label="${escapeHtml(t('renameTripModal.title'))}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     `;
   }).join('');
@@ -2978,9 +3060,12 @@ function getTripName(tripId) {
  * 直接 update trips 那一列（关联都是靠 trip.id，改名字不会动到任何其他资料），
  * 成功後同步更新 appState 缓存的那份名字，再重新渲染选单/标题等所有显示旅程
  * 名称的地方，不然会看到画面上还是旧名字，要等下次重新整理才会更新
+ * @param {string} [targetTripId] 要改名的旅程 id；不传的话回退成 currentTripId
+ *   （沿用旧行为，对应旅程标题旁边那颗改名按钮——没有指定特定目标，永远是改「目前这趟」）
  */
-async function handleRenameTripFormSubmit() {
-  if (!currentTripId) {
+async function handleRenameTripFormSubmit(targetTripId) {
+  const tripId = targetTripId || currentTripId;
+  if (!tripId) {
     return;
   }
 
@@ -2996,10 +3081,10 @@ async function handleRenameTripFormSubmit() {
   setButtonLoading(submitBtn, true);
 
   try {
-    const { error } = await supabaseClient.from('trips').update({ name: newName }).eq('id', currentTripId);
+    const { error } = await supabaseClient.from('trips').update({ name: newName }).eq('id', tripId);
     if (error) throw error;
 
-    const tripInList = appState.trips.find((item) => item.id === currentTripId);
+    const tripInList = appState.trips.find((item) => item.id === tripId);
     if (tripInList) {
       tripInList.name = newName;
       tripInList.updatedAt = new Date().toISOString(); // 後端有 updated_at 触发器的话本来就会更新，
@@ -3007,8 +3092,15 @@ async function handleRenameTripFormSubmit() {
     }
 
     closeActiveModal();
-    renderTripSelect();
-    renderDashboardHeader();
+    renderTripSelect(); // 内部会连带刷新 renderTripPillSwitcher() / renderTripPickerList()
+
+    // 只有改的刚好是「目前正在看的这趟」才需要刷新 Dashboard 标题；改的是清单里
+    // 别的旅程的话，画面上根本没在显示它的名字，不用碰 Dashboard，
+    // 更不会触发 loadTripData() 或任何资料重载
+    if (tripId === currentTripId) {
+      renderDashboardHeader();
+    }
+
     showToast('success', t('toast.tripRenamed'), t('toast.tripRenamedMsg', { name: newName }));
   } catch (error) {
     showToast('error', t('toast.actionFailed'), error.message);
@@ -3514,18 +3606,42 @@ function renderLanguagePickerList() {
 /**
  * 套用指定语言：记住选择、套用翻译。导览的一键循环按钮、设置页清单选择都共用这支函式，
  * 差别只在清单选择完还要多关闭 Modal（见 selectLanguage）
- * 选到目前已经在用的语言也没关系，一样安全地重新套用一次
+ * 选到目前已经在用的语言也没关系，一样安全地重新套用一次。
+ *
+ * applyLanguage() 会重绘几乎所有动态文字（导览、标题、清单、卡片……），
+ * 直接呼叫的话中间那一帧会明显闪一下（旧语言消失、新语言还没画出来的空档）。
+ * 這裡加一个整体淡出→重绘→淡入的过场盖掉那一帧——只对 App 主体（#appShell）
+ * 生效：登入页切语言（authGate 还开着、#appShell 还是 is-hidden 的时候）
+ * 不加任何过场，见任务 5-4 的说明，登入之前没有「进入 App」这个语境，
+ * 遮挡也没有对象可以遮
  * @param {string} code 语言代码，必须存在于 SUPPORTED_LANGUAGES
  */
-function setLanguage(code) {
+async function setLanguage(code) {
   if (!SUPPORTED_LANGUAGES.some((lang) => lang.code === code)) {
     return;
   }
 
   currentLang = code;
   localStorage.setItem(STORAGE_KEY_LANG, currentLang);
+
+  const appShellEl = document.getElementById('appShell');
+  const shouldFade = appShellEl && !appShellEl.classList.contains('is-hidden') && !prefersReducedMotion_();
+
+  if (!shouldFade) {
+    applyLanguage();
+    return;
+  }
+
+  appShellEl.classList.add('is-lang-switching', 'is-lang-switching-hidden');
+  await wait(LANG_SWITCH_FADE_MS);
   applyLanguage();
+  appShellEl.classList.remove('is-lang-switching-hidden');
+  // 淡入跑完後再把 is-lang-switching 拿掉，恢复 .app-shell 原本给「登出」动画用
+  // 的那份较长过渡时间——这段时间内 opacity 已经在 1，不会有额外的視覺变化
+  window.setTimeout(() => appShellEl.classList.remove('is-lang-switching'), LANG_SWITCH_FADE_MS);
 }
+
+const LANG_SWITCH_FADE_MS = 100; // 淡出/淡入各半，加总落在任务要求的「约 200ms」
 
 /**
  * 套用使用者在语言选择 Modal 里选的语言：记住选择、套用翻译、关闭 Modal。
@@ -4620,17 +4736,105 @@ function renderApiErrorState(message) {
    6. 页面导航（Sidebar / 底部 Tabbar 共用）
    ------------------------------------------------------------ */
 
+/**
+ * 依 NAV_ITEMS 的一项资料产生一颗桌面侧栏／手机抽屉共用的 .nav-item 按钮
+ * （图示 + 文字标签这种结构）。标签用 data-i18n 而不是直接塞翻译好的文字，
+ * 是为了让既有的 applyLanguage() 通用迴圈之後切语言时能自动更新，
+ * 不用另外为导览写一套语言切换逻辑
+ * @param {NavItem} item
+ * @param {boolean} isActive 是否为开局预设显示的分页
+ * @return {HTMLButtonElement}
+ */
+function buildNavItemButton_(item, isActive) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = isActive ? 'nav-item is-active' : 'nav-item';
+  btn.setAttribute('data-page', item.page);
+  btn.innerHTML = `
+    <span class="nav-icon" aria-hidden="true">${item.icon}</span>
+    <span class="nav-label" data-i18n="${item.labelKey}"></span>
+  `;
+  return btn;
+}
+
+/**
+ * 依 NAV_ITEMS 的一项资料产生一颗手机底部导览的 .tab-item 按钮——跟
+ * buildNavItemButton_() 不同的是图示没有包 .nav-icon 外层，沿用
+ * #mobileTabbar 原本「图示 + 短文字」的既有结构
+ * @param {NavItem} item
+ * @param {boolean} isActive
+ * @return {HTMLButtonElement}
+ */
+function buildTabItemButton_(item, isActive) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = isActive ? 'tab-item is-active' : 'tab-item';
+  btn.setAttribute('data-page', item.page);
+  btn.innerHTML = `${item.icon}<span data-i18n="${item.labelKey}"></span>`;
+  return btn;
+}
+
+/**
+ * 依 NAV_ITEMS 渲染桌面侧栏、手机抽屉、手机底部导览三处的分页按钮——
+ * 只在开机时呼叫一次就好，导览项目本身不会因为切换语言而变动，文字部分
+ * 交给上面 data-i18n + 既有的 applyLanguage() 处理，不需要语言切换时重新渲染。
+ * 必须在 initNavigation() 之前呼叫（後者要抓 [data-page] 按钮来绑点击事件，
+ * 这些按钮得先存在），也要在 applyLanguage() 之前呼叫，标签才能在第一次
+ * 套用语言时就跟着一起被翻译，不会先空白一下
+ */
+function renderMainNav() {
+  const sidebarNavEl = document.getElementById('sidebarNav');
+  if (sidebarNavEl) {
+    // #navIndicator 那个滑动指示器是 sidebarNav 的固定装饰，不属于 NAV_ITEMS
+    // 资料驱动的范围，先记住它、清空容器後再放回第一个
+    const indicator = document.getElementById('navIndicator');
+    sidebarNavEl.innerHTML = '';
+    if (indicator) {
+      sidebarNavEl.appendChild(indicator);
+    }
+    NAV_ITEMS.forEach((item) => {
+      sidebarNavEl.appendChild(buildNavItemButton_(item, item.page === 'dashboard'));
+    });
+  }
+
+  const drawerNavEl = document.getElementById('drawerNav');
+  if (drawerNavEl) {
+    drawerNavEl.innerHTML = '';
+    NAV_ITEMS.forEach((item) => {
+      drawerNavEl.appendChild(buildNavItemButton_(item, item.page === 'dashboard'));
+    });
+  }
+
+  const tabbarEl = document.getElementById('mobileTabbar');
+  if (tabbarEl) {
+    // 中间那颗新增消费的 FAB 是吉祥物插画，不是线性图标，不适合塞进 NAV_ITEMS
+    // 共用资料——先记住这个既有节点，清空容器後照原本「账目、FAB、结算」的
+    // 顺序插回原位，视觉/位置完全不变，只是旁边四颗改成资料驱动产生
+    const fabBtn = document.getElementById('mobileFabBtn');
+    tabbarEl.innerHTML = '';
+    NAV_ITEMS.forEach((item) => {
+      if (item.tabbarHidden) {
+        return;
+      }
+      tabbarEl.appendChild(buildTabItemButton_(item, item.page === 'dashboard'));
+      if (item.page === 'expenses' && fabBtn) {
+        tabbarEl.appendChild(fabBtn);
+      }
+    });
+  }
+}
+
 function initNavigation() {
   document.querySelectorAll('[data-page]').forEach((button) => {
     button.addEventListener('click', () => {
-      navigateToPage(button.getAttribute('data-page'));
+      goToPage_(button.getAttribute('data-page'));
       closeDrawer();
     });
   });
 
   document.querySelectorAll('[data-navigate]').forEach((button) => {
     button.addEventListener('click', () => {
-      navigateToPage(button.getAttribute('data-navigate'));
+      goToPage_(button.getAttribute('data-navigate'));
     });
   });
 
@@ -4965,12 +5169,25 @@ function initModals() {
         return;
       }
 
+      if (modalId === 'tripPickerModal') {
+        // 开之前先重新渲染一次清单，不然如果是从旧的快取画面直接开 Modal，
+        // 可能会看到切换旅程/改名之前的旧清单（跟 openTripPickerModal() 是同一个考量，
+        // 这里额外处理是因为这颗按钮走的是通用委派监听器，不是那支函式）
+        renderTripPickerList();
+      }
+
       if (modalId === 'renameTripModal') {
-        if (!currentTripId) {
+        // 铅笔按钮可能来自旅程标题旁边（没带 data-rename-trip-id，代表改目前这趟）
+        // 或 tripPickerModal 清单里的任一行（带了 data-rename-trip-id，代表改那一行）——
+        // 两种来源共用同一个 Modal，靠这个 data 属性分辨要改的到底是哪一趟旅程，
+        // 存进 Modal 自己的 dataset 里，送出表单时才能拿到目标旅程 id
+        const targetTripId = opener.getAttribute('data-rename-trip-id') || currentTripId;
+        if (!targetTripId) {
           showToast('error', t('toast.pleaseSelectTrip'), '');
           return;
         }
-        document.getElementById('renameTripNameInput').value = getTripName(currentTripId);
+        document.getElementById('renameTripModal').dataset.targetTripId = targetTripId;
+        document.getElementById('renameTripNameInput').value = getTripName(targetTripId);
       }
 
       openModal(modalId);
@@ -5001,8 +5218,123 @@ function initModals() {
 
   document.getElementById('renameTripForm').addEventListener('submit', (event) => {
     event.preventDefault();
-    handleRenameTripFormSubmit();
+    // 目标旅程 id 是开 Modal 当下存进 dataset 的（见上面 [data-open-modal] 的
+    // 'renameTripModal' 特判），送出时读出来，不能直接假设改的是 currentTripId
+    handleRenameTripFormSubmit(document.getElementById('renameTripModal').dataset.targetTripId);
   });
+}
+
+/* ------------------------------------------------------------
+   导航历史串接（安卓 / PWA 系统返回键）
+   ------------------------------------------------------------
+   背景：全项目原本零处使用 History API，导致在安卓/PWA 环境按系统返回键
+   会直接整个退出 App，而不是先关掉目前最上层的 Modal／子页面。这里补上
+   最小必要的串接：每次「往前」的导航（开 Modal、切主分页、进成员详情页）
+   都 pushState 一份状态，让返回键有东西可以退；每次「往回」（使用者自己
+   点关闭／背景／Esc／返回按钮触发的）都要主动 history.back() 把对应的
+   状态弹掉，不然历史栈只增不减，要按好几次返回键才能真正离开。
+
+   用两组旗标彼此配合，避免「popstate 触发关闭 → 关闭又呼叫 back() →
+   触发下一次 popstate」的无限循环：
+   - isPopStateInProgress：目前正在处理一次「货真价实、使用者按了返回键」
+     的 popstate。这段期间呼叫到的关闭函式，内部不能再自己呼叫一次
+     history.back()／pushState——History 早就自己走过了，重複呼叫只会
+     多退/多推一层，跟画面对不上。
+   - pendingProgrammaticPops：记录「接下来还有几次 popstate 是我们自己
+     呼叫 history.back()／history.go() 清理用的」，这几次要整个忽略掉，
+     不能被误判成使用者真的按了返回键。用计数而不是单纯的布林值，是因为
+     像 closeAllModals() 这种一次关很多层的情境，理论上也可能对应到不只
+     一次 popstate。
+   ------------------------------------------------------------ */
+let isPopStateInProgress = false;
+let pendingProgrammaticPops = 0;
+
+/**
+ * 「往前」的导航动作（开 Modal、切主分页、进成员详情页）呼叫这个，推入一份
+ * history 状态给返回键退。如果目前正在处理一次真正的返回键 popstate，代表
+ * History 已经自己走到这个状态了，不能重複 push（目前的呼叫时机不会真的
+ * 触发到这个分支，纯粹是防呆）
+ * @param {Object} state 存进 history 的状态物件，至少要有 appNavType 分辨类型
+ */
+function pushAppHistoryState_(state) {
+  if (isPopStateInProgress) {
+    return;
+  }
+  history.pushState(state, '');
+}
+
+/**
+ * 「往回」的动作（使用者自己点 X／背景／Esc／返回按钮……）呼叫这个，把先前
+ * pushAppHistoryState_() 留下的状态弹掉，避免历史栈只增不减。可以传入要
+ * 一次弹掉几步（closeAllModals() 一次关很多层 Modal 时会用到）
+ * @param {number} [steps=1] 要往回退几步
+ */
+function popAppHistoryState_(steps) {
+  if (isPopStateInProgress) {
+    // 这次的关闭本来就是「使用者按了返回键」引发的，History 已经自己往回
+    // 走过一次了，不能再呼叫一次 back()/go()，不然会多退一层
+    return;
+  }
+  const n = steps || 1;
+  // 不管这次要跳几步，同一个 history.back()/history.go() 呼叫规格上都只会
+  // 触发「一次」popstate（浏览器把它当成单一个巡覽任务处理），所以计数只加 1，
+  // 不是加 n
+  pendingProgrammaticPops += 1;
+  if (n === 1) {
+    history.back();
+  } else {
+    history.go(-n);
+  }
+}
+
+/**
+ * 依目前画面「最上层是什么」决定返回键要收掉哪一层：Modal 永远画在最上面，
+ * 优先关；没有 Modal 才轮到成员详情页；两者都没有才是「五个主分页之间」的
+ * 切换，靠 popstate 事件带回来的 state 决定要换回哪一页。如果连主分页的
+ * history 状态都没有了（代表已经回到 App 一开始载入时那笔真正的浏览器分录），
+ * 这里刻意什么都不做——让浏览器/系统自己接手，正常离开／关闭这个分页，
+ * 不要卡住不让走
+ * @param {PopStateEvent} event
+ */
+function handleAppPopState_(event) {
+  if (pendingProgrammaticPops > 0) {
+    pendingProgrammaticPops -= 1;
+    return;
+  }
+
+  isPopStateInProgress = true;
+  try {
+    if (modalStack.length > 0) {
+      closeActiveModal();
+      return;
+    }
+
+    const memberDetailPage = document.getElementById('page-member-detail');
+    if (memberDetailPage && !memberDetailPage.classList.contains('is-hidden')) {
+      closeMemberDetailPage_();
+      return;
+    }
+
+    const state = event.state;
+    if (state && state.appNavType === 'page' && PAGE_IDS.includes(state.pageId)) {
+      navigateToPage(state.pageId);
+    }
+  } finally {
+    isPopStateInProgress = false;
+  }
+}
+
+/**
+ * 切主分页专用的导航入口——跟单纯同步画面用的 navigateToPage() 分开，是因为
+ * navigateToPage() 也会被「返回键退回上一页」「删除旅程後扒回设置页顶端」
+ * 这类「不该 push 新状态」的情境呼叫，混在一起会 push 出重複/错位的分录
+ * （见 closeMemberDetailPage_() 的说明）。真正代表「使用者主动切去某个分页」
+ * 的入口只有底部导览/侧边导览的点击，统一走这支
+ * @param {string} pageId
+ */
+function goToPage_(pageId) {
+  navigateToPage(pageId);
+  pushAppHistoryState_({ appNavType: 'page', pageId });
 }
 
 /* ------------------------------------------------------------
@@ -5026,6 +5358,11 @@ function openModal(modalId) {
   if (!modal) {
     return;
   }
+
+  // 如果这颗 Modal 本来就已经是堆叠最上层（例如同一颗按钮被重複点了两下），
+  // 画面上不会有新的一层出现，就不该跟着推入新的 history 状态，不然会变成
+  // 「按一次返回键，画面明明没变，却已经退掉一层」的错位
+  const isAlreadyTopmost = modalStack[modalStack.length - 1] === modalId;
 
   // 若堆叠中已经有其他 Modal，把它标记为「背景层」（变暗、缩小），营造景深堆叠感
   if (modalStack.length > 0) {
@@ -5052,12 +5389,29 @@ function openModal(modalId) {
   if (modalId === 'addExpenseModal') {
     updateCustomSplitTotal();
   }
+
+  if (!isAlreadyTopmost) {
+    pushAppHistoryState_({ appNavType: 'modal', modalId });
+  }
 }
 
 /**
  * 关闭堆叠最上层的 Modal；若下面还有其他 Modal，会自动恢复显示（回退效果）
  */
 function closeActiveModal() {
+  closeTopModalLayer_(true);
+}
+
+/**
+ * 实际执行「收起堆叠最上层 Modal」的画面逻辑，抽出来是因为 closeAllModals()
+ * 一次要关好几层时，每一层各自的 history 清理不能各自独立呼叫
+ * popAppHistoryState_()——那样等於连续呼叫好几次 history.back()，
+ * 时序上会跟浏览器实际触发 popstate 的顺序打架。改成画面先一次性全部收完，
+ * 最後再统一批次弹掉对应数量的 history 状态（见 closeAllModals()）
+ * @param {boolean} shouldPopHistory 是否连带清掉这一层对应的 history 状态；
+ *   一般的「关掉最上层」用 true，closeAllModals() 内部迴圈用 false
+ */
+function closeTopModalLayer_(shouldPopHistory) {
   const topModalId = modalStack.pop();
   if (!topModalId) {
     return;
@@ -5080,15 +5434,38 @@ function closeActiveModal() {
     document.getElementById('modalBackdrop').style.zIndex = String(MODAL_BASE_Z_INDEX + newDepth * MODAL_Z_INDEX_STEP - 10);
     document.getElementById(newTopId).classList.remove('modal-dimmed');
   }
+
+  if (shouldPopHistory) {
+    popAppHistoryState_();
+  }
 }
 
 /**
- * 一次关闭所有 Modal（例如切换旅程、语言等大动作后，避免残留的弹窗状态卡住畫面）
+ * 一次关闭所有 Modal（例如切换旅程、语言等大动作后，避免残留的弹窗状态卡住畫面）。
+ * 画面先整批收完，最後再一次性批次弹掉对应数量的 history 状态，理由见
+ * closeTopModalLayer_() 的说明
  */
 function closeAllModals() {
+  const countToClose = modalStack.length;
   while (modalStack.length > 0) {
-    closeActiveModal();
+    closeTopModalLayer_(false);
   }
+  if (countToClose > 0) {
+    popAppHistoryState_(countToClose);
+  }
+}
+
+/**
+ * 串接 History API：设定开局的基準状态（用 replaceState，不能用 pushState——
+ * 概览页是「最外层」，不该额外多推一笔分录，不然使用者在最外层按一次返回键，
+ * 退的会是这笔多余的分录而不是真的离开 App，见任务需求(d)），并挂上
+ * popstate 监听。只会在 startAppAfterAuth() 里呼叫一次（登入成功只会真正
+ * 进入 App 一次，见 startAppAfterAuth() 的两个呼叫点都是互斥的），
+ * 不用担心重複挂听器
+ */
+function initAppHistoryNavigation() {
+  history.replaceState({ appNavType: 'page', pageId: 'dashboard' }, '');
+  window.addEventListener('popstate', handleAppPopState_);
 }
 
 /**
@@ -6745,11 +7122,23 @@ function renderDashboardHeader() {
     revealTripHeaderText(metaEl, newMeta);
   }
 
+  // 标题旁边那颗铅笔按钮固定语义是「改这趟旅程的名字」（点了直接开 renameTripModal，
+  // 见 index.html 上的 data-open-modal），aria-label 要跟着语言切换更新——
+  // 做法比照下面 Hero Card 吉祥物按钮那颗动态 aria-label，不能只在 index.html
+  // 写死一份，不然换语言後文字就跟画面其他地方对不上
+  const switchTripBtn = document.getElementById('dashSwitchTripBtn');
+  if (switchTripBtn) {
+    switchTripBtn.setAttribute('aria-label', t('renameTripModal.title'));
+  }
+
   renderAvatarStack();
 }
 
 /**
- * 头像堆叠：最多显示 4 个成员的姓名缩写，超过的用「+N」收尾
+ * 头像堆叠：最多显示 4 个成员的姓名缩写，超过的用「+N」收尾；
+ * 堆叠最後固定接一颗「切换旅程」按钮，图示改用双向箭头而不是铅笔——
+ * 铅笔已经被旅程标题旁边那颗按钮专用来表示「改名」，两个不同动作不能共用同一个图示，
+ * 不然使用者会分不清楚点下去到底是要改名字还是要换旅程（见任务 1-1 的图示语义整理）
  */
 function renderAvatarStack() {
   const container = document.getElementById('avatarStack');
@@ -6760,9 +7149,21 @@ function renderAvatarStack() {
   const visible = members.slice(0, MAX_VISIBLE);
   const remaining = members.length - visible.length;
 
-  container.innerHTML = visible.map((name) =>
+  const membersHtml = visible.map((name) =>
     `<div class="avatar" title="${escapeHtml(name)}">${escapeHtml(getInitials(name))}</div>`
   ).join('') + (remaining > 0 ? `<div class="avatar-stack-more">+${remaining}</div>` : '');
+
+  // 靠通用的 [data-open-modal] 委派监听器打开 tripPickerModal（见 initModals()
+  // 里对 'tripPickerModal' 的特判，负责在开启前先重新渲染一次清单）；这颗按钮
+  // 每次都是随 innerHTML 重新产生，不能用「先 getElementById 再 addEventListener」
+  // 那种绑法，不然重渲染一次监听器就掉了
+  const switchTripBtnHtml = `
+    <button type="button" class="avatar-stack-switch-btn" id="avatarStackSwitchTripBtn" data-open-modal="tripPickerModal" aria-label="${escapeHtml(t('fab.switchTrip'))}">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 8h12m0 0l-4-4m4 4l-4 4M19 16H7m0 0l4-4m-4 4l4 4" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  `;
+
+  container.innerHTML = membersHtml + switchTripBtnHtml;
 }
 
 /**
@@ -7072,16 +7473,6 @@ function renderRecentActivity() {
       }
     });
   });
-}
-
-/**
- * 绑定 Dashboard 头部「切换旅程」按钮——带去设置页的旅程切换面板
- */
-function initDashboardHeader() {
-  const switchBtn = document.getElementById('dashSwitchTripBtn');
-  if (switchBtn) {
-    switchBtn.addEventListener('click', () => openTripPickerModal());
-  }
 }
 
 /**
@@ -8173,6 +8564,81 @@ const EXPENSES_LIST_PAGE_SIZE = 40;
 let expensesListRenderedCount = EXPENSES_LIST_PAGE_SIZE;
 
 /**
+ * 幫每笔消费算出（並快取）一个小写的「可搜索文本」——把账目页搜索框实际
+ * 要覆盖的所有欄位（说明、备注、付款人、分类的原始值+目前语言翻译值、
+ * 参与人姓名、金额、日期）攤平成一个字串，搜索时只要对这一个字串做
+ * includes() 就好，不用每个欄位分开比对一次。
+ *
+ * 快取直接挂在 expense 物件自己身上（_searchText / _searchTextLang），不用
+ * 另外维护一份 id -> 文本的对照表：新增/编辑/删除都会产生全新的物件实例
+ * （见 expenseRowToOldShape_() 与各处 splice/push），不是原地修改既有物件，
+ * 所以只要语言没变、这个物件实例本身没被换掉，快取就还有效——只有第一次
+ * 遇到这个物件、或语言切换後第一次遇到它，才会真的重新调用 translateCategory()
+ * 这类相对昂贵的函式，不会每次按键、每一行都重算一次
+ * @param {Object} expense
+ * @return {string}
+ */
+function getExpenseSearchText_(expense) {
+  if (expense._searchText !== undefined && expense._searchTextLang === currentLang) {
+    return expense._searchText;
+  }
+
+  const parts = [
+    expense.Description,
+    expense.Remark,
+    getExpensePayerDisplay(expense.Payer),
+    expense.Category, // 原始值（例如 'Hotel'）——使用者可能直接记得英文代号
+    translateCategory(expense.Category), // 目前语言的翻译值（例如「住宿」），
+    // 这样切换语言後用另一种语言的分类名一样搜得到，不用等重新整理
+    (expense.Participants || []).join(' '),
+    expense.Amount,
+    expense.Date // 原始 "YYYY-MM-DD"，天然支援「10-15」「2026-10」这类部分匹配，
+    // 不需要额外格式化
+  ];
+
+  const searchText = parts
+    .filter((part) => part !== null && part !== undefined && part !== '')
+    .join(' ')
+    .toLowerCase();
+
+  expense._searchText = searchText;
+  expense._searchTextLang = currentLang;
+  return searchText;
+}
+
+/**
+ * 判断一笔消费是否符合目前的搜索关键字。支援空格分隔的多个词，全部要符合
+ * 才算通过（AND，例如「阿明 餐饮」= 阿明付的餐饮）。每个词可以是：
+ *   - 一般文字／数字：对 getExpenseSearchText_() 的可搜索文本做 includes()
+ *   - "＞100" / "＜50" 这种简单数字比较：只比对金额。做这个是因为金额是
+ *     使用者最常「大概记得、不记得精确数字」的欄位（例如记得「那笔应该蛮貴的」
+ *     但不记得是 1280 还是 1380），比起要求先猜出精确数字才能用文字包含比对
+ *     搜到，允许简单的大于/小于会实用很多；判断逻辑很单纯（一个正则 + 一次
+ *     数字比较），不会拖慢筛选速度
+ * @param {Object} expense
+ * @param {string} keyword 已经 trim + toLowerCase 过的搜索字串（见
+ *   initExpenseFilters() 的 input 监听器）
+ * @return {boolean}
+ */
+function expenseMatchesKeyword_(expense, keyword) {
+  if (!keyword) {
+    return true;
+  }
+
+  const terms = keyword.split(/\s+/).filter(Boolean);
+  const searchText = getExpenseSearchText_(expense);
+
+  return terms.every((term) => {
+    const comparison = term.match(/^([<>])(\d+(?:\.\d+)?)$/);
+    if (comparison) {
+      const threshold = Number(comparison[2]);
+      return comparison[1] === '>' ? expense.Amount > threshold : expense.Amount < threshold;
+    }
+    return searchText.includes(term);
+  });
+}
+
+/**
  * 依目前的分类/分账方式/关键字筛选条件，算出账目页要显示的消费清单（新到旧排序）
  * @return {Array<Object>}
  */
@@ -8180,11 +8646,7 @@ function getFilteredExpensesForList() {
   return appState.expenses.filter((expense) => {
     const matchCategory = currentCategoryFilter === 'all' || expense.Category === currentCategoryFilter;
     const matchSplitType = currentSplitTypeFilter === 'all' || expense.SplitType === currentSplitTypeFilter;
-    const keyword = currentSearchKeyword;
-    const matchKeyword = !keyword ||
-      (expense.Description || '').toLowerCase().includes(keyword) ||
-      (expense.Payer || '').toLowerCase().includes(keyword) ||
-      (expense.Remark || '').toLowerCase().includes(keyword);
+    const matchKeyword = expenseMatchesKeyword_(expense, currentSearchKeyword);
 
     return matchCategory && matchSplitType && matchKeyword;
   }).sort((a, b) => new Date(b.Date) - new Date(a.Date));
@@ -9071,16 +9533,28 @@ function showMemberDetailPage_() {
   });
   document.getElementById('page-member-detail').classList.remove('is-hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // 进成员详情页也是一次「往前」的导航，返回键要能退回「同行」页，
+  // 所以要 push 一份状态；跟五个主分页共用 goToPage_() 会有问题——那支
+  // 内部呼叫的 navigateToPage() 走的是 PAGE_IDS 白名单，'member-detail'
+  // 不在里面会被直接挡掉，所以这里改成直接 push 一份专属的状态
+  pushAppHistoryState_({ appNavType: 'memberDetail' });
 }
 
 /**
  * 「返回」离开成员消费明细页面，回到「同行」页——不是 Modal 的关闭，
  * 是切页，所以直接呼叫 navigateToPage('members') 把 nav 高亮/header
- * 标题/FAB 都恢复成「同行」页该有的状态
+ * 标题/FAB 都恢复成「同行」页该有的状态。这里刻意呼叫的是 navigateToPage()
+ * 而不是 goToPage_()：会走到这支函式的两种情境——使用者点「返回」按钮，
+ * 或使用者按了系统返回键——都是「往回」，该做的是把 showMemberDetailPage_()
+ * 当初 push 的那份状态弹掉（popAppHistoryState_()），不能又反过来 push
+ * 一份新的「members」状态，不然会跟下面那笔本来就存在、真正代表「同行」页
+ * 的状态重複堆叠
  */
 function closeMemberDetailPage_() {
   document.getElementById('page-member-detail').classList.add('is-hidden');
   navigateToPage('members');
+  popAppHistoryState_();
 }
 
 /**
@@ -11300,6 +11774,28 @@ function debounce(fn, delayMs) {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delayMs);
   };
+}
+
+/**
+ * Promise 版的 setTimeout，给需要「等一段固定时间再继续」的过场动画用
+ * （例如切换旅程/语言时先等淡出动画跑完，才真的去载入资料/重绘）
+ * @param {number} ms
+ * @return {Promise<void>}
+ */
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * 判断使用者是否开启了「减少动态效果」的系统设定——过场动画（切换旅程/语言
+ * 的淡出淡入）要尊重这个设定，直接跳过动画本身，不是硬把动画时间压到 0ms
+ * 还是跑一次（那样反而会让 opacity 从 1 瞬间跳到 0 又跳回 1，比完全不做
+ * 更突兀）。项目里 initSplashScreen() 已经有一份就地写的判断，这里抽成
+ * 共用函式给新的过场动画用，不重複写一样的判断式
+ * @return {boolean}
+ */
+function prefersReducedMotion_() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
 function escapeHtml(text) {

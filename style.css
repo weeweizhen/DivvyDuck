@@ -77,6 +77,22 @@
   --sidebar-width: 248px;
   --header-height: 88px;
   --tabbar-height: 68px;
+  --icon-btn-size: 44px; /* .icon-btn 本身的圆形按钮尺寸——另外抽成变量是因为
+    手机版几处 fixed 定位（headerActionBtn／.app-main 顶部留白）要预留「汉堡按钮
+    的高度」来避开它，原本各自写死一个 44px，跟 .icon-btn 实际尺寸没有绑在一起，
+    以後如果调整按钮大小很容易漏改、两边对不上 */
+
+  /* Hero Card 手机版收合高度：.hero-breakdown 那三项消费明细在手机版会被隐藏
+     （见 style.css 19.x 节的媒体查询），卡片没必要再撑到桌面版的 300px，
+     这两个数字本来就是一组「同一张卡片、两种内容量」对应的最小高度，配成
+     一对变量比各自散落两处、只靠注释串起关联更清楚 */
+  --hero-card-min-height: 300px;
+  --hero-card-min-height-compact: 180px;
+
+  /* 手机抽屉导览：单一按钮高度，以及为了不被 320px 窄机型的 overflow:hidden
+     裁掉而设的宽度上限（见 .side-drawer .drawer-nav .nav-item） */
+  --drawer-nav-item-height: 56px;
+  --drawer-nav-item-max-width: 260px;
 
   /* 动画 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -364,6 +380,21 @@ html {
   pointer-events: none;
 }
 
+/* 语言切换过场专用：盖掉上面 .app-shell 那份给「登出」动画用的 450ms 长过渡——
+   登出的淡出+缩放+模糊需要比较长的时间才有「收起来」的仪式感，语言切换只是
+   要盖掉重绘中间那一帧的闪烁，要越快越好，两者不能共用同一个时间。
+   is-lang-switching 单独存在时只改变过渡时间、不改变 opacity 本身，
+   实际的隐藏靠再叠一个 is-lang-switching-hidden——这样淡出（加上 -hidden）
+   跟淡入（拿掉 -hidden，但仍保留 is-lang-switching）才能用同一个短过渡时间，
+   不会淡出快、淡入却掉回 450ms 那份长过渡 */
+.app-shell.is-lang-switching {
+  transition: opacity 100ms var(--ease-out);
+}
+
+.app-shell.is-lang-switching.is-lang-switching-hidden {
+  opacity: 0;
+}
+
 .app-header {
   grid-area: header;
   position: sticky;
@@ -409,6 +440,13 @@ html {
      加上 min-width:0 明确告诉网格「不需要保留内容的最小宽度，缩到跟视口一样窄
      也没关系」，才能真正杜绝这个问题，而不是在个别元件上一个个补 */
   min-width: 0;
+  /* 切换旅程時用来短暂淡出/淡入的过渡——见 app.js 的 fadeOutAppMain_()／
+     fadeInAppMain_()，平常 opacity 不变，这条不会有任何视觉影响 */
+  transition: opacity 150ms var(--ease-out);
+}
+
+.app-main.is-content-switching {
+  opacity: 0;
 }
 
 /* 下拉刷新指示器——见 index.html #ptrIndicator，手势逻辑在 initTouchGestures() */
@@ -787,47 +825,56 @@ html {
   margin-left: 0;
 }
 
-/* 主导览：改成在剩余空间里垂直＋水平置中（原本是靠左、由上往下排的清单），
-   flex:1 让它撑满「品牌列」跟「底部功能列」中间剩下的所有空间，
-   justify-content/align-items:center 让整组选项在这个空间正中央 */
-/* 主导览：改成绝对定位、相对「整个屏幕」正中央置中——不是相对「品牌区块跟底部
-   功能列之间剩下的空间」置中。後者的问题是品牌区块（Logo+名称+slogan）比底部
-   功能列（语言/深色模式/登出三行）矮很多，剩下空间的中点会比整个屏幕的正中央
-   偏上，导览看起来就会「没有真的在正中间」 */
+/* 主导览：改回正常文档流内置中——flex:1 撑满「品牌列」跟「底部功能列」中间
+   剩下的所有空间，justify-content:center 让整组选项在这段空间里垂直置中。
+   原本改成 position:absolute 相对整个屏幕置中，是为了解决「品牌区块（Logo+
+   名称+slogan）比底部功能列（语言/深色模式/登出三行）矮很多，纯粹在剩余
+   空间里置中会不够准」这个真问题——但代价是脱离文档流後，5 项 x 56px + gap
+   逼近 300px，矮屏/横屏机型会跟品牌区/底部功能列重叠。正确做法是留在文档流
+   里，用一点 margin-top 把因为两端不等高造成的偏移配平回来，不是牺牲文档流
+   去换视觉置中。下面这个位移量是估算值，麻烦实机／模拟器跑一次矮屏
+   （约 640px 高）确认方向和幅度，不对的话调整 margin-top 那一行就好，
+   不影响其他逻辑 */
 .side-drawer .drawer-nav {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
   gap: var(--space-2);
+  margin-top: calc(var(--space-4) * -1);
 }
 
-.side-drawer .drawer-footer {
-  /* 原本是靠 .drawer-nav 的 flex:1 把底部功能列自然挤到最下面，现在 .drawer-nav
-     改成绝对定位、脱离了排版流，底部功能列改用 margin-top:auto 自己顶到底部
-     （父层 .side-drawer 还是 flex-direction:column，auto margin 一样有效） */
-  margin-top: auto;
-}
+/* 主导览改回 flex:1 之後，底部功能列不用再靠 margin-top:auto 自己顶到底部——
+   父层 .side-drawer 是 flex-direction:column，.drawer-nav 的 flex:1 会自动
+   吃掉品牌列跟底部功能列之间的剩余空间，底部功能列自然被挤到最下面 */
 
 .side-drawer .drawer-nav .nav-item {
-  height: 56px;
-  width: auto;
-  min-width: 220px;
+  height: var(--drawer-nav-item-height);
+  width: 100%;
+  max-width: var(--drawer-nav-item-max-width);
   justify-content: flex-start;
   gap: var(--space-3);
   padding: 0 var(--space-5);
   border-radius: var(--radius-full);
   font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
+  /* 未选中：字重、颜色都降一级，只有选中项才用最重的字重＋强调色——
+     「选中」这件事要同时靠字重和颜色两个线索表达，不能只靠颜色（见下面
+     .is-active），色弱或强光下的手机屏幕上单靠一个颜色差很容易看不出来 */
+  font-weight: 600;
+  color: var(--text-secondary);
   transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
 .side-drawer .drawer-nav .nav-item .nav-icon {
   flex-shrink: 0;
+}
+
+.side-drawer .drawer-nav .nav-item .nav-icon svg {
+  /* 抽屉字号（17px）比桌面侧栏（14px）大，图示也跟着放大一点，不是原封
+     不动套用 .nav-item svg 那条给桌面侧栏用的 19px */
+  width: 21px;
+  height: 21px;
 }
 
 .side-drawer .drawer-nav .nav-item .nav-label {
@@ -836,11 +883,19 @@ html {
 }
 
 .side-drawer .drawer-nav .nav-item.is-active {
+  font-weight: 700;
   color: var(--accent);
+  /* 选中态加一颗实底 pill，写在 .is-active 上而不是 :hover——手机没有 hover
+     状态，原本只靠 hover 换底色的话，选中项在真机触摸下永远不会有背景色，
+     「现在在哪一页」只能靠一个颜色差硬撑，在抽屉的彩色渐层玻璃背景上很弱 */
+  background: var(--accent-soft);
 }
 
 .side-drawer .drawer-nav .nav-item:hover {
-  background: var(--bg-elevated);
+  /* hover 保留，但降级成比 .is-active 淡的中性色——选中态已经是最强的视觉
+     讯号（字重+颜色+强调色底），hover 只是「摸过」的轻量回饋，两者要有
+     明显的份量差，不能一样重 */
+  background: var(--bg-subtle);
 }
 
 .side-drawer .drawer-nav .nav-item:active {
@@ -903,11 +958,6 @@ html {
   width: 15px;
   height: 15px;
 }
-
-.drawer-nav .nav-item {
-  height: 46px;
-}
-
 
 /* ------------------------------------------------------------
    5. Header 内容
@@ -1192,8 +1242,8 @@ html {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--icon-btn-size);
+  height: var(--icon-btn-size);
   border-radius: var(--radius-full);
   color: var(--text-secondary);
   transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
@@ -4826,6 +4876,35 @@ body {
   margin-left: -8px;
 }
 
+/* 头像堆叠末端的「切换旅程」按钮：跟旁边的头像/圆圈同尺寸、同样靠负值 margin
+   重叠銜接，但刻意维持中性色（不像成员头像那样上彩色），一眼就能跟真人头像
+   区分开来——这是唯一能点的一颗，图示也改用双向箭头，不跟旅程标题旁边
+   「改名」用的铅笔图示撞语义（见任务 1-1 的图示语义整理） */
+.avatar-stack-switch-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 2px solid var(--bg-subtle);
+  margin-left: -8px;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.avatar-stack-switch-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.avatar-stack-switch-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
 .dash-switch-trip {
   background: var(--surface-glass);
   border: 0.5px solid var(--border-strong);
@@ -5281,7 +5360,7 @@ body {
    显示，「记一笔」被下面 23.3 的规则隐藏掉，底部导览列已经有 ➕ 了。 */
 #headerActionBtn {
   position: fixed;
-  top: calc(var(--space-4) + env(safe-area-inset-top) + 44px + var(--space-3));
+  top: calc(var(--space-4) + env(safe-area-inset-top) + var(--icon-btn-size) + var(--space-3));
   right: var(--space-4);
   z-index: 21;
 }
@@ -5306,7 +5385,7 @@ body {
      藏起来之後还是要留一截，一来要空出安全区（瀏海/状态列），二来要空出
      浮动汉堡按钮的高度，不然第一屏内容会直接顶到按钮下面，甚至被盖住 */
   .app-main {
-    padding-top: calc(var(--space-4) + env(safe-area-inset-top) + 44px + var(--space-4));
+    padding-top: calc(var(--space-4) + env(safe-area-inset-top) + var(--icon-btn-size) + var(--space-4));
   }
 
   /* 成员消费明细页的「返回」在手机版改成固定定位，跟汉堡按钮同一行高度、
@@ -5345,7 +5424,7 @@ body {
      （金库卡片如果比这个矮，syncDashCardHeights() 还是会用 JS inline style 把两张卡
      动态对齐到同一高度，这条只是把「没有金库卡片、或金库卡片也很矮」时的下限调整） */
   .dash-card-slider .hero-card {
-    min-height: 180px !important;
+    min-height: var(--hero-card-min-height-compact) !important;
   }
 }
 
@@ -6231,7 +6310,7 @@ body {
 .dash-card-slider .hero-card,
 .dash-card-slider .divvy-pool-card {
   margin-bottom: 0; /* 卡片自身的下边距交给 slider 容器统一处理，避免滑动时看到不对齐的留白 */
-  min-height: 300px; /* 两张卡固定同一个最小高度，不管彼此内容多寡，看起来都是一样大小的卡片 */
+  min-height: var(--hero-card-min-height); /* 两张卡固定同一个最小高度，不管彼此内容多寡，看起来都是一样大小的卡片 */
   height: 100%; /* min-height 只是下限，两张卡内容量不同时高度还是会各自不一样；
                    父层 .dash-card-slide 已经被 .dash-card-track 的 align-items: stretch
                    拉到跟最高的兄弟一样高，这里让卡片本体（真正看得见背景/圆角/阴影的那层）
