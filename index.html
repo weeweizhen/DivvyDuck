@@ -46,7 +46,7 @@
      app.js 既有的登入逻辑判断、准备好，时间到了动画淡出，直接接上已经
      准备好的画面（未登入 → 登入闸门；已登入 → 概览页）
      ============================================================ -->
-<div class="app-splash" id="appSplash" aria-hidden="true">
+<div class="app-splash fullscreen-layer" id="appSplash" aria-hidden="true">
   <div class="app-splash-glow"></div>
   <span class="app-splash-mark">
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -304,8 +304,8 @@
   </aside>
 
   <!-- ---------------- 移动版侧滑抽屉（补齐手机上看不到的完整导航，例如设置） ---------------- -->
-  <div class="drawer-backdrop" id="drawerBackdrop"></div>
-  <aside class="side-drawer" id="sideMenu" aria-label="主导航（移动版）">
+  <div class="drawer-backdrop fullscreen-layer" id="drawerBackdrop"></div>
+  <aside class="side-drawer fullscreen-layer" id="sideMenu" aria-label="主导航（移动版）">
     <div class="sidebar-brand">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -860,32 +860,18 @@
         </div>
       </div>
 
-      <!-- 分类管理：系统内置分类只显示，不给操作按钮（RLS 本来就不允许一般
-           使用者改内置分类）；自定义分类带改名/隐藏/删除三个动作。清单本身、
-           以及「新增分类」開的 Modal，都由 app.js 的 renderCategoryManageList()／
-           initCategoryManage() 动态产生，这里只放容器骨架 -->
-      <div class="panel" id="categoryManagePanel">
-        <div class="panel-header">
-          <h2 data-i18n="settings.categoriesPanel">分类管理</h2>
-        </div>
-        <div class="panel-body settings-body">
-          <p class="form-hint" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
-          <div id="categoryManageList">
-            <!-- 分类清单由 renderCategoryManageList() 动态产生 -->
-          </div>
-          <div class="settings-actions">
-            <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
-           「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
-           合并成一个 category，标题换成跟上面几个面板（账户资料／偏好设置／财务设置）
-           同一种命名习惯的「旅程设置」。「目前旅程」这行是 pill 式切换器：
-           左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
-           小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
-           选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
+      <!-- 「切换旅程」「邀请码」「分类管理」原本是三个各自独立的面板，
+           但都是围绕「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入、
+           这趟旅程有哪些分类），合併成一个「旅程设置」面板，标题统一命名
+           习惯。「目前旅程」这行是 pill 式切换器：左边一颗 badge 显示目前
+           旅程名字，如果使用者不只一趟旅程，右边叠一颗小圆圈提示还有其他
+           旅程；点 pill 或右边的「更改」都会开 tripPickerModal 选旅程，
+           「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示。
+           「分类管理」这行只显示「目前有哪些分类」的并列预览（不含隐藏的），
+           点「更改」才开 categoryManageModal 跳出完整的可编辑清单（改名/
+           隐藏/删除三颗按钮 + 新增分类），不直接攤开在设置页裡——原本
+           独立成一个面板时就是想避免这样，併进来也要维持这个「预览 +
+           更改按钮」的简短形式，不能因为併进来就把完整清单也带进来 -->
       <div class="panel" id="settingsTripSwitcherPanel">
         <div class="panel-header">
           <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
@@ -900,6 +886,17 @@
               </button>
             </div>
             <button class="btn btn-ghost btn-sm" type="button" id="openTripPickerBtn" data-i18n="account.changeBtn">更改</button>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="settings.categoriesPanel">分类管理</p>
+              <p class="settings-row-desc" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
+              <div class="category-preview-chips" id="categoryManagePreview">
+                <!-- 分类并列预览由 renderCategoryManagePreview_() 动态产生 -->
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" data-open-modal="categoryManageModal" data-i18n="account.changeBtn">更改</button>
           </div>
 
           <div class="settings-row">
@@ -1126,7 +1123,7 @@
 <!-- ============================================================
      Modals
      ============================================================ -->
-<div class="modal-backdrop" id="modalBackdrop"></div>
+<div class="modal-backdrop fullscreen-layer" id="modalBackdrop"></div>
 
 <!-- 新增 / 编辑消费 Modal -->
 <div class="modal" id="addExpenseModal" role="dialog" aria-modal="true" aria-labelledby="addExpenseTitle">
@@ -1405,6 +1402,28 @@
       <span class="btn-label" data-i18n="renameTripModal.save">储存</span>
       <span class="btn-spinner" aria-hidden="true"></span>
     </button>
+  </div>
+</div>
+
+<!-- 分类管理 Modal：设置页那行「更改」按钮点了会开这个，里面才是完整的
+     可编辑清单（内置分类只显示，自定义分类带改名/隐藏/删除）+「新增分类」。
+     清单内容由 renderCategoryManageList() 动态产生；点清单里的「改名」或
+     底下的「新增分类」会在这个 Modal 之上再叠一层 addCategoryModal，
+     跟 Modal 堆叠机制本来就支援多层是同一回事 -->
+<div class="modal" id="categoryManageModal" role="dialog" aria-modal="true" aria-labelledby="categoryManageModalTitle">
+  <div class="modal-header">
+    <h2 id="categoryManageModalTitle" data-i18n="settings.categoriesPanel">分类管理</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div id="categoryManageList">
+      <!-- 分类清单由 renderCategoryManageList() 动态产生 -->
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
   </div>
 </div>
 
