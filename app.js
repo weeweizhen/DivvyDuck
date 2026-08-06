@@ -1887,14 +1887,6 @@ function unlockBodyScroll() {
   document.body.classList.remove('body-scroll-locked');
   document.body.style.top = '';
   window.scrollTo(0, bodyScrollLockY);
-
-  // 强制同步重排——装成 iOS PWA 後，解锁这一刻 WKWebView 不会主动重新计算
-  // position:fixed 元素的视口参考，底部导览列会停留在锁定期间那个被 dvh
-  // 重算矮掉的视口底边，看起来像是「浮在半空中」而不是贴齐屏幕底部。
-  // 读一次 offsetHeight 会逼浏览器立刻同步做一次布局计算（不是排到下一帧），
-  // 借这个副作用让 WKWebView 重新量一次真正的视口尺寸。这里刻意不用变量接
-  // 这个值——要的就是「读取触发重排」这个副作用本身，不是这个数字
-  void document.body.offsetHeight;
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
