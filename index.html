@@ -440,35 +440,9 @@
       <!-- 尚无任何旅程时的全屏欢迎画面：logo + slogan + 一句引导句 + 建立旅程按钮，
            取代原本散落在各个面板里的一堆小型空状态区块。见 renderNoTripState() -->
       <div class="page-empty-hero is-hidden" id="dashEmptyHero">
-        <span class="page-empty-hero-mark" aria-hidden="true">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ddPurpleEmptyHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#1E1B4B"/>
-                <stop offset="100%" stop-color="#0F172A"/>
-              </linearGradient>
-              <linearGradient id="ddBeakEmptyHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FBBF24"/>
-                <stop offset="100%" stop-color="#F59E0B"/>
-              </linearGradient>
-              <linearGradient id="ddBarEmptyHero" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38BDF8"/>
-                <stop offset="100%" stop-color="#818CF8"/>
-              </linearGradient>
-            </defs>
-            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleEmptyHero)"/>
-            <g transform="rotate(-12, 50, 50)">
-              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
-              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
-              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakEmptyHero)"/>
-              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarEmptyHero)"/>
-              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
-            </g>
-          </svg>
-        </span>
-        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
-        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
-        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+        <!-- 内容由 app.js 的 renderNoTripState()／renderEmptyBlock(..., 'page')
+             动态产生（任务 9-2：四个分页的这份画面完全一样，收敛成一份，不再
+             各自複製一遍品牌插画 SVG） -->
       </div>
 
       <div class="page-normal-content" id="dashNormalContent">
@@ -506,11 +480,8 @@
             <!-- Hero Card：个人净额总览 -->
             <div class="hero-card glass-card hero-card-slate" id="heroCard">
               <div class="hero-empty-state" id="heroEmptyState">
-                <div class="empty-illustration" aria-hidden="true">
-                  <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M24 33L29 38L40 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <h3 id="heroEmptyStateTitle" data-i18n="hero.noViewerTitle">还没设定你是谁</h3>
-                <p id="heroEmptyStateDesc" data-i18n="hero.noViewerDesc">这个账号还没连结到这趟旅程里的任何一位成员，请联系旅程发起人协助设定。</p>
+                <!-- 内容由 app.js 的 renderEmptyBlock('heroEmptyState', ...) 动态产生
+                     （任务 9-2：跟其他空状态收敛成同一个函式，不再手写死这一份） -->
               </div>
               <div class="hero-content is-hidden" id="heroContent">
                 <div class="hero-card-top">
@@ -643,35 +614,7 @@
     <!-- ========== Expenses 页 ========== -->
     <section class="page is-hidden" id="page-expenses" data-page-section="expenses">
       <div class="page-empty-hero is-hidden" id="expensesEmptyHero">
-        <span class="page-empty-hero-mark" aria-hidden="true">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ddPurpleExpensesHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#1E1B4B"/>
-                <stop offset="100%" stop-color="#0F172A"/>
-              </linearGradient>
-              <linearGradient id="ddBeakExpensesHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FBBF24"/>
-                <stop offset="100%" stop-color="#F59E0B"/>
-              </linearGradient>
-              <linearGradient id="ddBarExpensesHero" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38BDF8"/>
-                <stop offset="100%" stop-color="#818CF8"/>
-              </linearGradient>
-            </defs>
-            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleExpensesHero)"/>
-            <g transform="rotate(-12, 50, 50)">
-              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
-              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
-              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakExpensesHero)"/>
-              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarExpensesHero)"/>
-              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
-            </g>
-          </svg>
-        </span>
-        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
-        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
-        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+        <!-- 内容由 renderNoTripState() 动态产生，见 dashEmptyHero 的说明 -->
       </div>
 
       <div class="page-normal-content" id="expensesNormalContent">
@@ -698,35 +641,7 @@
     <!-- ========== Summary 页 ========== -->
     <section class="page is-hidden" id="page-summary" data-page-section="summary">
       <div class="page-empty-hero is-hidden" id="summaryEmptyHero">
-        <span class="page-empty-hero-mark" aria-hidden="true">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ddPurpleSummaryHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#1E1B4B"/>
-                <stop offset="100%" stop-color="#0F172A"/>
-              </linearGradient>
-              <linearGradient id="ddBeakSummaryHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FBBF24"/>
-                <stop offset="100%" stop-color="#F59E0B"/>
-              </linearGradient>
-              <linearGradient id="ddBarSummaryHero" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38BDF8"/>
-                <stop offset="100%" stop-color="#818CF8"/>
-              </linearGradient>
-            </defs>
-            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleSummaryHero)"/>
-            <g transform="rotate(-12, 50, 50)">
-              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
-              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
-              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakSummaryHero)"/>
-              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarSummaryHero)"/>
-              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
-            </g>
-          </svg>
-        </span>
-        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
-        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
-        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+        <!-- 内容由 renderNoTripState() 动态产生，见 dashEmptyHero 的说明 -->
       </div>
 
       <!-- 旅程本身是有的，只是完全还没有任何消费纪录——用跟其他地方（账目页、
@@ -800,35 +715,7 @@
     <!-- ========== Members 页 ========== -->
     <section class="page is-hidden" id="page-members" data-page-section="members">
       <div class="page-empty-hero is-hidden" id="membersEmptyHero">
-        <span class="page-empty-hero-mark" aria-hidden="true">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="ddPurpleMembersHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#1E1B4B"/>
-                <stop offset="100%" stop-color="#0F172A"/>
-              </linearGradient>
-              <linearGradient id="ddBeakMembersHero" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FBBF24"/>
-                <stop offset="100%" stop-color="#F59E0B"/>
-              </linearGradient>
-              <linearGradient id="ddBarMembersHero" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#38BDF8"/>
-                <stop offset="100%" stop-color="#818CF8"/>
-              </linearGradient>
-            </defs>
-            <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurpleMembersHero)"/>
-            <g transform="rotate(-12, 50, 50)">
-              <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
-              <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
-              <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeakMembersHero)"/>
-              <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBarMembersHero)"/>
-              <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
-            </g>
-          </svg>
-        </span>
-        <p class="page-empty-hero-slogan" data-i18n="brand.slogan">聚会分账，鸭力全无！</p>
-        <p class="page-empty-hero-desc" data-i18n="system.noTripMsg">请先建立一个旅程，才能开始记录消费。</p>
-        <button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="addTripModal" data-i18n="tripModal.save">建立旅程</button>
+        <!-- 内容由 renderNoTripState() 动态产生，见 dashEmptyHero 的说明 -->
       </div>
 
       <div class="page-normal-content" id="membersNormalContent">
@@ -1051,15 +938,15 @@
       </p>
     </section>
 
-    <!-- 成员消费明细：原本是 Modal，改成独立页面（可以用「返回」离开，不是关闭
-         Modal），点击「同行」页任一位成员会切换过来。不是底部导览五个分页之一，
-         靠 memberDetailBackBtn 的「返回」离开，不透过 navigateToPage() 切换 -->
-    <section class="page is-hidden" id="page-member-detail" data-page-section="member-detail">
-      <div class="member-detail-page-header">
-        <button class="icon-btn" id="memberDetailBackBtn" type="button" aria-label="返回">
+    <!-- 成员消费明细：点击「同行」页任一位成员会切换过来，只读、不属于底部
+         导览五个分页之一，用通用的二级页面机制（见 app.js 的 showSecondaryPage_()/
+         closeSecondaryPage_()，任务阶段 8） -->
+    <section class="page secondary-page is-hidden" id="page-member-detail" data-page-section="member-detail">
+      <div class="secondary-page-header">
+        <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
           <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div class="member-detail-page-header-text">
+        <div class="secondary-page-header-text">
           <h1 class="page-title" id="memberExpenseTitle">消费明细</h1>
           <p class="page-subtitle" id="memberExpenseSubtitle" style="display: block;"></p>
         </div>
@@ -1067,7 +954,7 @@
       <div id="memberExpenseList">
         <!-- 该成员的消费明细由 app.js 动态产生 -->
       </div>
-      <div class="member-detail-page-footer">
+      <div class="secondary-page-footer">
         <label class="participant-label is-hidden" id="includePersonalInReportRow" style="margin-bottom: var(--space-2);">
           <span class="checkbox">
             <input type="checkbox" id="includePersonalInReportCheckbox">
@@ -1083,6 +970,114 @@
         </button>
       </div>
     </section>
+
+
+<section class="page secondary-page is-hidden" id="page-expense-detail" data-page-section="expense-detail">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" id="expenseDetailTitle" data-i18n="expenseDetailModal.title">消费明细</h1>
+      <p class="page-subtitle" id="expenseDetailSubtitle"></p>
+    </div>
+  </div>
+  <div class="secondary-page-body">
+    <div class="expense-detail-hero">
+      <p class="expense-detail-amount mono" id="expenseDetailAmount">RM 0.00</p>
+      <div class="expense-detail-badges" id="expenseDetailBadges"></div>
+    </div>
+    <p class="expense-detail-remark is-hidden" id="expenseDetailRemark"></p>
+    <div class="expense-detail-receipt is-hidden" id="expenseDetailReceiptWrap">
+      <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.receiptLabel">收据照片</p>
+      <button type="button" class="expense-detail-receipt-thumb" id="expenseDetailReceiptThumb" aria-label="查看收据照片">
+        <img src="" alt="收据照片" id="expenseDetailReceiptImg">
+      </button>
+    </div>
+    <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.splitBreakdown">分摊明细</p>
+    <div id="expenseDetailSplitList">
+      <!-- 每位参与人分摊多少，由 app.js 动态产生 -->
+    </div>
+  </div>
+  <div class="secondary-page-footer is-hidden" id="expenseDetailFooter">
+    <button class="btn btn-ghost" type="button" id="expenseDetailDeleteBtn" data-i18n="aria.delete">删除</button>
+    <button class="btn btn-primary" type="button" id="expenseDetailEditBtn" data-i18n="aria.edit">编辑</button>
+  </div>
+</section>
+<section class="page secondary-page is-hidden" id="page-category-stats" data-page-section="category-stats">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="dashboard.categorySummary">分类消费</h1>
+      <p class="page-subtitle" data-i18n="dashboard.categoryClickHint">点击分类可查看明细</p>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="categorySummaryList">
+    <div class="empty-state empty-state-compact">
+      <div class="empty-illustration" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M32 12V32L46 40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3 data-i18n="empty.noCategory.title">尚无分类资料</h3>
+      <p data-i18n="empty.noCategory.desc">新增消费纪录后，这里会显示各分类的花费占比。</p>
+    </div>
+  </div>
+</section>
+<section class="page secondary-page is-hidden" id="page-pool-detail" data-page-section="pool-detail">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="pool.detail.title">搭伙鸭金库明细</h1>
+      <p class="page-subtitle" id="poolDetailSubtitle"></p>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="poolDetailBody"></div>
+</section>
+<section class="page secondary-page is-hidden" id="page-all-expenses" data-page-section="all-expenses">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="nav.expenses">账目</h1>
+      <p class="page-subtitle" id="allExpensesSubtitle"></p>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="allExpensesList">
+    <!-- 所有消费纪录由 app.js 动态产生 -->
+  </div>
+</section>
+<section class="page secondary-page is-hidden" id="page-settlement-suggestions" data-page-section="settlement-suggestions">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="summary.settlementPanel">最优结算</h1>
+      <p class="page-subtitle" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="settlementSuggestionsList">
+    <!-- 建议还款清单由 app.js 动态产生 -->
+  </div>
+</section>
+<section class="page secondary-page is-hidden" id="page-category-expenses" data-page-section="category-expenses">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" id="categoryExpensesTitle">分类明细</h1>
+      <p class="page-subtitle" id="categoryExpensesSubtitle"></p>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="categoryExpensesList">
+    <!-- 该分类的消费清单由 app.js 动态产生 -->
+  </div>
+</section>
 
   </main>
 </div>
@@ -1294,7 +1289,7 @@
 
 <!-- 语言选择 Modal：显示语言的「更改」按钮会打开这个清单，而不是直接切到另一种语言——
      未来加了第三、第四种语言，这里也不用改，清单是 app.js 依 SUPPORTED_LANGUAGES 动态产生的 -->
-<div class="modal" id="languagePickerModal" role="dialog" aria-modal="true" aria-labelledby="languagePickerTitle">
+<div class="modal modal-sm" id="languagePickerModal" role="dialog" aria-modal="true" aria-labelledby="languagePickerTitle">
   <div class="modal-header">
     <div>
       <h2 id="languagePickerTitle" data-i18n="languagePicker.title">选择语言</h2>
@@ -1310,7 +1305,7 @@
 </div>
 
 <!-- 合并重复成员 Modal -->
-<div class="modal" id="mergeMemberModal" role="dialog" aria-modal="true" aria-labelledby="mergeMemberTitle">
+<div class="modal modal-sm" id="mergeMemberModal" role="dialog" aria-modal="true" aria-labelledby="mergeMemberTitle">
   <div class="modal-header">
     <div>
       <h2 id="mergeMemberTitle" data-i18n="mergeMemberModal.title">合并重复成员</h2>
@@ -1325,42 +1320,6 @@
   </div>
 </div>
 
-<!-- 消费明细 Modal：点击账目列表任一笔消费会弹出，显示完整分摊明细跟收据照片（若有）
-     ——这两块对所有成员都开放预览；编辑/删除按钮才是只有当初建立这笔纪录的账号
-     （当事人）才看得到 -->
-<div class="modal" id="expenseDetailModal" role="dialog" aria-modal="true" aria-labelledby="expenseDetailTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="expenseDetailTitle" data-i18n="expenseDetailModal.title">消费明细</h2>
-      <p class="panel-hint" id="expenseDetailSubtitle"></p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body">
-    <div class="expense-detail-hero">
-      <p class="expense-detail-amount mono" id="expenseDetailAmount">RM 0.00</p>
-      <div class="expense-detail-badges" id="expenseDetailBadges"></div>
-    </div>
-    <p class="expense-detail-remark is-hidden" id="expenseDetailRemark"></p>
-    <div class="expense-detail-receipt is-hidden" id="expenseDetailReceiptWrap">
-      <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.receiptLabel">收据照片</p>
-      <button type="button" class="expense-detail-receipt-thumb" id="expenseDetailReceiptThumb" aria-label="查看收据照片">
-        <img src="" alt="收据照片" id="expenseDetailReceiptImg">
-      </button>
-    </div>
-    <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.splitBreakdown">分摊明细</p>
-    <div id="expenseDetailSplitList">
-      <!-- 每位参与人分摊多少，由 app.js 动态产生 -->
-    </div>
-  </div>
-  <div class="modal-footer is-hidden" id="expenseDetailFooter">
-    <button class="btn btn-ghost" type="button" id="expenseDetailDeleteBtn" data-i18n="aria.delete">删除</button>
-    <button class="btn btn-primary" type="button" id="expenseDetailEditBtn" data-i18n="aria.edit">编辑</button>
-  </div>
-</div>
-
 <!-- 收据大图预览 Modal：从消费明细弹窗的收据缩图点进来，纯粹放大看图，
      不需要表单或其他互动，沿用同一套 Modal 堆叠机制（背景点击/Esc 都能关） -->
 <div class="modal modal-sm receipt-viewer-modal" id="receiptViewerModal" role="dialog" aria-modal="true" aria-labelledby="receiptViewerTitle">
@@ -1372,28 +1331,6 @@
   </div>
   <div class="modal-body receipt-viewer-body">
     <img src="" alt="收据照片" id="receiptViewerImg" class="receipt-viewer-img">
-  </div>
-</div>
-
-<!-- 账单统计 Modal（只保留分类消费总览，每人消费总览已移除——个别成员明细改到「同行」页查看） -->
-<div class="modal" id="categoryStatsModal" role="dialog" aria-modal="true" aria-labelledby="categoryStatsTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="categoryStatsTitle" data-i18n="dashboard.categorySummary">分类消费</h2>
-      <p class="panel-hint" data-i18n="dashboard.categoryClickHint">点击分类可查看明细</p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="categorySummaryList">
-    <div class="empty-state empty-state-compact">
-      <div class="empty-illustration" aria-hidden="true">
-        <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2"/><path d="M32 12V32L46 40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <h3 data-i18n="empty.noCategory.title">尚无分类资料</h3>
-      <p data-i18n="empty.noCategory.desc">新增消费纪录后，这里会显示各分类的花费占比。</p>
-    </div>
   </div>
 </div>
 
@@ -1415,22 +1352,6 @@
   </div>
 </div>
 
-<!-- 搭伙金库明细 Modal：登记打款流水 + 支出流水 + 结程退余（结程後才会出现），
-     从 Dashboard 卡片的「查看明细」按钮打开，不管有没有结程都能看，
-     结程後等於是一份可以随时回来查的完整报告 -->
-<div class="modal" id="poolDetailModal" role="dialog" aria-modal="true" aria-labelledby="poolDetailTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="poolDetailTitle" data-i18n="pool.detail.title">搭伙鸭金库明细</h2>
-      <p class="panel-hint" id="poolDetailSubtitle"></p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="poolDetailBody"></div>
-</div>
-
 <!-- 更改登记打款 Modal：设置页「更改」按钮打开，先列出所有登记纪录选一笔，
      再改人均金额／货币（以防充值当下输错了）——列表跟编辑表单共用同一个 Modal，
      用 renderPoolTopupEditList()／renderPoolTopupEditForm() 切换内容 -->
@@ -1442,54 +1363,6 @@
     </button>
   </div>
   <div class="modal-body" id="poolTopupEditBody"></div>
-</div>
-
-<!-- 全部消费记录 Modal -->
-<div class="modal" id="allExpensesModal" role="dialog" aria-modal="true" aria-labelledby="allExpensesTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="allExpensesTitle" data-i18n="nav.expenses">账目</h2>
-      <p class="panel-hint" id="allExpensesSubtitle"></p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="allExpensesList">
-    <!-- 所有消费纪录由 app.js 动态产生 -->
-  </div>
-</div>
-
-<!-- 建议还款 Modal -->
-<div class="modal" id="settlementSuggestionsModal" role="dialog" aria-modal="true" aria-labelledby="settlementSuggestionsTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="settlementSuggestionsTitle" data-i18n="summary.settlementPanel">最优结算</h2>
-      <p class="panel-hint" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="settlementSuggestionsList">
-    <!-- 建议还款清单由 app.js 动态产生 -->
-  </div>
-</div>
-
-<!-- 分类消费明细 Modal -->
-<div class="modal" id="categoryExpensesModal" role="dialog" aria-modal="true" aria-labelledby="categoryExpensesTitle">
-  <div class="modal-header">
-    <div>
-      <h2 id="categoryExpensesTitle">分类明细</h2>
-      <p class="panel-hint" id="categoryExpensesSubtitle"></p>
-    </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="categoryExpensesList">
-    <!-- 该分类的消费清单由 app.js 动态产生 -->
-  </div>
 </div>
 
 <!-- 选择旅程 Modal：设置页「目前旅程」pill 或「更改」按钮点了都会开这个——
@@ -1568,7 +1441,7 @@
 </div>
 
 <!-- 新增旅程 Modal：新建旅程 / 加入旅程（邀请码）两个分页 -->
-<div class="modal modal-sm" id="addTripModal" role="dialog" aria-modal="true" aria-labelledby="addTripTitle">
+<div class="modal" id="addTripModal" role="dialog" aria-modal="true" aria-labelledby="addTripTitle">
   <div class="modal-header">
     <h2 id="addTripTitle" data-i18n="tripModal.title">新增旅程</h2>
     <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">

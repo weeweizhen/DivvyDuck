@@ -1295,7 +1295,7 @@ html {
      用 --ease-pop 換掉原本的 --ease-out，滑入＋轻微放大到 100% 的尾段会
      带一点回弹，感觉像页面「稳稳地弹回定位」，不是平淡地滑到底就停。
      注意：不能加 will-change: transform（或任何形式的 transform）在这层——
-     成员消费明细页的「返回」键（#memberDetailBackBtn）是 position:fixed，
+     二级页面的「返回」键（.secondary-page-back-btn，见下方）是 position:fixed，
      藏在 .page 底下当子元素；只要祖先有 transform 或 will-change:transform，
      fixed 子元素就会改成相对那个祖先定位，不再相对整个视口，会跟同样
      fixed、但不在 .page 里面的汉堡按钮对不齐 */
@@ -1311,23 +1311,26 @@ html {
   margin-bottom: var(--space-5);
 }
 
-/* 成员消费明细页面：自己带一个「返回」+ 标题的迷你 header，取代原本 Modal
-   的关闭按钮——手机版整条 .app-header 藏起来了，这是唯一看得到标题/返回
-   入口的地方；桌面版则是叠在 .app-header 下面多一层，不冲突。
+/* 二级页面共用的迷你 header（返回键 + 标题/副标题），取代原本 Modal 的关闭
+   按钮——手机版整条 .app-header 藏起来了，这是唯一看得到标题/返回入口的
+   地方；桌面版则是叠在 .app-header 下面多一层，不冲突。
    标题/副标题自己一整块，返回键在手机版另外抽出来变成固定定位，跟汉堡
-   按钮同一行高度、左右对称（返回在左、汉堡在右），不占页面内容的排版位置 */
-.member-detail-page-header {
+   按钮同一行高度、左右对称（返回在左、汉堡在右），不占页面内容的排版位置。
+   原本是只给「成员消费明细」写的一套（.member-detail-page-*），阶段 8
+   把只读型 Modal 改成二级页面时泛化成通用类名，7 个二级页面共用同一份 CSS，
+   不用每个页面各自重複定义一遍 */
+.secondary-page-header {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
 }
 
-.member-detail-page-header-text {
+.secondary-page-header-text {
   min-width: 0;
 }
 
-.member-detail-page-footer {
+.secondary-page-footer {
   margin-top: var(--space-5);
   display: flex;
   justify-content: flex-end;
@@ -3157,6 +3160,22 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   pointer-events: none;
 }
 
+/**
+ * Modal 尺寸规则（任务 9-1 统一制定，全站一体适用，新增 Modal 时比照办理）：
+ * ------------------------------------------------------------
+ * .modal-sm（max-width 420px）用於「单次决定」型的内容——具体来说：
+ *   - 表单欄位（input／select／textarea／自订 widget 如图示选择格）总数 ≤ 2 个的表单
+ *   - 纯粹「从一组选项挑一个」的简短列表（旅程/语言选择、认领重複成员）
+ *   - 单一动作的确认对话（confirmModal、repaymentActionModal 这类只有文字 + 按钮）
+ *   - 单一用途的检视器（收据大图预览）
+ * 其余情况一律用默认尺寸（不加 .modal-sm）：
+ *   - 表单欄位 ≥ 3 个（例如 addTripModal 的建立分頁有旅程名称/基准货币/金库开关，
+ *     addRepaymentModal 的收款人/还款人/日期/备注）
+ *   - 含分頁切换（.modal-tabs）的表单，即使某一分頁当下欄位不多，也用默认尺寸，
+ *     因为分頁彼此之间宽度要一致，不能切分頁时忽窄忽宽
+ *   - 呈现多欄位/多币种等密集资讯的清单（例如 poolRefundModal 逐笔列出每个人
+ *     在每种货币各该退多少），窄版会让这类内容换行/挤压，可读性变差
+ */
 .modal-sm {
   max-width: 420px;
 }
@@ -5028,7 +5047,7 @@ body {
   --hero-owing: #be123c;
   --hero-divider: rgba(0, 0, 0, 0.08);
 
-  background: #ffffff;
+  background: var(--bg-elevated);
   border: 1px solid rgba(0, 0, 0, 0.04);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   backdrop-filter: none;
@@ -5485,18 +5504,21 @@ body {
     padding-top: calc(var(--space-4) + env(safe-area-inset-top) + var(--icon-btn-size) + var(--space-4));
   }
 
-  /* 成员消费明细页的「返回」在手机版改成固定定位，跟汉堡按钮同一行高度、
+  /* 二级页面的「返回」在手机版改成固定定位，跟汉堡按钮同一行高度、
      左右对称（返回在左，汉堡在右）——不是跟着内容一起捲动的按钮，这样
-     不管捲到哪里都找得到返回入口，跟汉堡按钮的行为一致 */
-  #memberDetailBackBtn {
+     不管捲到哪里都找得到返回入口，跟汉堡按钮的行为一致。原本只给
+     #memberDetailBackBtn 一个 id 写的规则，阶段 8 把其他 6 个只读 Modal
+     也改成二级页面後，泛化成 class 选择器，7 个页面的返回键自动套用
+     同一份定位，不用每加一个二级页面就回来补一条 */
+  .secondary-page-back-btn {
     position: fixed;
     top: calc(var(--space-4) + env(safe-area-inset-top));
     left: var(--space-4);
     z-index: 25;
   }
 
-  #memberDetailBackBtn:hover,
-  #memberDetailBackBtn:active {
+  .secondary-page-back-btn:hover,
+  .secondary-page-back-btn:active {
     background: var(--surface-glass-strong);
     backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
     -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
@@ -5957,7 +5979,7 @@ body {
   z-index: 1;
   width: 96px;
   height: 96px;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   opacity: 0;
@@ -6515,18 +6537,18 @@ body {
   filter: blur(40px);
   opacity: 0.32;
   pointer-events: none;
-  background: #2dd4bf;
+  background: var(--hero-owed);
   transition: background var(--duration-slow, 360ms) var(--ease-out, ease);
   z-index: 0;
 }
 
 .hero-card.hero-card-slate:has(.hero-net-value.is-owed)::before {
-  background: #2dd4bf;
+  background: var(--hero-owed);
   opacity: 0.5;
 }
 
 .hero-card.hero-card-slate:has(.hero-net-value.is-owing)::before {
-  background: #fbbf24;
+  background: var(--hero-owing);
   opacity: 0.45;
 }
 

@@ -1693,6 +1693,16 @@ function applyLanguage() {
     el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
   });
 
+  // 通用的 aria-label 翻译出口——原本项目里大部分 aria-label 是「静态、跟语言
+  // 无关」的场景（例如「关闭」这种到处都是、极少数使用者会真的用螢幕阅读器
+  // 深究的按钮），所以一直没有建立这个机制；阶段 9 最终检查时发现二级页面的
+  // 返回按钮（.secondary-page-back-btn，任务阶段 8 新增）应该要跟着语言切换，
+  // 干脆一次把机制建起来，之後有类似需求可以直接加 data-i18n-aria-label，
+  // 不用再各自写一段 JS 手动同步
+  document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
+    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
+  });
+
   // 导览上的语言按钮（桌面侧栏、手机抽屉、登入页）现在都是「一点击就直接换下一个语言」，
   // 所以文字要显示「点了会换成哪个语言」（下一个），跟深色模式按钮同一套逻辑；
   // 只有设置页的语言面板还是「打开清单挑」，那边继续显示「目前用的是哪个语言」
@@ -1758,6 +1768,12 @@ let currentSplitType = 'equal';
 // 只有金库开启的旅程才会显示这个选择器，预设一律是 normal，行为跟合并这个功能之前完全一样
 let currentExpenseSource = 'normal';
 let modalStack = []; // Modal Stack Manager：依开启顺序记录目前所有开着的 Modal id
+let secondaryPageStack = []; // 二级页面堆叠：依开启顺序记录目前一路钻进来的二级页面
+// id（例如从「账单统计」点进某个分类的「分类消费清单」，会是 ['category-stats',
+// 'category-expenses']）。跟 modalStack 是同一个概念，只是这边管的是 .page
+// 元素，不是 Modal——阶段 8 把「只读、可能还要继续往下钻」的那 6 个 Modal
+// 改成了二级页面，加上原本就是二级页面的成员消费明细，共用同一套机制
+// （见 showSecondaryPage_()／closeSecondaryPage_()）
 // Modal／侧边抽屉打开时，背景锁住不能捲动用的记录——锁住当下的捲动位置（Y），
 // 解锁时要还原回去
 let bodyScrollLockY = 0;
@@ -1941,7 +1957,7 @@ function startAppAfterAuth() {
   initNavigation();
   initModals();
   initAppHistoryNavigation();
-  document.getElementById('memberDetailBackBtn').addEventListener('click', closeMemberDetailPage_);
+  initSecondaryPageBackButtons_();
   initSegmentedControl();
   initSmartMemory();
   initExpenseDraftAutosave();
@@ -4873,10 +4889,15 @@ const PAGE_EMPTY_HERO_MAP = [
  * 已连上 API，但目前完全没有任何旅程时的提示状态：
  * Dashboard / 账目 / 结算 / 同行四个分页整个换成置中的欢迎画面
  * （logo + slogan + 引导句 + 建立旅程按钮），不再是原本一堆面板各自塞一个
- * 小型空状态区块——不管从哪个分页点进来，看到的都是同一句引导、同一颗按钮
+ * 小型空状态区块——不管从哪个分页点进来，看到的都是同一句引导、同一颗按钮。
+ * 四个容器的内容完全一样，只在 renderEmptyBlock() 裡用 containerId 当 SVG
+ * 渐层 id 的后缀避免重複，见 renderEmptyBlock() 的 level='page' 分支
  */
 function renderNoTripState() {
-  PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => togglePageEmptyHero_(heroId, normalId, true));
+  PAGE_EMPTY_HERO_MAP.forEach(([heroId, normalId]) => {
+    togglePageEmptyHero_(heroId, normalId, true);
+    renderEmptyBlock(heroId, null, t('system.noTripMsg'), 'addTripModal', t('tripModal.save'), 'page');
+  });
   // 「完全没有旅程」跟「有旅程但还没有消费纪录」是两组互斥的 Hero，切到
   // 「没有旅程」这组的时候，另一组如果还留着 is-hidden 拿掉的状态，
   // 两个 Hero 会同时露出来，这里保险起见都藏掉
@@ -5463,11 +5484,11 @@ function popAppHistoryState_(steps) {
 
 /**
  * 依目前画面「最上层是什么」决定返回键要收掉哪一层：Modal 永远画在最上面，
- * 优先关；没有 Modal 才轮到成员详情页；两者都没有才是「五个主分页之间」的
- * 切换，靠 popstate 事件带回来的 state 决定要换回哪一页。如果连主分页的
- * history 状态都没有了（代表已经回到 App 一开始载入时那笔真正的浏览器分录），
- * 这里刻意什么都不做——让浏览器/系统自己接手，正常离开／关闭这个分页，
- * 不要卡住不让走
+ * 优先关；没有 Modal 才轮到二级页面（可能一路钻了好几层，见 secondaryPageStack）；
+ * 两者都没有才是「五个主分页之间」的切换，靠 popstate 事件带回来的 state
+ * 决定要换回哪一页。如果连主分页的 history 状态都没有了（代表已经回到 App
+ * 一开始载入时那笔真正的浏览器分录），这里刻意什么都不做——让浏览器/系统
+ * 自己接手，正常离开／关闭这个分页，不要卡住不让走
  * @param {PopStateEvent} event
  */
 function handleAppPopState_(event) {
@@ -5483,9 +5504,8 @@ function handleAppPopState_(event) {
       return;
     }
 
-    const memberDetailPage = document.getElementById('page-member-detail');
-    if (memberDetailPage && !memberDetailPage.classList.contains('is-hidden')) {
-      closeMemberDetailPage_();
+    if (secondaryPageStack.length > 0) {
+      closeSecondaryPage_();
       return;
     }
 
@@ -5502,13 +5522,117 @@ function handleAppPopState_(event) {
  * 切主分页专用的导航入口——跟单纯同步画面用的 navigateToPage() 分开，是因为
  * navigateToPage() 也会被「返回键退回上一页」「删除旅程後扒回设置页顶端」
  * 这类「不该 push 新状态」的情境呼叫，混在一起会 push 出重複/错位的分录
- * （见 closeMemberDetailPage_() 的说明）。真正代表「使用者主动切去某个分页」
+ * （见 closeSecondaryPage_() 的说明）。真正代表「使用者主动切去某个分页」
  * 的入口只有底部导览/侧边导览的点击，统一走这支
  * @param {string} pageId
  */
 function goToPage_(pageId) {
   navigateToPage(pageId);
   pushAppHistoryState_({ appNavType: 'page', pageId });
+}
+
+/**
+ * 目前 nav 高亮显示的是哪个主分页——直接读 DOM（[data-page].is-active 是
+ * navigateToPage() 自己会维护的状态），不用另外开一个变量去同步；二级页面
+ * 显示期间 navigateToPage() 不会被呼叫，nav 的高亮状态会持续维持在「进二级
+ * 页面之前」原本在哪一页，secondaryPageStack 清空後要退回主分页时，靠这个
+ * 函式就能正确知道该退去哪里，不用每个 showSecondaryPage_() 呼叫端自己传
+ * @return {string}
+ */
+function getCurrentMainPageId_() {
+  const activeBtn = document.querySelector('[data-page].is-active');
+  return activeBtn ? activeBtn.getAttribute('data-page') : 'dashboard';
+}
+
+/* ------------------------------------------------------------
+   二级页面管理（Secondary Page Manager）
+   ------------------------------------------------------------
+   阶段 8：把「只读、使用者可能还要继续往下钻」的深层内容（消费明细、
+   分类消费清单、全部消费记录、金库明细、最优结算建议、账单统计）从
+   Modal 改成二级页面——这类内容不是「我在做一件临时的事」（那种维持用
+   Modal：表单、确认、快速选择），而是「我想再多看一点、可能还要继续点
+   进更深一层」，用整页 + 返回键比蒙层 Modal 更符合语境，也更方便阶段 2
+   接上的系统返回键操作。
+
+   泛化自原本专门给「成员消费明细」写的 showMemberDetailPage_() /
+   closeMemberDetailPage_()：不是为每个二级页面各写一份开关逻辑，而是
+   用 secondaryPageStack 这个堆叠统一管理，支援连续往下钻（例如「账单
+   统计」点进某个分类的「分类消费清单」，是两层二级页面叠在一起）。
+   ------------------------------------------------------------ */
+
+/**
+ * 切换到一个二级页面。目前显示的那一层（可能是某个主分页，也可能是另一个
+ * 二级页面——支援连续往下钻）会被藏起来，新的这层叠上去、捲回顶端，並
+ * push 一份 history 状态给返回键/返回按钮退。
+ *
+ * 如果这个页面本来就已经是堆叠最上层（例如私人消费编辑後 refreshMemberDetailPageIfOpen_()
+ * 重新渲染内容，不是真的「导航过去」），不会重複 push history，也不会把
+ * 捲动位置弹回顶端打断使用者——只有画面上真的新叠上一层时才做这两件事
+ * @param {string} pageId 对应 <section id="page-${pageId}"> 的那个 id 片段
+ */
+function showSecondaryPage_(pageId) {
+  const alreadyTopmost = secondaryPageStack[secondaryPageStack.length - 1] === pageId;
+
+  document.querySelectorAll('.page').forEach((section) => {
+    section.classList.add('is-hidden');
+  });
+  const pageEl = document.getElementById(`page-${pageId}`);
+  if (pageEl) {
+    pageEl.classList.remove('is-hidden');
+  }
+
+  if (alreadyTopmost) {
+    return;
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  secondaryPageStack.push(pageId);
+  pushAppHistoryState_({ appNavType: 'secondaryPage', pageId });
+}
+
+/**
+ * 离开目前最上层的二级页面。堆叠裡还有上一层的话（连续钻了好几层），退回
+ * 显示那一层；堆叠空了的话，代表已经退到底，回到 getCurrentMainPageId_()
+ * 记得的那个主分页——用 navigateToPage() 把 nav 高亮/header 标题都复原，
+ * 不是简单显示/隐藏就好。
+ *
+ * 这支函式会在两种情境下被呼叫：使用者点画面上的「返回」按钮，或使用者按了
+ * 系统返回键（見 handleAppPopState_()）。两种情境都是「往回」，该做的是把
+ * showSecondaryPage_() 当初 push 的那份状态弹掉（popAppHistoryState_()
+ * 内部已经会分辨这次是不是该真的呼叫 history.back()），不能反过来 push
+ * 一份新状态
+ */
+function closeSecondaryPage_() {
+  const closingPageId = secondaryPageStack.pop();
+  if (closingPageId) {
+    const closingPageEl = document.getElementById(`page-${closingPageId}`);
+    if (closingPageEl) {
+      closingPageEl.classList.add('is-hidden');
+    }
+  }
+
+  if (secondaryPageStack.length > 0) {
+    const previousPageId = secondaryPageStack[secondaryPageStack.length - 1];
+    const previousPageEl = document.getElementById(`page-${previousPageId}`);
+    if (previousPageEl) {
+      previousPageEl.classList.remove('is-hidden');
+    }
+  } else {
+    navigateToPage(getCurrentMainPageId_());
+  }
+
+  popAppHistoryState_();
+}
+
+/**
+ * 绑定所有二级页面共用的「返回」按钮（.secondary-page-back-btn）——统一用
+ * 事件委派绑一次，7 个二级页面（成员消费明细 + 阶段 8 新增的 6 个）不用
+ * 各自重複绑一次点击事件，之後再新增二级页面也不用回来补这段
+ */
+function initSecondaryPageBackButtons_() {
+  document.querySelectorAll('.secondary-page-back-btn').forEach((btn) => {
+    btn.addEventListener('click', () => closeSecondaryPage_());
+  });
 }
 
 /* ------------------------------------------------------------
@@ -7551,8 +7675,7 @@ function renderHeroCard() {
   const item = viewerName ? balances.find((b) => b.name === viewerName) : null;
 
   if (!viewerName || !item) {
-    document.getElementById('heroEmptyStateTitle').textContent = t('hero.noViewerTitle');
-    document.getElementById('heroEmptyStateDesc').textContent = t('hero.noViewerDesc');
+    renderEmptyBlock('heroEmptyState', t('hero.noViewerTitle'), t('hero.noViewerDesc'));
     emptyState.classList.remove('is-hidden');
     content.classList.add('is-hidden');
     content.classList.remove('is-skeleton');
@@ -7564,8 +7687,7 @@ function renderHeroCard() {
   // 不该让 Hero Card 显示一堆 MYR 0.00（看起来像是有过账目、只是刚好扯平），
   // 沿用同一个空状态框架、换一组「还没有消费纪录」的文案
   if (appState.expenses.length === 0) {
-    document.getElementById('heroEmptyStateTitle').textContent = t('empty.noExpenses.title');
-    document.getElementById('heroEmptyStateDesc').textContent = t('empty.noExpenses.desc');
+    renderEmptyBlock('heroEmptyState', t('empty.noExpenses.title'), t('empty.noExpenses.desc'));
     emptyState.classList.remove('is-hidden');
     content.classList.add('is-hidden');
     content.classList.remove('is-skeleton');
@@ -7839,10 +7961,7 @@ function initQuickActionsDock() {
 
   const statsBtn = document.getElementById('qaStatsBtn');
   if (statsBtn) {
-    statsBtn.addEventListener('click', () => {
-      renderCategorySummary();
-      openModal('categoryStatsModal');
-    });
+    statsBtn.addEventListener('click', () => openCategoryStatsPage_());
   }
 }
 
@@ -7922,7 +8041,7 @@ function openCategoryExpensesModal(category) {
     }
   }
 
-  openModal('categoryExpensesModal');
+  showSecondaryPage_('category-expenses');
 }
 
 
@@ -8389,7 +8508,7 @@ function openPoolDetailModal() {
 
   if (!pool || !pool.enabled) {
     renderEmptyBlock('poolDetailBody', t('pool.detail.emptyTitle'), t('pool.detail.emptyDesc'));
-    openModal('poolDetailModal');
+    showSecondaryPage_('pool-detail');
     return;
   }
 
@@ -8423,7 +8542,7 @@ function openPoolDetailModal() {
   ` : `<div class="pool-detail-section"><p class="pool-detail-section-title">${escapeHtml(t('pool.report.topupTitle'))}</p><p class="report-summary-row">${escapeHtml(t('pool.report.noTopups'))}</p></div>`;
 
   bodyEl.innerHTML = currencySummaryHtml + topupHtml;
-  openModal('poolDetailModal');
+  showSecondaryPage_('pool-detail');
 }
 
 /* ===== 10B-5. 设置页面板：登记打款 ===== */
@@ -9186,7 +9305,7 @@ function openExpenseDetailModal(expenseId) {
     const freshEditBtn = editBtn.cloneNode(true);
     editBtn.parentNode.replaceChild(freshEditBtn, editBtn);
     freshEditBtn.addEventListener('click', () => {
-      closeActiveModal();
+      closeSecondaryPage_();
       openExpenseFormForEdit(expenseId);
     });
 
@@ -9198,7 +9317,7 @@ function openExpenseDetailModal(expenseId) {
     });
   }
 
-  openModal('expenseDetailModal');
+  showSecondaryPage_('expense-detail');
 }
 
 
@@ -9726,7 +9845,7 @@ function openAllExpensesModal() {
     `).join('');
   }
 
-  openModal('allExpensesModal');
+  showSecondaryPage_('all-expenses');
 }
 
 /**
@@ -9750,7 +9869,7 @@ function openSettlementSuggestionsModal() {
         <p>${escapeHtml(emptyDesc)}</p>
       </div>
     `;
-    openModal('settlementSuggestionsModal');
+    showSecondaryPage_('settlement-suggestions');
     return;
   }
 
@@ -9768,24 +9887,24 @@ function openSettlementSuggestionsModal() {
     </div>
   `).join('');
 
-  openModal('settlementSuggestionsModal');
+  showSecondaryPage_('settlement-suggestions');
 }
 
 /**
- * 打开「账单统计」Modal（Dashboard Quick Actions Dock 的「📈 账单统计」）
+ * 打开「账单统计」二级页面（Dashboard Quick Actions Dock 的「📈 账单统计」）
  * 只保留「分类消费」长条图总览，不再列出每人消费总览
  * （每位成员的个别消费明细，改由「同行」页各自的成员卡片点击进入，不需要在这里重复呈现）
  */
-function openCategoryStatsModal() {
+function openCategoryStatsPage_() {
   renderCategorySummary();
-  openModal('categoryStatsModal');
+  showSecondaryPage_('category-stats');
 }
 
 /**
- * 切换到「成员消费明细」页面，列出指定成员所有相关的纪录——原本是 Modal，
- * 现在是独立页面（用 openMemberDetailPage/closeMemberDetailPage 这组函式
- * 手动切换 .is-hidden，不透过 navigateToPage()，因为这不是底部导览五个
- * 分页之一，不需要更新 nav 高亮/header 标题那一整套逻辑）
+ * 切换到「成员消费明细」二级页面，列出指定成员所有相关的纪录——用
+ * showSecondaryPage_('member-detail')／closeSecondaryPage_() 这组通用
+ * 二级页面机制（见任务 8），不透过 navigateToPage()，因为这不是底部导览
+ * 五个分页之一，不需要更新 nav 高亮/header 标题那一整套逻辑
  * 包含：消费（他当付款人垫的 / 他有分摊到的），以及他自己付出去的还款纪录
  * （只记录「付给谁」，不记录「收到谁的」——那属于对方自己的还款纪录）
  * @param {string} name 成员姓名
@@ -9862,7 +9981,7 @@ function openMemberDetailPage(name) {
     if (includePersonalRowEmpty) {
       includePersonalRowEmpty.classList.add('is-hidden');
     }
-    showMemberDetailPage_();
+    showSecondaryPage_('member-detail');
     return;
   }
 
@@ -9933,7 +10052,7 @@ function openMemberDetailPage(name) {
     includePersonalCheckbox.checked = false;
   }
 
-  showMemberDetailPage_();
+  showSecondaryPage_('member-detail');
 }
 
 /**
@@ -9988,41 +10107,6 @@ function bindPersonalExpenseRowActions_(container) {
       }
     });
   });
-}
-
-/**
- * 实际切换到成员消费明细页面：藏掉其他 .page、显示这个、捲回顶端——
- * 跟 navigateToPage() 分开一支，因为这个页面不在 PAGE_IDS 里，不需要
- * 更新 nav 高亮/header 标题/FAB 那一整套逻辑
- */
-function showMemberDetailPage_() {
-  document.querySelectorAll('.page').forEach((section) => {
-    section.classList.add('is-hidden');
-  });
-  document.getElementById('page-member-detail').classList.remove('is-hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // 进成员详情页也是一次「往前」的导航，返回键要能退回「同行」页，
-  // 所以要 push 一份状态；跟五个主分页共用 goToPage_() 会有问题——那支
-  // 内部呼叫的 navigateToPage() 走的是 PAGE_IDS 白名单，'member-detail'
-  // 不在里面会被直接挡掉，所以这里改成直接 push 一份专属的状态
-  pushAppHistoryState_({ appNavType: 'memberDetail' });
-}
-
-/**
- * 「返回」离开成员消费明细页面，回到「同行」页——不是 Modal 的关闭，
- * 是切页，所以直接呼叫 navigateToPage('members') 把 nav 高亮/header
- * 标题/FAB 都恢复成「同行」页该有的状态。这里刻意呼叫的是 navigateToPage()
- * 而不是 goToPage_()：会走到这支函式的两种情境——使用者点「返回」按钮，
- * 或使用者按了系统返回键——都是「往回」，该做的是把 showMemberDetailPage_()
- * 当初 push 的那份状态弹掉（popAppHistoryState_()），不能又反过来 push
- * 一份新的「members」状态，不然会跟下面那笔本来就存在、真正代表「同行」页
- * 的状态重複堆叠
- */
-function closeMemberDetailPage_() {
-  document.getElementById('page-member-detail').classList.add('is-hidden');
-  navigateToPage('members');
-  popAppHistoryState_();
 }
 
 /**
@@ -10361,7 +10445,7 @@ function renderCategoryIconPicker_(selectedIcon) {
     const meta = CATEGORY_ICON_META[key];
     const isActive = key === selectedIcon;
     return `
-      <button type="button" class="category-icon-option activity-icon ${meta.cls}${isActive ? ' is-active' : ''}" data-icon-key="${escapeHtml(key)}" aria-label="${escapeHtml(key)}">
+      <button type="button" class="category-icon-option activity-icon ${meta.cls}${isActive ? ' is-active' : ''}" data-icon-key="${escapeHtml(key)}" aria-label="${escapeHtml(translateCategory(key))}">
         ${meta.svg}
       </button>
     `;
@@ -12244,9 +12328,77 @@ function setButtonLoading(button, isLoading) {
    19. 共用小型渲染工具
    ------------------------------------------------------------ */
 
-function renderEmptyBlock(containerId, title, message, modalId, buttonLabel) {
+/**
+ * 「搭伙鸭」品牌插画 SVG——原本 4 份 .page-empty-hero（Dashboard/账目/结算/同行
+ * 各一份）几乎逐字複製了这段，唯一差异是 SVG 渐层的 id 后缀（避免同一份文件裡
+ * 出现重複 id）。抽成共用函式，id 后缀由呼叫端带入，不再各自维护一份
+ * @param {string} idSuffix 用来让渐层 id 在同一份文件裡保持唯一
+ * @return {string}
+ */
+function buildEmptyStateBrandMarkSvg_(idSuffix) {
+  return `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ddPurple${idSuffix}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1E1B4B"/>
+          <stop offset="100%" stop-color="#0F172A"/>
+        </linearGradient>
+        <linearGradient id="ddBeak${idSuffix}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FBBF24"/>
+          <stop offset="100%" stop-color="#F59E0B"/>
+        </linearGradient>
+        <linearGradient id="ddBar${idSuffix}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#38BDF8"/>
+          <stop offset="100%" stop-color="#818CF8"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="100" height="100" rx="24" fill="url(#ddPurple${idSuffix})"/>
+      <g transform="rotate(-12, 50, 50)">
+        <circle cx="50" cy="27" r="13" fill="#FFFFFF"/>
+        <circle cx="54" cy="24" r="2.8" fill="#1E1B4B"/>
+        <path d="M 61 25 C 71 25, 75 29, 72 34 C 69 37, 61 34, 61 30 Z" fill="url(#ddBeak${idSuffix})"/>
+        <rect x="22" y="46" width="56" height="10" rx="5" fill="url(#ddBar${idSuffix})"/>
+        <path d="M 28 67 C 28 67, 38 65, 50 65 C 62 65, 72 67, 72 67 C 72 78, 62 84, 50 84 C 38 84, 28 78, 28 67 Z" fill="#FFFFFF"/>
+      </g>
+    </svg>
+  `;
+}
+
+/**
+ * 空状态渲染的唯一出口（任务 9-2 收敛）——原本有三条平行的实作：这支函式本身
+ * （区块级，专案裡最常用的那一种）、togglePageEmptyHero_() 搭配四份手写在
+ * HTML 裡、几乎逐字複製的 .page-empty-hero（页面级，Dashboard/账目/结算/同行
+ * 没有任何旅程时的引导画面），以及 Hero Card 自己又手写一份 #heroEmptyState。
+ * 现在收成这一个函式，用 level 参数分流成两种呈现：
+ *   - 'block'（预设）：小图示圆圈 + 标题 + 说明 + 可选的 CTA 按钮，用於既有
+ *     页面/卡片裡的一小块（列表还没有资料、Modal 内容是空的……）
+ *   - 'page'：搭伙鸭品牌插画 + 品牌 slogan（固定文案，不受 title 参数影响）+
+ *     说明 + 可选的 CTA 按钮，用於整个分页/整张卡片被换成引导画面的情境——
+ *     目前只有「完全没有任何旅程」这一种场景在用，标语是「聚会分账，鸭力全无！」，
+ *     这句话不因为呼叫端传了什麼 title 而改变，所以 level='page' 时 title
+ *     参数会被忽略，只有 message／modalId／buttonLabel 有作用
+ * 两种呈现共用同一套 CSS（.empty-state／.page-empty-hero 系列既有的样式，
+ * 没有为了合併另外新增）
+ * @param {string} containerId 要渲染进去的容器 id
+ * @param {string} title 标题；level='page' 时会被忽略（固定用品牌 slogan）
+ * @param {string} message 说明文字
+ * @param {string} [modalId] 有給的話会渲染一颗打开该 Modal 的按钮
+ * @param {string} [buttonLabel]
+ * @param {'block'|'page'} [level='block']
+ */
+function renderEmptyBlock(containerId, title, message, modalId, buttonLabel, level) {
   const container = document.getElementById(containerId);
   if (!container) {
+    return;
+  }
+
+  if (level === 'page') {
+    container.innerHTML = `
+      <span class="page-empty-hero-mark" aria-hidden="true">${buildEmptyStateBrandMarkSvg_(containerId)}</span>
+      <p class="page-empty-hero-slogan">${escapeHtml(t('brand.slogan'))}</p>
+      <p class="page-empty-hero-desc">${escapeHtml(message)}</p>
+      ${modalId ? `<button class="btn btn-primary page-empty-hero-btn" type="button" data-open-modal="${modalId}">${escapeHtml(buttonLabel || '')}</button>` : ''}
+    `;
     return;
   }
 
