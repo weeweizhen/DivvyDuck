@@ -94,6 +94,24 @@
   --drawer-nav-item-height: 56px;
   --drawer-nav-item-max-width: 260px;
 
+  /* z-index 尺度（任务 3.5-3 统一制定）：原本 Modal／Toast／App 开机动画用
+     个位十位（30/40/50），侧边抽屉自己另开一套百位（400/410），两套刻度
+     混用，数字之间「谁该盖过谁」全靠巧合对齐，改一个地方很容易不小心
+     打乱另一边。这裡统一成一组间隔 10 的刻度，由下到上分别是：
+     底部导览列 → Modal 遮罩 → Modal 本身 → 抽屉遮罩 → 抽屉本身 → Toast
+     通知 → App 开机動畫。数字越大代表越靠上层。
+     Modal 实际打开时是 app.js 用 JS 动态写 inline z-index（不是这裡的
+     --z-modal 固定值，Modal 可能一层层往上叠），JS 那套算式也已经同步
+     改成落在 --z-modal(50) 到 --z-toast(80) 这个区间内爬升，不会再各自
+     用一套不相干的数字，见 app.js 的 MODAL_BASE_Z_INDEX／MODAL_Z_INDEX_STEP */
+  --z-tabbar: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-drawer-backdrop: 60;
+  --z-drawer: 70;
+  --z-toast: 80;
+  --z-splash: 90;
+
   /* 动画 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* 带一点点回弹的「定住」曲线，
@@ -244,12 +262,19 @@ body {
    浏览器会在那一刻顺手把捲动位置重置成 0，背景页面会像是「自己跳回顶端」。
    position:fixed 配合 JS 算好、写在 inline style 上的负值 top，能把 body 精准
    冻结在使用者原本看到的那个画面，关闭 Modal 後再解锁、把捲动位置还原回去，
-   全程不会有任何视觉跳动 */
+   全程不会有任何视觉跳动。
+   height:100% 是後补的——position:fixed 只给了 left/right/width，没给高度，
+   body 的高度会退回内容高度（fixed 元素不参与正常文档流的高度撑开），
+   html 的可捲动区域也跟着塌陷。目前因为 Modal／抽屉的遮罩本来就是满屏的，
+   这个塌陷被遮罩盖住看不出来，但 unlockBodyScroll() 解锁時要用 JS 记下来的
+   bodyScrollLockY 把捲动位置还原回去，如果这段期间文档高度已经塌陷过，
+   还原可能失准 */
 .body-scroll-locked {
   position: fixed;
   left: 0;
   right: 0;
   width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -732,7 +757,7 @@ html {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s var(--ease-spring);
-  z-index: 400;
+  z-index: var(--z-drawer-backdrop);
 }
 
 .drawer-backdrop.is-visible {
@@ -757,7 +782,7 @@ html {
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   box-shadow: var(--shadow-lg);
-  z-index: 410;
+  z-index: var(--z-drawer);
   overflow: hidden;
   /* GPU 加速：只用 transform 做滑出动画，搭配 will-change 提示浏览器提前合成图层。
      从右侧推入，所以关闭状态是往右边（正值）位移，不是原本左侧面板的负值位移。
@@ -1718,6 +1743,28 @@ html {
   opacity: 0.45;
   margin-right: var(--space-2);
   vertical-align: middle;
+}
+
+/* 设置页「分类管理」的并列预览——跟账目页的筛选 .chip-group 不同，这裡
+   要的是「一眼看完全部」，用 flex-wrap 换行而不是横向捲动；.category-preview-chip
+   沿用 .chip 的胶囊造型，缩小一号、拿掉 hover 效果，避免看起来像可以点的
+   筛选按钮（这裡纯粹是预览，不能点，要互动请按旁边的「更改」） */
+.category-preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.category-preview-chip {
+  height: 26px;
+  font-size: 12px;
+  cursor: default;
+}
+
+.category-preview-chip:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
 }
 
 .select-control {
@@ -3114,7 +3161,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   pointer-events: none;
   will-change: opacity;
   transition: opacity 0.35s var(--ease-spring);
-  z-index: 40;
+  z-index: var(--z-modal-backdrop);
 }
 
 .modal-backdrop.is-visible {
@@ -3135,7 +3182,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
   border-bottom: none;
-  z-index: 50;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   opacity: 0;
@@ -3226,12 +3273,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  /* 通知一定要浮在所有东西最上面：登入/注册的 auth-gate（z-index 200）、手机版侧边抽屉
-     （z-index 410），还有 Modal——Modal 是用 JS 动态设 inline z-index（MODAL_BASE_Z_INDEX
-     500 起，每多叠一层 +20，见 app.js 的 openModal），inline style 的优先权本来就高过这里
-     的 class 规则，所以这个数字必须明显盖过「Modal 叠到很深」的极端情况，才不会在弹窗开着
-     的时候（例如新增消费填精确金额算错）把错误提示压在 Modal 底下、完全看不到 */
-  z-index: 9999;
+  /* 通知一定要浮在所有东西最上面：登入/注册的 auth-gate、手机版侧边抽屉
+     （--z-drawer），还有 Modal——Modal 实际打开时是用 JS 动态设 inline
+     z-index（见 app.js 的 MODAL_BASE_Z_INDEX／MODAL_Z_INDEX_STEP），inline
+     style 的优先权本来就高过这裡的 class 规则，所以 JS 那套算式已经改成
+     固定落在 --z-modal(50) 到 --z-toast(80) 这个区间内爬升、不会超过
+     --z-toast，这裡才能安心用统一尺度的 --z-toast，不用再靠一个明显
+     盖过一切的极端值（原本是 9999）硬压 */
+  z-index: var(--z-toast);
   width: calc(100% - 32px);
   max-width: 380px;
   pointer-events: none;
@@ -3395,7 +3444,25 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturate));
   border-top: 1px solid var(--border);
-  z-index: 30;
+  z-index: var(--z-tabbar);
+  transition: opacity 0.25s var(--ease-out);
+}
+
+/* Modal／抽屉打开时（两者都会给 body 加 .body-scroll-locked，见该 class
+   的说明）直接把底部导览列藏起来，不要让它继续透在遮罩底下——遮罩
+   （.modal-backdrop／.drawer-backdrop）都带 backdrop-filter 模糊 + 半透明
+   压暗，压在导览列这种「背景本身透明、底下又是 .app-main 特意留给它的
+   padding 空白」的元素上，会糊成一条看起来像「空白」的均匀色块，
+   10.5px 的文字标签被模糊後基本不可读。这也更贴近 iOS/Android 的原生
+   行为——Modal／抽屉本来就该整个盖住 tab bar，不是让它半透明地透出来。
+   遮罩本身是满屏的（height:100dvh），导览列藏起来後那块区域直接由遮罩
+   本身的底色填满，不会露出任何空隙。
+   ⚠️ 不要改用「把 .mobile-tabbar 的 z-index 提到遮罩之上」来解决——那样
+   Modal／抽屉开着的时候使用者还是能点到导览列切换分页，会切出一堆
+   状态错乱（当下的 Modal 还开着，画面却换到别的分页去了） */
+.body-scroll-locked .mobile-tabbar {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .tab-item {
@@ -3586,6 +3653,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
     left: auto !important;
     right: auto !important;
     width: auto !important;
+    height: auto !important;
     overflow: visible !important;
   }
 
@@ -5382,6 +5450,18 @@ body {
 .activity-icon.cat-shopping { background: rgba(168, 130, 230, 0.14); color: #9d7de0; }
 .activity-icon.cat-others { background: var(--bg-subtle); color: var(--text-tertiary); }
 
+/* 自定义分类专属图示的配色（CUSTOM_CATEGORY_ICON_PRESETS，见 app.js）——
+   刻意用跟上面 cat-food／cat-transport 等系统内置分类不同的 class 名称，
+   就算颜色数值一样也不共用同一个 class：自定义分类的图示形状本来就跟内置
+   分类不同了，颜色再挂钩在一起、共用同一个 class 名称，之後如果想单独
+   微调某一边的配色会牵动到另一边，两者语意上也是独立的两组图示，不该
+   耦合在同一个 class 上。5 组颜色轮流分给 10 个图示 */
+.activity-icon.cat-custom-teal { background: var(--accent-soft); color: var(--accent); }
+.activity-icon.cat-custom-green { background: var(--owed-soft); color: var(--owed); }
+.activity-icon.cat-custom-orange { background: var(--owe-soft); color: var(--owe); }
+.activity-icon.cat-custom-amber { background: var(--warning-soft); color: var(--warning); }
+.activity-icon.cat-custom-purple { background: rgba(168, 130, 230, 0.14); color: #9d7de0; }
+
 /* 自定义分类没选图示时的兜底——分类名首字，颜色沿用 .activity-icon 的预设
    accent-soft／accent（见 getCategoryIconMeta()），这里只需要处理文字本身
    的字体大小，不用额外定义背景色 */
@@ -5936,10 +6016,11 @@ body {
 
 /* ============================================================
    23. 开机品牌动画 App Splash —— Logo + DivvyDuck 字样短暂动画
-   固定盖在所有内容最上层（z-index 高过 Toast 的 9999）。背景跟随当下
-   浅色/深色模式的 --bg，不再固定用深空靛蓝渐层——开机第一眼就跟之后
-   看到的画面同一个色调，不会有「先看到一个深色画面、进 App 后突然变白」
-   的割裂感。动画结束后淡出交给登入闸门或 App 主体接手
+   固定盖在所有内容最上层（z-index 高过 --z-toast，见 :root 那组统一尺度，
+   任务 3.5-3 之前是写死的 10000，比 Toast 当时的 9999 高一点点就好）。
+   背景跟随当下浅色/深色模式的 --bg，不再固定用深空靛蓝渐层——开机第一眼
+   就跟之后看到的画面同一个色调，不会有「先看到一个深色画面、进 App 后
+   突然变白」的割裂感。动画结束后淡出交给登入闸门或 App 主体接手
    ============================================================ */
 .app-splash {
   position: fixed;
@@ -5953,7 +6034,7 @@ body {
      「现在这一刻真正看得到的画面高度」，不再靠 bottom:0 换算，就不会有这个落差 */
   height: 100vh; /* 向後相容：不支援 dvh 的旧浏览器会用这个值 */
   height: 100dvh;
-  z-index: 10000;
+  z-index: var(--z-splash);
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -157,11 +157,68 @@ const CATEGORY_ICON_META = {
 };
 
 /**
+ * 自定义分类专用的图示预设——刻意跟 CATEGORY_ICON_META（系统内置那 6 个分类）
+ * 完全分开一组，不重複使用。原本任务 6-3(c) 让使用者从内置分类的图示裡选，
+ * 会造成一个自定义分类（例如「潜水装备」）选了「交通」的公车图示，
+ * 结果长得跟内置的「交通」分类一模一样（同形状、同颜色），一眼看错行；
+ * 这裡改成一组通用、内置分类不会用到的图示，形状不重複，颜色也刻意不沿用
+ * CATEGORY_ICON_META 那几个 cat-food／cat-transport 等 class（避免颜色也
+ * 撞在一起），5 个颜色轮流分给 10 个图示
+ */
+const CUSTOM_CATEGORY_ICON_PRESETS = {
+  Luggage: {
+    cls: 'cat-custom-teal',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 7V5C9 4 9.7 3.5 10.5 3.5H13.5C14.3 3.5 15 4 15 5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 12H20" stroke="currentColor" stroke-width="1.6"/></svg>'
+  },
+  Camera: {
+    cls: 'cat-custom-green',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5C4 7.4 4.9 6.5 6 6.5H8L9 4.5H15L16 6.5H18C19.1 6.5 20 7.4 20 8.5V17C20 18.1 19.1 19 18 19H6C4.9 19 4 18.1 4 17V8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.3" stroke="currentColor" stroke-width="1.6"/></svg>'
+  },
+  Gift: {
+    cls: 'cat-custom-orange',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M4 10H20V7.5C20 6.7 19.3 6 18.5 6H5.5C4.7 6 4 6.7 4 7.5V10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 6V20" stroke="currentColor" stroke-width="1.6"/><path d="M12 6C12 6 9 6 9 3.8C9 2.8 9.8 2 10.7 2C11.9 2 12 4 12 6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 6C12 6 15 6 15 3.8C15 2.8 14.2 2 13.3 2C12.1 2 12 4 12 6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>'
+  },
+  Medical: {
+    cls: 'cat-custom-amber',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+  },
+  Pet: {
+    cls: 'cat-custom-purple',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="15" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="8" r="1.8" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="6" r="1.8" stroke="currentColor" stroke-width="1.5"/><circle cx="17" cy="8" r="1.8" stroke="currentColor" stroke-width="1.5"/></svg>'
+  },
+  Music: {
+    cls: 'cat-custom-teal',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="17" r="2.5" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="15" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 17V5.5L19.5 3.5V15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  },
+  Drink: {
+    cls: 'cat-custom-green',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M6 8H16V16C16 18.2 14.2 20 12 20H10C7.8 20 6 18.2 6 16V8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 10H17.5C18.9 10 20 11.1 20 12.5C20 13.9 18.9 15 17.5 15H16" stroke="currentColor" stroke-width="1.6"/><path d="M9 5C9 4 10 4 10 3M13 5C13 4 14 4 14 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'
+  },
+  Beach: {
+    cls: 'cat-custom-orange',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 3 3.5 7 3.5 11H20.5C20.5 7 17 3 12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 3V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 21C12 21 9 21 8 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+  },
+  Book: {
+    cls: 'cat-custom-amber',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H11V19H5.5C4.7 19 4 18.3 4 17.5V5.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 5.5C20 4.7 19.3 4 18.5 4H13V19H18.5C19.3 19 20 18.3 20 17.5V5.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+  },
+  Star: {
+    cls: 'cat-custom-purple',
+    svg: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5L14.5 9.2L20.5 9.9L16 14L17.3 20L12 17L6.7 20L8 14L3.5 9.9L9.5 9.2L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>'
+  }
+};
+
+
+/**
  * 依分类取得图示 meta——系统内置分类直接查表；自定义分类去 appState.categories
- * 找有没有存 icon（新增分类时使用者可能挑了一个既有图示，见任务 6-3(c)），
- * 有就沿用那组既有的 SVG；都没有就退回「分类名首字」的色块兜底，取代之前
- * 「找不到就一律用『其他』的三个点图示」——三个点是「其他」这个特定分类
- * 专属的意象，挪去代表「随便一个没设图示的自定义分类」语意上并不合适
+ * 找有没有存 icon（新增分类时使用者可能挑了一个既有图示，见任务 6-3(c)）。
+ * 自定义分类选的图示来自 CUSTOM_CATEGORY_ICON_PRESETS 这组独立的预设（不是
+ * CATEGORY_ICON_META 那 6 个内置分类图示，见 CUSTOM_CATEGORY_ICON_PRESETS
+ * 的说明）——这里两组都查一次，是为了兼容「阶段 9 修正之前」就已经选了内置
+ * 分类图示的既有自定义分类，不会因为改版而突然找不到图示；都没有就退回
+ * 「分类名首字」的色块兜底，取代最早「找不到就一律用『其他』的三个点图示」
+ * 的做法——三个点是「其他」这个特定分类专属的意象，挪去代表「随便一个没设
+ * 图示的自定义分类」语意上并不合适
  * @param {string} category 分类原始值
  * @return {{cls: string, svg: string}}
  */
@@ -171,8 +228,13 @@ function getCategoryIconMeta(category) {
   }
 
   const customCategory = (appState.categories || []).find((item) => item.name === category);
-  if (customCategory && customCategory.icon && CATEGORY_ICON_META[customCategory.icon]) {
-    return CATEGORY_ICON_META[customCategory.icon];
+  if (customCategory && customCategory.icon) {
+    if (CUSTOM_CATEGORY_ICON_PRESETS[customCategory.icon]) {
+      return CUSTOM_CATEGORY_ICON_PRESETS[customCategory.icon];
+    }
+    if (CATEGORY_ICON_META[customCategory.icon]) {
+      return CATEGORY_ICON_META[customCategory.icon];
+    }
   }
 
   const initial = (category || '').trim().charAt(0).toUpperCase() || '?';
@@ -674,6 +736,16 @@ const STRINGS = {
     'addCategoryModal.nameLabel': '分类名称',
     'addCategoryModal.nameHint': '两种语言下都会直接显示你输入的名称，不会另外翻译。',
     'addCategoryModal.iconLabel': '图示（可选）',
+    'categoryIcon.Luggage': '行李',
+    'categoryIcon.Camera': '相机',
+    'categoryIcon.Gift': '礼物',
+    'categoryIcon.Medical': '医疗',
+    'categoryIcon.Pet': '宠物',
+    'categoryIcon.Music': '音乐',
+    'categoryIcon.Drink': '饮品',
+    'categoryIcon.Beach': '海滩',
+    'categoryIcon.Book': '书籍',
+    'categoryIcon.Star': '星星',
     'addCategoryModal.save': '储存',
     'confirm.deleteCategory': '删除分类「{name}」？若已有消费纪录将无法删除，请改用隐藏。',
     'toast.pleaseEnterCategoryName': '请输入分类名称',
@@ -1335,6 +1407,16 @@ const STRINGS = {
     'addCategoryModal.nameLabel': 'Category Name',
     'addCategoryModal.nameHint': 'Shown as-is in both languages — it will not be translated.',
     'addCategoryModal.iconLabel': 'Icon (optional)',
+    'categoryIcon.Luggage': 'Luggage',
+    'categoryIcon.Camera': 'Camera',
+    'categoryIcon.Gift': 'Gift',
+    'categoryIcon.Medical': 'Medical',
+    'categoryIcon.Pet': 'Pet',
+    'categoryIcon.Music': 'Music',
+    'categoryIcon.Drink': 'Drink',
+    'categoryIcon.Beach': 'Beach',
+    'categoryIcon.Book': 'Book',
+    'categoryIcon.Star': 'Star',
     'addCategoryModal.save': 'Save',
     'confirm.deleteCategory': 'Delete category "{name}"? Blocked if it already has expenses — hide it instead.',
     'toast.pleaseEnterCategoryName': 'Enter a category name',
@@ -4845,6 +4927,7 @@ function renderEverything() {
   renderCategorySelectOptions();
   renderCategoryFilterChips();
   renderCategoryManageList();
+  renderCategoryManagePreview_();
   renderCurrencySettings();
   renderDangerZoneButton();
 
@@ -5644,8 +5727,20 @@ function initSecondaryPageBackButtons_() {
    上面一层，下层会自动恢复成可视/可互动状态，达到回退动画的效果。
    ------------------------------------------------------------ */
 
-const MODAL_BASE_Z_INDEX = 500;
-const MODAL_Z_INDEX_STEP = 20;
+// 任务 3.5-3 统一 z-index 尺度：这两个常数原本是 500／20，跟 style.css 的
+// --z-modal(50) 完全是两套不相干的数字。Modal 是用 inline style 动态写
+// z-index（优先权高过 CSS class），所以真正决定「Modal 到底叠多高」的
+// 其实是这里，不是 CSS 那个 50——但 Toast（--z-toast:80）靠的就是「一定要
+// 盖过 Modal 叠到很深的极端情况」，两套算式不同调的话，其中一边随便调一下
+// 数字就可能让 Toast 被压到 Modal 底下看不见。现在改成落在 --z-modal(50)
+// 到 --z-toast(80) 这个区间内爬升：BASE 直接对齐 --z-modal 的值，STEP=5
+// 让每往下钻一层多垫 5，backdrop 比同一层的 Modal 本身低 3。这个专案裡
+// 最深只钻过 2 层（例如「账单统计」→「分类消费清单」，或 tripPickerModal→
+// renameTripModal），照这个算法最深第 6 层才会真的碰到 --z-toast 的上限，
+// 留了很充足的余裕；如果之後真的做出需要叠更多层的功能，记得同步检查
+// 这里跟 --z-toast 还留不留得住这个「Modal 永远压不过 Toast」的关系
+const MODAL_BASE_Z_INDEX = 50;
+const MODAL_Z_INDEX_STEP = 5;
 
 /**
  * 开启一个 Modal，推入堆叠最上层
@@ -5679,7 +5774,7 @@ function openModal(modalId) {
   modal.classList.add('is-open');
 
   const backdrop = document.getElementById('modalBackdrop');
-  backdrop.style.zIndex = String(MODAL_BASE_Z_INDEX + depth * MODAL_Z_INDEX_STEP - 10);
+  backdrop.style.zIndex = String(MODAL_BASE_Z_INDEX + depth * MODAL_Z_INDEX_STEP - 3);
   backdrop.classList.add('is-visible');
 
   lockBodyScroll();
@@ -5729,7 +5824,7 @@ function closeTopModalLayer_(shouldPopHistory) {
     // 还有更下面一层 Modal，背景遮罩退回贴在新的最上层正下方，呈现回退景深
     const newTopId = modalStack[modalStack.length - 1];
     const newDepth = modalStack.length;
-    document.getElementById('modalBackdrop').style.zIndex = String(MODAL_BASE_Z_INDEX + newDepth * MODAL_Z_INDEX_STEP - 10);
+    document.getElementById('modalBackdrop').style.zIndex = String(MODAL_BASE_Z_INDEX + newDepth * MODAL_Z_INDEX_STEP - 3);
     document.getElementById(newTopId).classList.remove('modal-dimmed');
   }
 
@@ -7017,6 +7112,7 @@ async function refreshCategories_() {
   renderCategoryFilterChips();
   renderCategorySelectOptions();
   renderCategoryManageList();
+  renderCategoryManagePreview_();
 }
 
 /**
@@ -10356,11 +10452,33 @@ function renderCategorySelectOptions() {
 }
 
 /**
+ * 渲染设置页「分类管理」面板的并列预览——不是完整可编辑清单（那份在
+ * categoryManageModal 里，见 renderCategoryManageList()），这裡只是让使用者
+ * 不用点开 Modal 就能一眼看到「目前有哪些分类」，用跟账目页筛选 chip 一样的
+ * 小胶囊并排显示，不占版面高度。隐藏的自定义分类不出现在这裡——预览要反映
+ * 的是「记账表单实际选得到的分类」，跟 renderCategorySelectOptions() 的
+ * 过滤逻辑一致
+ */
+function renderCategoryManagePreview_() {
+  const container = document.getElementById('categoryManagePreview');
+  if (!container) return;
+
+  container.innerHTML = appState.categories
+    .filter((category) => !category.isHidden)
+    .map((category) => {
+      const dot = category.tripId ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '';
+      return `<span class="chip category-preview-chip">${dot}${escapeHtml(translateCategory(category.name))}</span>`;
+    })
+    .join('');
+}
+
+/**
  * 渲染设置页「分类管理」面板的分类清单——系统内置分类只显示、不给任何操作
  * 按钮（RLS 本来就不允许一般使用者改内置分类，给了按钮点了也只会出错）；
  * 自定义分类带「改名／隐藏或取消隐藏／删除」三个动作。风格沿用设置页其他
  * 面板既有的 .settings-row + .btn-ghost.btn-sm 文字按钮，不新造一套列表
- * 元件或图示按钮的视觉语言
+ * 元件或图示按钮的视觉语言。这份清单现在放在 categoryManageModal 裡，
+ * 点设置页那行的「更改」才看得到，不是直接攤开在设置页上
  */
 function renderCategoryManageList() {
   const container = document.getElementById('categoryManageList');
@@ -10431,21 +10549,22 @@ function openCategoryFormModal_(category) {
 }
 
 /**
- * 渲染新增/编辑分类 Modal 里的图示选择格——沿用 getCategoryIconMeta() 既有的
- * 6 组预设图示（见任务 6-3(c)：不重新设计一套自定义分类专属的图示），点选
- * 後存的是 key（例如 'Transport'），不是重新画一次 SVG；不选任何一个也能
- * 储存，届时显示会自动退回分类名首字的色块兜底
+ * 渲染新增/编辑分类 Modal 里的图示选择格——用 CUSTOM_CATEGORY_ICON_PRESETS
+ * 这组自定义分类专属的预设图示（阶段 9 後修正：原本沿用系统内置分类的
+ * 6 组图示，会造成自定义分类跟内置分类长得一模一样，见 CUSTOM_CATEGORY_ICON_PRESETS
+ * 的说明），点选後存的是 key（例如 'Camera'），不是重新画一次 SVG；不选
+ * 任何一个也能储存，届时显示会自动退回分类名首字的色块兜底
  * @param {string|null} selectedIcon
  */
 function renderCategoryIconPicker_(selectedIcon) {
   const container = document.getElementById('categoryIconPicker');
   if (!container) return;
 
-  container.innerHTML = Object.keys(CATEGORY_ICON_META).map((key) => {
-    const meta = CATEGORY_ICON_META[key];
+  container.innerHTML = Object.keys(CUSTOM_CATEGORY_ICON_PRESETS).map((key) => {
+    const meta = CUSTOM_CATEGORY_ICON_PRESETS[key];
     const isActive = key === selectedIcon;
     return `
-      <button type="button" class="category-icon-option activity-icon ${meta.cls}${isActive ? ' is-active' : ''}" data-icon-key="${escapeHtml(key)}" aria-label="${escapeHtml(translateCategory(key))}">
+      <button type="button" class="category-icon-option activity-icon ${meta.cls}${isActive ? ' is-active' : ''}" data-icon-key="${escapeHtml(key)}" aria-label="${escapeHtml(t('categoryIcon.' + key))}">
         ${meta.svg}
       </button>
     `;
