@@ -78,15 +78,6 @@ function getPageAction(pageId) {
   return { label: entry.labelKey ? t(entry.labelKey) : '', modal: entry.modal };
 }
 
-const CATEGORY_LABEL_MAP = {
-  Food: '餐饮',
-  Transport: '交通',
-  Hotel: '住宿',
-  Ticket: '票券',
-  Shopping: '购物',
-  Others: '其他'
-};
-
 const STORAGE_KEY_THEME = 'splitapp-theme';
 const STORAGE_KEY_LANG = 'splitapp-lang';
 
@@ -166,12 +157,32 @@ const CATEGORY_ICON_META = {
 };
 
 /**
- * 依分类取得图示 meta（找不到就用「其他」当预设，永远有得显示）
- * @param {string} category 分类代号
+ * 依分类取得图示 meta——系统内置分类直接查表；自定义分类去 appState.categories
+ * 找有没有存 icon（新增分类时使用者可能挑了一个既有图示，见任务 6-3(c)），
+ * 有就沿用那组既有的 SVG；都没有就退回「分类名首字」的色块兜底，取代之前
+ * 「找不到就一律用『其他』的三个点图示」——三个点是「其他」这个特定分类
+ * 专属的意象，挪去代表「随便一个没设图示的自定义分类」语意上并不合适
+ * @param {string} category 分类原始值
  * @return {{cls: string, svg: string}}
  */
 function getCategoryIconMeta(category) {
-  return CATEGORY_ICON_META[category] || CATEGORY_ICON_META.Others;
+  if (CATEGORY_ICON_META[category]) {
+    return CATEGORY_ICON_META[category];
+  }
+
+  const customCategory = (appState.categories || []).find((item) => item.name === category);
+  if (customCategory && customCategory.icon && CATEGORY_ICON_META[customCategory.icon]) {
+    return CATEGORY_ICON_META[customCategory.icon];
+  }
+
+  const initial = (category || '').trim().charAt(0).toUpperCase() || '?';
+  return {
+    // cls 只是给 CSS 一个挂载点调整字体大小，颜色本身沿用 .activity-icon
+    // 的预设色（accent-soft 底、accent 字），刚好就是「色块」效果，不需要
+    // 再另外定义一组背景色
+    cls: 'cat-custom-fallback',
+    svg: `<span class="cat-fallback-letter">${escapeHtml(initial)}</span>`
+  };
 }
 
 /**
@@ -548,6 +559,9 @@ const STRINGS = {
     'memberDetail.expenseSectionLabel': '消费明细（{count} 笔）',
     'memberDetail.repaymentSectionLabel': '还款纪录（{count} 笔）',
     'memberDetail.repaymentTotal': '还款合计',
+    'memberDetail.personalExpenseSectionLabel': '私人消费（{count} 笔）',
+    'memberDetail.personalExpenseHint': '只有你自己看得到，不出现在账目页，也不算进任何人的分账/结算。',
+    'memberDetail.personalExpenseTotal': '私人消费合计',
     'memberDetail.empty.title': '还没有相关纪录',
     'memberDetail.empty.desc': '新增消费时把他加进参与人，就会出现在这里。',
     'badge.paid': '付款',
@@ -645,6 +659,32 @@ const STRINGS = {
     'currency.missingWarning': '部分外币尚未设定汇率，目前暂以 1:1 计算，建议尽快补全。',
     'currency.save': '储存',
     'currency.allBaseCurrency': '所有消费都使用基准货币，不需要设定汇率。',
+
+    // 分类管理
+    'settings.categoriesPanel': '分类管理',
+    'category.manage.desc': '除了预设的分类，你也可以为这趟旅程新增专属的分类。',
+    'category.manage.addBtn': '＋ 新增分类',
+    'category.manage.renameBtn': '改名',
+    'category.manage.hideBtn': '隐藏',
+    'category.manage.unhideBtn': '取消隐藏',
+    'category.manage.deleteBtn': '删除',
+    'category.manage.hiddenBadge': '已隐藏',
+    'addCategoryModal.title': '新增分类',
+    'addCategoryModal.editTitle': '编辑分类',
+    'addCategoryModal.nameLabel': '分类名称',
+    'addCategoryModal.nameHint': '两种语言下都会直接显示你输入的名称，不会另外翻译。',
+    'addCategoryModal.iconLabel': '图示（可选）',
+    'addCategoryModal.save': '储存',
+    'confirm.deleteCategory': '删除分类「{name}」？若已有消费纪录将无法删除，请改用隐藏。',
+    'toast.pleaseEnterCategoryName': '请输入分类名称',
+    'toast.categoryNameDuplicate': '这个名称已经在用了，换一个名字试试',
+    'toast.categoryAdded': '已新增分类',
+    'toast.categoryRenamed': '已更新分类',
+    'toast.categoryHidden': '已隐藏该分类',
+    'toast.categoryUnhidden': '已取消隐藏',
+    'toast.categoryDeleted': '已删除分类',
+    'toast.categoryInUseCannotDelete': '这个分类已经有消费纪录在用，无法删除，请改用隐藏。',
+
     'settings.deleteTrip': '删除目前旅程',
     'settings.leaveTrip': '退出目前旅程',
     'settings.aboutText': 'DivvyDuck 搭伙鸭 · 聚会分账，鸭力全无！',
@@ -785,6 +825,9 @@ const STRINGS = {
     'report.personalBalanceSummary': '个人结算摘要',
     'personalReport.allSettled': '已全部结清，无需转账',
     'personalReport.expenseSection': '消费明细',
+    'personalReport.personalExpenseSection': '私人消费',
+    'personalReport.personalExpenseDisclaimer': '以下为私人消费，与本报告的群组结算无关，不计入应收/应付金额。',
+    'personalReport.includePersonalCheckbox': '包含我的私人消费（作为独立章节附在最后，不参与结算）',
     'personalReport.summaryPaid': '已付金额',
     'personalReport.summaryOwnExpense': '个人消费',
     'personalReport.summaryReceived': '已收金额',
@@ -941,8 +984,10 @@ const STRINGS = {
 
     'expense.sourceLabel': '资金来源',
     'expense.sourceNormal': '正常记账',
+    'expense.sourcePersonal': '私人消费',
     'expense.sourceDeduct': '金库支出',
     'expense.sourceNormalHint': '照一般方式记账，跟同行的人依分账方式结算。',
+    'expense.sourcePersonalHint': '只有你自己看得到，不出现在账目页，也不参与任何分账/结算。',
     'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆账。',
 
     'pool.expense.deductFailed': '金库支出失败',
@@ -1181,6 +1226,9 @@ const STRINGS = {
     'memberDetail.expenseSectionLabel': 'Expenses ({count})',
     'memberDetail.repaymentSectionLabel': 'Repayments ({count})',
     'memberDetail.repaymentTotal': 'Repayment Total',
+    'memberDetail.personalExpenseSectionLabel': 'Private Expenses ({count})',
+    'memberDetail.personalExpenseHint': "Only you can see this. It won't appear on the Expenses page or count toward anyone's split/settlement.",
+    'memberDetail.personalExpenseTotal': 'Private Expense Total',
     'memberDetail.empty.title': 'No records yet',
     'memberDetail.empty.desc': 'Add them to an expense to see it here.',
     'badge.paid': 'Paid',
@@ -1272,6 +1320,32 @@ const STRINGS = {
     'currency.missingWarning': 'Some exchange rates are missing and default to 1:1. Complete them for accuracy.',
     'currency.save': 'Save',
     'currency.allBaseCurrency': 'All expenses use the base currency — no exchange rate needed.',
+
+    // Category management
+    'settings.categoriesPanel': 'Categories',
+    'category.manage.desc': 'Besides the built-in categories, you can add your own for this trip.',
+    'category.manage.addBtn': '+ Add Category',
+    'category.manage.renameBtn': 'Rename',
+    'category.manage.hideBtn': 'Hide',
+    'category.manage.unhideBtn': 'Unhide',
+    'category.manage.deleteBtn': 'Delete',
+    'category.manage.hiddenBadge': 'Hidden',
+    'addCategoryModal.title': 'Add Category',
+    'addCategoryModal.editTitle': 'Edit Category',
+    'addCategoryModal.nameLabel': 'Category Name',
+    'addCategoryModal.nameHint': 'Shown as-is in both languages — it will not be translated.',
+    'addCategoryModal.iconLabel': 'Icon (optional)',
+    'addCategoryModal.save': 'Save',
+    'confirm.deleteCategory': 'Delete category "{name}"? Blocked if it already has expenses — hide it instead.',
+    'toast.pleaseEnterCategoryName': 'Enter a category name',
+    'toast.categoryNameDuplicate': 'That name is already in use — try a different one',
+    'toast.categoryAdded': 'Category added',
+    'toast.categoryRenamed': 'Category updated',
+    'toast.categoryHidden': 'Category hidden',
+    'toast.categoryUnhidden': 'Category unhidden',
+    'toast.categoryDeleted': 'Category deleted',
+    'toast.categoryInUseCannotDelete': 'This category already has expenses on it and cannot be deleted — hide it instead.',
+
     'settings.deleteTrip': 'Delete This Trip',
     'settings.leaveTrip': 'Leave This Trip',
     'settings.aboutText': 'DivvyDuck · Split the bill, lose the stress.',
@@ -1405,6 +1479,9 @@ const STRINGS = {
     'report.personalBalanceSummary': 'Personal Balance Summary',
     'personalReport.allSettled': 'All settled — nothing to transfer',
     'personalReport.expenseSection': 'Expense Detail',
+    'personalReport.personalExpenseSection': 'Private Expenses',
+    'personalReport.personalExpenseDisclaimer': 'The following are private expenses, unrelated to this report\'s group settlement, and are not counted toward any amount owed/receivable.',
+    'personalReport.includePersonalCheckbox': 'Include my private expenses (appended as a separate section, excluded from settlement)',
     'personalReport.summaryPaid': 'Amount Paid',
     'personalReport.summaryOwnExpense': 'Personal Spend',
     'personalReport.summaryReceived': 'Amount Received',
@@ -1559,8 +1636,10 @@ const STRINGS = {
 
     'expense.sourceLabel': 'Funding source',
     'expense.sourceNormal': 'Normal expense',
+    'expense.sourcePersonal': 'Private expense',
     'expense.sourceDeduct': 'Pool expense',
     'expense.sourceNormalHint': 'Recorded as usual and split with the group.',
+    'expense.sourcePersonalHint': "Only you can see this. It won't appear on the Expenses page or count toward any split/settlement.",
     'expense.sourceDeductHint': 'Paid straight from the Divvy Duck Pool — no split needed.',
 
     'pool.expense.deductFailed': 'Pool expense failed',
@@ -1726,7 +1805,11 @@ const appState = {
   trips: [],
   members: [],
   categories: [],
-  expenses: [],
+  expenses: [], // 只会放 scope='group' 的一般消费——'personal' 的在读取层就分流去
+  // appState.personalExpenses 了（见 splitExpensesByScope_()），不会出现在这裡，
+  // 下游结算/账目页/PDF 报告等所有既有代码天然不可能碰到、不可能污染结算
+  personalExpenses: [], // 只有「查看者自己」建立的个人消费会在这裡——RLS 已经保证
+  // 撈回来的资料本来就只有自己的，这裡不需要再额外按 created_by 过滤一次
   summary: { balances: [], settlements: [] },
   repayments: [],
   categorySummary: [],
@@ -1863,6 +1946,7 @@ function startAppAfterAuth() {
   initSmartMemory();
   initExpenseDraftAutosave();
   initSettingsPage();
+  initCategoryManage();
   initCurrencySettings();
   initExpenseFilters();
   initTripSwitcher();
@@ -2632,6 +2716,7 @@ function queueOfflineExpense(payload) {
     Receipt: payload.receipt || '',
     Remark: payload.remark || '',
     Deleted: false,
+    Scope: payload.scope || 'group',
     CanManage: false, // 还没真正存进後端、连正式 ID 都没有，先不给编辑/删除
     ExchangeRateSnapshot: 0,
     _pendingSync: true
@@ -2667,17 +2752,23 @@ async function flushOfflineQueue() {
   const stillPending = [];
 
   for (const item of queue) {
+    // 用「暂存当下记的 scope」决定这笔待补送的消费该找哪个阵列——跟
+    // queueOfflineExpense() 塞乐观资料时用的是同一个判断依据，两边要一致，
+    // 不然补送成功後会更新到「暂存时明明不在」的那个阵列，留下一个永远
+    // 清不掉的幽灵 LOCAL- 暂存项
+    const targetArray = item.payload.scope === 'personal' ? appState.personalExpenses : appState.expenses;
+
     try {
       const row = translateExpensePayloadForWrite_(item.payload);
       const { data, error } = await supabaseClient.from('expenses').insert(row).select().single();
       if (error) throw error;
       const savedExpense = expenseRowToOldShape_(data);
 
-      const index = appState.expenses.findIndex((expense) => expense.ID === item.localId);
+      const index = targetArray.findIndex((expense) => expense.ID === item.localId);
       if (index !== -1) {
-        appState.expenses.splice(index, 1, savedExpense);
+        targetArray.splice(index, 1, savedExpense);
       } else if (currentTripId && String(item.payload.tripId) === String(currentTripId)) {
-        appState.expenses.push(savedExpense);
+        targetArray.push(savedExpense);
       }
 
       syncedCount += 1;
@@ -2686,9 +2777,9 @@ async function flushOfflineQueue() {
         stillPending.push(item); // 还是没网路，留着下次再试
       } else {
         droppedCount += 1;
-        const index = appState.expenses.findIndex((expense) => expense.ID === item.localId);
+        const index = targetArray.findIndex((expense) => expense.ID === item.localId);
         if (index !== -1) {
-          appState.expenses.splice(index, 1);
+          targetArray.splice(index, 1);
         }
       }
     }
@@ -3701,13 +3792,44 @@ async function syncMembersState_() {
 }
 
 /**
- * 取得全域共用的分类清单
- * @return {Array<string>}
+ * 取得目前这趟旅程看得到的分类清单——系统内置（trip_id is null）+ 这趟旅程
+ * 自己加的自定义分类。RLS 已经保证「只会撈到系统内置 + 自己有加入的行程」，
+ * 但一个人可能同时是好几趟旅程的成员，这里还要再用 trip_id 明确限定在
+ * 「目前这趟」，不然会把其他趟旅程的自定义分类也混进来。
+ *
+ * 系统内置分类固定排在最前面（维持 CATEGORY_ICON_META 里原本的顺序），
+ * 自定义分类接在後面按建立时间排序——理由见 migration 里 created_at
+ * 欄位的注释，这里不做拖拽排序
+ * @return {Array<{id: string, name: string, tripId: string|null, isHidden: boolean, icon: string|null}>}
  */
 async function fetchCategories_() {
-  const { data, error } = await supabaseClient.from('categories').select('name').order('name');
+  const { data, error } = await supabaseClient
+    .from('categories')
+    .select('id, name, trip_id, created_by, icon, is_hidden, created_at')
+    .or(`trip_id.is.null,trip_id.eq.${currentTripId}`);
   if (error) throw error;
-  return (data || []).map((row) => row.name);
+
+  const rows = (data || []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    tripId: row.trip_id,
+    createdBy: row.created_by,
+    icon: row.icon,
+    isHidden: row.is_hidden,
+    createdAt: row.created_at
+  }));
+
+  const builtins = rows.filter((row) => !row.tripId);
+  const custom = rows
+    .filter((row) => row.tripId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  // 系统内置分类固定顺序沿用 CATEGORY_ICON_META 的 key 顺序，不是資料库
+  // 撈回来的顺序（撈回来的顺序不保证跟这里一致）
+  const builtinOrder = Object.keys(CATEGORY_ICON_META);
+  builtins.sort((a, b) => builtinOrder.indexOf(a.name) - builtinOrder.indexOf(b.name));
+
+  return [...builtins, ...custom];
 }
 
 
@@ -4120,6 +4242,7 @@ function expenseRowToOldShape_(row) {
     Receipt: row.receipt_url || '',
     Remark: row.remark || '',
     Deleted: !!row.deleted,
+    Scope: row.scope || 'group',
     CanManage: row.split_type !== 'pool' && (!row.created_by || (session && row.created_by === session.userId) || appState.canDeleteTrip),
     ExchangeRateSnapshot: Number(row.exchange_rate_snapshot) || 0
   };
@@ -4147,12 +4270,39 @@ function translateExpensePayloadForWrite_(payload) {
     custom_split: mapCustomSplitNamesToIds_(payload.customSplit, nameToId),
     receipt_url: payload.receipt || '',
     remark: payload.remark || '',
+    scope: payload.scope || 'group', // 任务 7-3 才会真的做出让使用者选 'personal' 的 UI，
+    // 这里先接好，现有表单没带这个欄位时预设 'group'，行为跟改动前完全一样
     created_by: session ? session.userId : null
   };
 }
 
 /**
- * 撈取这趟旅程所有未删除的消费纪录（依日期新到旧排序）
+ * 把一批消费依 scope 分成两组——'group' 进一般结算/账目页会用的那个阵列，
+ * 'personal' 进个人专属的那个阵列。这是整个「个人消费」设计的核心：只在
+ * 「资料从後端进来」这个单一入口做一次分流，appState.expenses 里根本不会
+ * 出现 personal 的资料，下游几千行渲染/结算计算代码天然不可能碰到、更不
+ * 可能污染结算，不需要在每个消费的地方加 if (scope==='group') 这种散落
+ * 各处、容易漏掉的过滤条件（见任务 7-2 的核心设计决策）
+ * @param {Array<Object>} rows expenseRowToOldShape_() 转换後的消费物件阵列
+ * @return {{group: Array<Object>, personal: Array<Object>}}
+ */
+function splitExpensesByScope_(rows) {
+  const group = [];
+  const personal = [];
+  (rows || []).forEach((expense) => {
+    if (expense.Scope === 'personal') {
+      personal.push(expense);
+    } else {
+      group.push(expense);
+    }
+  });
+  return { group, personal };
+}
+
+/**
+ * 撈取这趟旅程所有未删除的消费纪录（依日期新到旧排序）——回传的是「一般 +
+ * 个人」混在一起的原始清单，呼叫端要自己用 splitExpensesByScope_() 分流，
+ * 不要直接整批塞进 appState.expenses（见任务 7-2 的核心设计决策）
  */
 async function fetchExpenses_() {
   const { data, error } = await supabaseClient
@@ -4482,7 +4632,7 @@ async function loadTripData() {
     // 换算回名字，所以不能跟其他撈取平行执行
     await syncMembersState_();
 
-    const [categories, expenses, repayments, tripCurrency, pool] = await Promise.all([
+    const [categories, expensesRaw, repayments, tripCurrency, pool] = await Promise.all([
       fetchCategories_(),
       fetchExpenses_(),
       fetchRepayments_(),
@@ -4490,8 +4640,11 @@ async function loadTripData() {
       fetchPoolStatus_()
     ]);
 
+    const { group: expenses, personal: personalExpenses } = splitExpensesByScope_(expensesRaw);
+
     appState.categories = categories;
     appState.expenses = expenses;
+    appState.personalExpenses = personalExpenses;
     appState.repayments = repayments;
     appState.tripCurrency = tripCurrency;
     appState.pool = pool;
@@ -4506,6 +4659,7 @@ async function loadTripData() {
       viewerName: appState.viewerName,
       unclaimedMembers: appState.unclaimedMembers,
       expenses: appState.expenses,
+      personalExpenses: appState.personalExpenses,
       repayments: appState.repayments,
       tripCurrency: appState.tripCurrency
     });
@@ -4524,6 +4678,7 @@ async function loadTripData() {
     appState.viewerName = cached.data.viewerName || '';
     appState.unclaimedMembers = cached.data.unclaimedMembers || [];
     appState.expenses = cached.data.expenses || [];
+    appState.personalExpenses = cached.data.personalExpenses || [];
     appState.repayments = cached.data.repayments || [];
     appState.pool = null; // 金库状态没有快取（离线时无法判断余额是否安全），先清空避免残留上一趟旅程的资料
     appState.tripCurrency = cached.data.tripCurrency || normalizeCurrencyInfo(null);
@@ -4559,7 +4714,9 @@ function normalizeCurrencyInfo(currencyInfo) {
  * 只重新载入消费与结算总览（删除消费、或任何「手上没有最新那笔消费资料」的情况使用）
  */
 async function refreshExpensesAndSummary() {
-  appState.expenses = await fetchExpenses_();
+  const { group, personal } = splitExpensesByScope_(await fetchExpenses_());
+  appState.expenses = group;
+  appState.personalExpenses = personal;
   appState.summary = sortSummaryAlphabetically(computeSummaryClient_());
   appState.categorySummary = computeCategorySummaryClient_();
   // ⚠️ 过渡期：汇率还没搬到 Supabase（5.7 才会做），appState.tripCurrency 暂不重新撈取
@@ -4579,16 +4736,29 @@ async function refreshExpensesAndSummary() {
  * @param {Object} savedExpense addExpense／updateExpense 存回的完整消费纪录物件
  * @param {boolean} isNew 这次是新增（true）还是编辑既有消费（false）
  */
+/**
+ * 新增／编辑消费后的效能优化版刷新：addExpense／updateExpense 当下已经拿到了
+ * 那笔消费最新、完整的资料（含 CanManage），不需要再整批重新撈一次 fetchExpenses_。
+ * 总览／分类统计因为牵动其他笔消费的加总，用本地资料重新算一次即可，不用打网路请求。
+ *
+ * 依 savedExpense.Scope 决定放回哪个阵列——先把两个阵列裡「这个 ID」的旧资料
+ * 都清掉，再依最新的 scope 插回正确的那一个，新增／编辑共用同一套逻辑，
+ * 不用分开写两次；理论上一笔消费的 scope 不会中途改变（现有表单没有让你把
+ * 已经存在的一般消费切成个人消费，反之亦然），这样写只是顺手对「万一之後
+ * 真的开放切换 scope」多一层防呆，不会因为 scope 没变就漏更新
+ * @param {Object} savedExpense addExpense／updateExpense 存回的完整消费纪录物件
+ * @param {boolean} isNew 这次是新增（true）还是编辑既有消费（false）——目前只用来
+ *   决定要不要防御性地当作「找不到旧资料时也要塞进去」，实际的放置逻辑两种
+ *   情境是共用的
+ */
 async function refreshAfterExpenseSave(savedExpense, isNew) {
-  if (isNew) {
-    appState.expenses.push(savedExpense);
+  appState.expenses = appState.expenses.filter((item) => item.ID !== savedExpense.ID);
+  appState.personalExpenses = appState.personalExpenses.filter((item) => item.ID !== savedExpense.ID);
+
+  if (savedExpense.Scope === 'personal') {
+    appState.personalExpenses.push(savedExpense);
   } else {
-    const index = appState.expenses.findIndex((item) => item.ID === savedExpense.ID);
-    if (index !== -1) {
-      appState.expenses[index] = savedExpense;
-    } else {
-      appState.expenses.push(savedExpense); // 防御性处理，理论上编辑一定找得到既有那一笔
-    }
+    appState.expenses.push(savedExpense);
   }
 
   appState.summary = sortSummaryAlphabetically(computeSummaryClient_());
@@ -4600,6 +4770,7 @@ async function refreshAfterExpenseSave(savedExpense, isNew) {
   renderCategorySummary();
   renderCurrencySettings();
   renderMembersPage(); // 同行页面的「待清算」余额、「参与 X 笔消费」都要跟着更新
+  refreshMemberDetailPageIfOpen_(); // 私人消费在自己详情页里的那个分区（任务 7-4）也要跟着更新
 }
 
 /**
@@ -4626,11 +4797,13 @@ async function refreshMembers() {
   // 会影响「目前该显示的名字」的操作），这两份资料裡的名字字串就会跟「最新的
   // 成员名单」对不上——不重新撈一次的话，旧名字的钱会变成一个「查无此人」的
   // 幽灵条目，本人名下反而变成 0（这正是「消费记录突然变零」的真正原因）
-  const [expenses, repayments] = await Promise.all([
+  const [expensesRaw, repayments] = await Promise.all([
     fetchExpenses_(),
     fetchRepayments_()
   ]);
-  appState.expenses = expenses;
+  const { group, personal } = splitExpensesByScope_(expensesRaw);
+  appState.expenses = group;
+  appState.personalExpenses = personal;
   appState.repayments = repayments;
 
   // 成员名单变了（新增/删除/合并/改名），结算总览一定要跟着重算——不然新成员根本不会
@@ -4655,6 +4828,7 @@ function renderEverything() {
   renderRepaymentSelectOptions();
   renderCategorySelectOptions();
   renderCategoryFilterChips();
+  renderCategoryManageList();
   renderCurrencySettings();
   renderDangerZoneButton();
 
@@ -5557,7 +5731,7 @@ function initExpenseSourceControl() {
 /**
  * 切换记账 Modal 的资金来源模式，同步分段控制的选取状态、提示文案，
  * 以及付款人/分账方式/参与人这几个只有「正常记账」才需要的栏位显示与否
- * @param {string} source 'normal' | 'deduct'
+ * @param {string} source 'normal' | 'personal' | 'deduct'
  */
 function setExpenseSourceControl(source) {
   currentExpenseSource = source;
@@ -5569,6 +5743,7 @@ function setExpenseSourceControl(source) {
   const hintEl = document.getElementById('expenseSourceHint');
   const hintKeyMap = {
     normal: 'expense.sourceNormalHint',
+    personal: 'expense.sourcePersonalHint',
     deduct: 'expense.sourceDeductHint'
   };
   if (hintEl) {
@@ -5580,26 +5755,37 @@ function setExpenseSourceControl(source) {
   const participantsSection = document.getElementById('expenseParticipantsSection');
   const payerInput = document.getElementById('expensePayer');
 
-  // 金库支出：钱直接从金库出，不涉及任何一位成员「先垫付」，付款人栏位整个不需要
-  if (payerField) payerField.classList.toggle('is-hidden', source === 'deduct');
-  if (payerInput) payerInput.required = source !== 'deduct';
+  // 付款人栏位：金库支出（钱直接从金库出，没有人「先垫付」）、个人消费
+  // （付款人固定就是自己，不需要再选一次）这两种都不需要显示付款人栏位
+  const hidePayerField = source === 'deduct' || source === 'personal';
+  if (payerField) payerField.classList.toggle('is-hidden', hidePayerField);
+  if (payerInput) payerInput.required = source === 'normal';
 
-  // 分账方式／参与人：金库支出不需要拆账——钱是从大家已经打进去的预付款直接扣，
-  // 不会在成员之间产生新的欠款
+  // 个人消费的付款人固定带出「自己」，不给选——这笔钱本来就只跟自己有关，
+  // 连「代付」这个概念都不适用（代付是在同行人之间发生的事）
+  if (source === 'personal' && payerInput) {
+    const viewer = getViewerName();
+    if (viewer) {
+      payerInput.value = viewer;
+    }
+  }
+
+  // 分账方式／参与人：只有「正常记账」才需要——金库支出的钱从大家已经打进去的
+  // 预付款直接扣，个人消费根本不跟任何人分账，两者都不会在成员之间产生欠款
   const hideSplitAndParticipants = source !== 'normal';
   if (splitSection) splitSection.classList.toggle('is-hidden', hideSplitAndParticipants);
   if (participantsSection) participantsSection.classList.toggle('is-hidden', hideSplitAndParticipants);
 
-  // 货币：金库支出只能从「金库目前有登记过」的货币里选——旅行常常换好几种货币
-  // （机场先收马币、到当地再收人民币），所以这里改成动态列出 appState.pool.currencies，
-  // 不是全部支援货币都能选，也不锁死成单一货币；正常记账模式则照旧用完整货币清单
+  // 货币：只有「金库支出」限定在金库目前有登记过的货币里选（旅行常常换好几种货币，
+  // 金库余额是按货币分开记的，扣款只能从有余额的那个货币扣）；正常记账／个人消费
+  // 两者都用完整的货币清单，跟原本「正常记账」的行为一致
   const currencySelect = document.getElementById('expenseCurrency');
   if (currencySelect) {
     currencySelect.disabled = false;
-    if (source !== 'normal' && appState.pool && appState.pool.currencies && appState.pool.currencies.length > 0) {
+    if (source === 'deduct' && appState.pool && appState.pool.currencies && appState.pool.currencies.length > 0) {
       const poolCurrencies = appState.pool.currencies.map((c) => c.currency);
       currencySelect.innerHTML = poolCurrencies.map((code) => `<option value="${code}">${code}</option>`).join('');
-    } else if (source === 'normal') {
+    } else if (source !== 'deduct') {
       renderCurrencySelectOptions('expenseCurrency', appState.tripCurrency.baseCurrency);
     }
   }
@@ -5899,13 +6085,19 @@ function resetExpenseForm() {
   updateCustomSplitTotal();
   clearReceiptPreview();
 
-  // 资金来源选择器：只有这趟旅程开了搭伙金库、而且目前还有余额可以扣，才有得选「金库支出」，
-  // 否则整组隐藏，行为回到合并这个功能之前一模一样的「正常记账」——余额是 0 的时候选了也扣不出来，
-  // 不如直接不给选，充值後 isTripSettled 会自动变回 false，下次打开表单就又看得到这个选项了
+  // 资金来源选择器：正常记账／个人消费两项永远都在——个人消费不需要靠金库才能用，
+  // 「金库支出」这个选项才是有条件的：只有这趟旅程开了搭伙金库、而且目前还有余额
+  // 可以扣，才有得选，否则只隐藏这一颗按钮（隐藏後 flex 布局会自动只分两栏），
+  // 不再是整组一起藏。余额是 0 的时候选了也扣不出来，不如直接不给选，充值後
+  // isTripSettled 会自动变回 false，下次打开表单就又看得到这个选项了
   const poolAvailable = !!(appState.pool && appState.pool.enabled && !appState.pool.isTripSettled);
   const poolSourceGroup = document.getElementById('poolSourceGroup');
   if (poolSourceGroup) {
-    poolSourceGroup.classList.toggle('is-hidden', !poolAvailable);
+    poolSourceGroup.classList.remove('is-hidden');
+  }
+  const deductSourceBtn = document.querySelector('#expenseSourceControl [data-expense-source="deduct"]');
+  if (deductSourceBtn) {
+    deductSourceBtn.classList.toggle('is-hidden', !poolAvailable);
   }
   setExpenseSourceControl('normal');
 
@@ -5923,7 +6115,8 @@ function resetExpenseForm() {
  * @param {string} expenseId 要编辑的消费 ID
  */
 function openExpenseFormForEdit(expenseId) {
-  const expense = appState.expenses.find((item) => item.ID === expenseId);
+  const expense = appState.expenses.find((item) => item.ID === expenseId)
+    || appState.personalExpenses.find((item) => item.ID === expenseId);
   if (!expense) {
     showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
     return;
@@ -5933,13 +6126,16 @@ function openExpenseFormForEdit(expenseId) {
   document.getElementById('addExpenseTitle').textContent = t('expenseModal.titleEdit');
   document.getElementById('expenseSubmitBtn').querySelector('.btn-label').textContent = t('expenseModal.saveEdit');
 
-  // 编辑一定是「正常记账」——金库支出／代垫归还从来不会写进 Expenses 表，不会有能编辑的入口，
-  // 选择器直接隐藏，避免使用者以为可以把一笔正常消费临时改成金库支出
+  // 编辑一定维持原本的资金来源类型，不给切换——金库支出从来不会有能编辑的入口
+  // （见 handleExpenseFormSubmitInner_ 一开始就把 'deduct' 分流去别的函式，
+  // 不会写出一笔「SplitType='pool' 但走这支函式编辑」的纪录）；正常记账／个人消费
+  // 这两种编辑时也不给互相切换，选择器直接隐藏，避免使用者以为可以把一笔正常消费
+  // 临时改成个人消费（反之亦然）——依 expense.Scope 决定要把栏位配置成哪一种模式
   const poolSourceGroup = document.getElementById('poolSourceGroup');
   if (poolSourceGroup) {
     poolSourceGroup.classList.add('is-hidden');
   }
-  setExpenseSourceControl('normal');
+  setExpenseSourceControl(expense.Scope === 'personal' ? 'personal' : 'normal');
 
   document.getElementById('expensePayer').value = expense.Payer;
   document.getElementById('expenseAmount').value = expense.Amount;
@@ -6018,7 +6214,11 @@ async function handleExpenseFormSubmitInner_() {
   const receipt = document.getElementById('expenseReceipt').value.trim();
   const remark = document.getElementById('expenseRemark').value.trim();
   const date = document.getElementById('expenseDate').value;
-  const participants = collectSelectedParticipants();
+  const isPersonal = currentExpenseSource === 'personal';
+  // 个人消费不跟任何人分账，付款人／参与人都固定是自己（付款人栏位在这个模式下
+  // 隐藏、由 setExpenseSourceControl() 自动带出「自己」），不需要使用者手动选，
+  // 也不用跑後面「至少选一个参与人」那些跟拆账有关的检查
+  const participants = isPersonal ? [payer] : collectSelectedParticipants();
 
   if (!payer) {
     showToast('error', t('toast.pleaseSelectPayer'), '');
@@ -6032,7 +6232,7 @@ async function handleExpenseFormSubmitInner_() {
     showToast('error', t('toast.amountMustBePositive'), '');
     return;
   }
-  if (participants.length < 1) {
+  if (!isPersonal && participants.length < 1) {
     showToast('error', t('toast.needAtLeastOneParticipant'), '');
     return;
   }
@@ -6042,6 +6242,9 @@ async function handleExpenseFormSubmitInner_() {
   }
 
   let customSplit = {};
+  // 个人消费模式下分账方式区块是隐藏的，currentSplitType 会停留在
+  // resetExpenseForm() 设的初始值 'equal'，不会走进下面这三个分支，
+  // 不需要额外用 isPersonal 挡一次
   if (currentSplitType === 'custom') {
     customSplit = collectCustomSplit();
     const sum = Object.values(customSplit).reduce((total, value) => total + value, 0);
@@ -6082,7 +6285,8 @@ async function handleExpenseFormSubmitInner_() {
       participants,
       customSplit,
       receipt,
-      remark
+      remark,
+      scope: isPersonal ? 'personal' : 'group'
     };
 
     const submitBtn = document.getElementById('expenseSubmitBtn');
@@ -6128,7 +6332,11 @@ async function handleExpenseFormSubmitInner_() {
           // 乐观地插进列表显示（标「待同步」徽章），等 initOfflineHandling() 侦测到
           // 恢复连线时由 flushOfflineQueue() 自动补送，不用使用者自己记得再送一次
           const optimisticExpense = queueOfflineExpense(payload);
-          appState.expenses.push(optimisticExpense);
+          if (optimisticExpense.Scope === 'personal') {
+            appState.personalExpenses.push(optimisticExpense);
+          } else {
+            appState.expenses.push(optimisticExpense);
+          }
 
           rememberLastSplitForPayer(payer, currentSplitType, participants);
           clearExpenseDraft();
@@ -6254,6 +6462,10 @@ function handleDeleteExpenseClick(expenseId, descriptionText) {
     if (error) throw error;
 
     appState.expenses = appState.expenses.filter((item) => item.ID !== expenseId);
+    // 这个操作入口现在有两处会触发：账目页的一般消费、同行页自己详情页里的
+    // 私人消费（见 bindPersonalExpenseRowActions_，任务 7-4）——两个阵列都
+    // 顺手一併过滤，一笔消费的 ID 只会存在其中一个，过滤另一个不会有副作用
+    appState.personalExpenses = appState.personalExpenses.filter((item) => item.ID !== expenseId);
     showToast('success', t('toast.expenseDeleted'), t('toast.expenseDeletedMsg'));
     closeActiveModal();
     appState.summary = sortSummaryAlphabetically(computeSummaryClient_());
@@ -6264,6 +6476,7 @@ function handleDeleteExpenseClick(expenseId, descriptionText) {
     renderCategorySummary();
     renderCurrencySettings();
     renderMembersPage();
+    refreshMemberDetailPageIfOpen_();
   });
 }
 
@@ -6660,6 +6873,145 @@ function handleDeleteMemberClick(name) {
 
     showToast('success', t('toast.memberDeleted'), t('toast.memberDeletedMsg', { name }));
     await refreshMembers();
+  });
+}
+
+
+/* ------------------------------------------------------------
+   9A. 自定义分类管理
+   ------------------------------------------------------------ */
+
+/**
+ * 重新撈一次分类清单並刷新所有会用到它的画面——新增/改名/隐藏/取消隐藏/删除
+ * 分类後呼叫。跟 refreshMembers() 不同：分类不会像成员改名那样「反向」影响
+ * 历史消费纪录显示的文字（expense.Category 存的字串本身没变，改的只是这个
+ * 分类自己的 meta：icon／is_hidden），不需要连带重新撈 expenses/repayments，
+ * 单纯刷新分类清单本身、以及会画出分类清单的那几个地方就够了
+ */
+async function refreshCategories_() {
+  appState.categories = await fetchCategories_();
+  renderCategoryFilterChips();
+  renderCategorySelectOptions();
+  renderCategoryManageList();
+}
+
+/**
+ * 检查这趟旅程有没有（未删除的）消费纪录在用这个分类——有的话不能直接删除，
+ * 只能隐藏。跟 isMemberInUse_() 是同一个模式，只是比对的欄位换成 category
+ * @param {string} categoryName
+ * @return {Promise<boolean>}
+ */
+async function isCategoryInUse_(categoryName) {
+  const { data, error } = await supabaseClient
+    .from('expenses')
+    .select('id')
+    .eq('trip_id', currentTripId)
+    .eq('deleted', false)
+    .eq('category', categoryName)
+    .limit(1);
+  if (error) throw error;
+  return (data || []).length > 0;
+}
+
+/**
+ * 新增/重命名分类共用的表单送出处理——沿用 renameTripModal 那套「同一个 Modal，
+ * 靠 dataset 上有没有存目标 id 分辨是新增还是编辑」的模式（见 handleRenameTripFormSubmit()）。
+ * 名称检查会同时挡「跟系统内置分类同名」——不然 translateCategory() 会把这笔自定义
+ * 分类誤判成内置分类去查 STRINGS 翻译，两种语言下都会显示翻译後的内置分类文字，
+ * 而不是使用者自己输入的原文，违背了任务 6-3(a) 的设计
+ */
+async function handleCategoryFormSubmit_() {
+  const nameInput = document.getElementById('categoryNameInput');
+  const name = nameInput.value.trim();
+  const modalEl = document.getElementById('addCategoryModal');
+  const targetCategoryId = modalEl.dataset.targetCategoryId || null;
+  const selectedIcon = modalEl.querySelector('.category-icon-option.is-active');
+  const iconValue = selectedIcon ? selectedIcon.getAttribute('data-icon-key') : null;
+
+  if (!name) {
+    showToast('error', t('toast.pleaseEnterCategoryName'), '');
+    return;
+  }
+
+  const isBuiltinName = !!CATEGORY_ICON_META[name];
+  const isDuplicate = appState.categories.some((category) => {
+    if (targetCategoryId && category.id === targetCategoryId) {
+      return false; // 编辑中的这一笔，名字没变也不该判定成跟自己重複
+    }
+    return category.name === name;
+  });
+
+  if (isBuiltinName || isDuplicate) {
+    showToast('error', t('toast.categoryNameDuplicate'), '');
+    return;
+  }
+
+  const submitBtn = document.getElementById('categorySubmitBtn');
+  setButtonLoading(submitBtn, true);
+
+  try {
+    if (targetCategoryId) {
+      const { error } = await supabaseClient
+        .from('categories')
+        .update({ name, icon: iconValue })
+        .eq('id', targetCategoryId);
+      if (error) throw error;
+      showToast('success', t('toast.categoryRenamed'), '');
+    } else {
+      const { error } = await supabaseClient
+        .from('categories')
+        .insert({ trip_id: currentTripId, created_by: getUserSession().userId, name, icon: iconValue });
+      if (error) throw error;
+      showToast('success', t('toast.categoryAdded'), '');
+    }
+
+    closeActiveModal();
+    await refreshCategories_();
+  } catch (error) {
+    showToast('error', t('toast.actionFailed'), error.message);
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
+}
+
+/**
+ * 隐藏／取消隐藏一个自定义分类——隐藏後不再出现在记账表单的分类 pill 裡，
+ * 但历史上已经记过的消费纪录不受影响，照常显示（见 renderCategorySelectOptions()
+ * 的过滤逻辑）
+ * @param {Object} category
+ */
+async function handleToggleCategoryHiddenClick(category) {
+  const nextHidden = !category.isHidden;
+  try {
+    const { error } = await supabaseClient
+      .from('categories')
+      .update({ is_hidden: nextHidden })
+      .eq('id', category.id);
+    if (error) throw error;
+
+    showToast('success', nextHidden ? t('toast.categoryHidden') : t('toast.categoryUnhidden'), '');
+    await refreshCategories_();
+  } catch (error) {
+    showToast('error', t('toast.actionFailed'), error.message);
+  }
+}
+
+/**
+ * 删除一个自定义分类——先照 isMemberInUse_() 的模式检查有没有消费纪录在用，
+ * 有的话拒绝删除並提示改用「隐藏」，不是悄悄失败或悄悄允许
+ * @param {Object} category
+ */
+function handleDeleteCategoryClick(category) {
+  openConfirmModal(t('confirm.deleteCategory', { name: translateCategory(category.name) }), async () => {
+    if (await isCategoryInUse_(category.name)) {
+      throw new Error(t('toast.categoryInUseCannotDelete'));
+    }
+
+    const { error } = await supabaseClient.from('categories').delete().eq('id', category.id);
+    if (error) throw error;
+
+    showToast('success', t('toast.categoryDeleted'), '');
+    await refreshCategories_();
   });
 }
 
@@ -8539,8 +8891,11 @@ function renderCategoryFilterChips() {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'chip';
-    chip.setAttribute('data-category-filter', category);
-    chip.textContent = translateCategory(category);
+    chip.setAttribute('data-category-filter', category.name);
+    // 自定义分类给一个极轻微的小圆点标记（见 .chip-custom-dot），暗示「这是你
+    // 自己加的」——刻意不用不同颜色/边框，那样在一整排 chip 里会喧宾夺主
+    chip.innerHTML = (category.tripId ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '')
+      + escapeHtml(translateCategory(category.name));
     container.appendChild(chip);
   });
 
@@ -9435,6 +9790,18 @@ function openCategoryStatsModal() {
  * （只记录「付给谁」，不记录「收到谁的」——那属于对方自己的还款纪录）
  * @param {string} name 成员姓名
  */
+/**
+ * 如果目前正显示著成员详情页，重新渲染一次内容——新增/编辑/删除私人消费後
+ * 呼叫，不然要等使用者手动离开再进来一次才会看到最新状态。页面没开着的话
+ * 什么都不做，不会平白多一次渲染
+ */
+function refreshMemberDetailPageIfOpen_() {
+  const page = document.getElementById('page-member-detail');
+  if (page && !page.classList.contains('is-hidden') && currentMemberDetailName) {
+    openMemberDetailPage(currentMemberDetailName);
+  }
+}
+
 function openMemberDetailPage(name) {
   currentMemberDetailName = name;
   const memberId = appState.memberIndex && appState.memberIndex.byName[name];
@@ -9466,13 +9833,22 @@ function openMemberDetailPage(name) {
   const totalCount = relatedExpenses.length + poolDeductExpenses.length + relatedRepayments.length;
   const status = getMemberStatusBadge(name);
 
+  // 私人消费：只有查看自己时才有——RLS 已经保证 appState.personalExpenses 裡
+  // 本来就只会有自己的资料，这裡的 isViewingSelf 判断是 UI 层再加一道保险，
+  // 不是真正的隐私边界（真正的边界在阶段 7-1 的 RLS），避免「万一哪裡漏了
+  // 权限检查」时不小心把这个分区露给查看别人时的画面
+  const isViewingSelf = name === getViewerName();
+  const personalExpensesForSelf = isViewingSelf
+    ? appState.personalExpenses.slice().sort((a, b) => new Date(b.Date) - new Date(a.Date))
+    : [];
+
   document.getElementById('memberExpenseTitle').textContent = `${name}${t('memberDetail.titleSuffix')}`;
   document.getElementById('memberExpenseSubtitle').textContent =
     t('memberDetail.summary', { count: totalCount, paid: formatMoney(stat.paid), shouldPay: consumptionTotalText }) + repaidNote + ' · ' + status.text;
 
   const listContainer = document.getElementById('memberExpenseList');
 
-  if (totalCount === 0) {
+  if (totalCount === 0 && personalExpensesForSelf.length === 0) {
     listContainer.innerHTML = `
       <div class="empty-state empty-state-compact">
         <div class="empty-illustration" aria-hidden="true">
@@ -9482,6 +9858,10 @@ function openMemberDetailPage(name) {
         <p>${escapeHtml(t('memberDetail.empty.desc'))}</p>
       </div>
     `;
+    const includePersonalRowEmpty = document.getElementById('includePersonalInReportRow');
+    if (includePersonalRowEmpty) {
+      includePersonalRowEmpty.classList.add('is-hidden');
+    }
     showMemberDetailPage_();
     return;
   }
@@ -9518,8 +9898,96 @@ function openMemberDetailPage(name) {
     `;
   }
 
+  // ---- 区块三：私人消费（跟群组无关，不参与分账/结算，只有自己看得到——见任务 7-4） ----
+  if (personalExpensesForSelf.length > 0) {
+    const personalBreakdown = groupAmountsByCurrency(personalExpensesForSelf, (item) => item.Amount, (item) => item.Currency);
+    const personalTotalText = formatCurrencyBreakdownText(personalBreakdown);
+
+    html += `<p class="member-detail-section-label member-detail-section-label-spaced">${escapeHtml(t('memberDetail.personalExpenseSectionLabel', { count: personalExpensesForSelf.length }))}</p>`;
+    html += `<p class="form-hint">${escapeHtml(t('memberDetail.personalExpenseHint'))}</p>`;
+    html += personalExpensesForSelf.map(renderPersonalExpenseRow_).join('');
+    html += `
+      <div class="balance-row member-detail-total-row">
+        <div class="balance-info">
+          <p class="balance-name">${escapeHtml(t('memberDetail.personalExpenseTotal'))}</p>
+        </div>
+        <p class="balance-amount mono">${escapeHtml(personalTotalText)}</p>
+      </div>
+    `;
+  }
+
   listContainer.innerHTML = html;
+
+  if (personalExpensesForSelf.length > 0) {
+    bindPersonalExpenseRowActions_(listContainer);
+  }
+
+  // 汇出 PDF 那颗「包含我的私人消费」勾选框——只有查看自己、而且真的有私人消费
+  // 可以附加时才显示，每次重新打开这个页面都重置回未勾选（预设不含，见任务 7-5）
+  const includePersonalRow = document.getElementById('includePersonalInReportRow');
+  const includePersonalCheckbox = document.getElementById('includePersonalInReportCheckbox');
+  if (includePersonalRow) {
+    includePersonalRow.classList.toggle('is-hidden', personalExpensesForSelf.length === 0);
+  }
+  if (includePersonalCheckbox) {
+    includePersonalCheckbox.checked = false;
+  }
+
   showMemberDetailPage_();
+}
+
+/**
+ * 渲染「私人消费」分区裡的一列——跟一般消费的 renderMemberExpenseRow() 不同，
+ * 私人消费没有「份额」「付款人」这些拆账概念，金额就是金额；编辑/删除直接放
+ * 在列上，不像一般消费要点进「消费明细」Modal 才有——私人消费在整个 App 裡
+ * 就只有这一个入口，不需要为它多包一层 Modal
+ * @param {Object} expense
+ * @return {string}
+ */
+function renderPersonalExpenseRow_(expense) {
+  const iconMeta = getCategoryIconMeta(expense.Category);
+  return `
+    <div class="balance-row personal-expense-row" data-personal-expense-id="${escapeHtml(expense.ID)}">
+      <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
+      <div class="balance-info">
+        <p class="balance-name">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
+        <p class="balance-sub">${escapeHtml(formatDateDisplay(expense.Date))} · ${escapeHtml(translateCategory(expense.Category))}</p>
+      </div>
+      <div class="personal-expense-row-end">
+        <p class="balance-amount mono">${formatExpenseAmountDisplay(expense)}</p>
+        <div class="personal-expense-row-actions">
+          <button type="button" class="btn btn-ghost btn-sm" data-personal-expense-action="edit" data-i18n="aria.edit">编辑</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-personal-expense-action="delete" data-i18n="aria.delete">删除</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 绑定私人消费分区列上「编辑／删除」按钮的点击——直接重用一般消费编辑/删除
+ * 那两支函式（openExpenseFormForEdit／handleDeleteExpenseClick 都已经改成
+ * 会同时查 appState.expenses 跟 appState.personalExpenses，见任务 7-2），
+ * 不需要另外写一套
+ * @param {HTMLElement} container #memberExpenseList
+ */
+function bindPersonalExpenseRowActions_(container) {
+  container.querySelectorAll('[data-personal-expense-action]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const row = btn.closest('[data-personal-expense-id]');
+      const expenseId = row ? row.getAttribute('data-personal-expense-id') : null;
+      if (!expenseId) return;
+
+      const action = btn.getAttribute('data-personal-expense-action');
+      if (action === 'edit') {
+        openExpenseFormForEdit(expenseId);
+      } else if (action === 'delete') {
+        const expense = appState.personalExpenses.find((item) => item.ID === expenseId);
+        handleDeleteExpenseClick(expenseId, expense ? (expense.Description || translateCategory(expense.Category)) : '');
+      }
+    });
+  });
 }
 
 /**
@@ -9775,12 +10243,20 @@ function renderCategorySelectOptions() {
   const currentValue = hiddenInput ? hiddenInput.value : '';
 
   container.innerHTML = '';
-  appState.categories.forEach((category) => {
+  // 隐藏的自定义分类不出现在这里——「隐藏」的用意就是不想再拿它记新的消费，
+  // 但历史上已经记过的消费还是正常显示（见 isCategoryInUse_() 那套删除保护）。
+  // 例外：如果正在编辑的这笔消费本来用的就是一个後来被隐藏的分类，还是要
+  // 保留那颗 pill，不然画面上会看起来像分类被清空了，使用者容易誤会
+  const visibleCategories = appState.categories.filter(
+    (category) => !category.isHidden || category.name === currentValue
+  );
+  visibleCategories.forEach((category) => {
     const pill = document.createElement('button');
     pill.type = 'button';
     pill.className = 'category-pill';
-    pill.setAttribute('data-category', category);
-    pill.textContent = translateCategory(category);
+    pill.setAttribute('data-category', category.name);
+    pill.innerHTML = (category.tripId ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '')
+      + escapeHtml(translateCategory(category.name));
     container.appendChild(pill);
   });
 
@@ -9790,8 +10266,135 @@ function renderCategorySelectOptions() {
     });
   });
 
-  if (appState.categories.includes(currentValue)) {
+  if (visibleCategories.some((category) => category.name === currentValue)) {
     setExpenseCategoryValue_(currentValue);
+  }
+}
+
+/**
+ * 渲染设置页「分类管理」面板的分类清单——系统内置分类只显示、不给任何操作
+ * 按钮（RLS 本来就不允许一般使用者改内置分类，给了按钮点了也只会出错）；
+ * 自定义分类带「改名／隐藏或取消隐藏／删除」三个动作。风格沿用设置页其他
+ * 面板既有的 .settings-row + .btn-ghost.btn-sm 文字按钮，不新造一套列表
+ * 元件或图示按钮的视觉语言
+ */
+function renderCategoryManageList() {
+  const container = document.getElementById('categoryManageList');
+  if (!container) return;
+
+  container.innerHTML = appState.categories.map((category) => {
+    const iconMeta = getCategoryIconMeta(category.name);
+    const isCustom = !!category.tripId;
+    const dot = isCustom ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '';
+    const hiddenBadge = category.isHidden
+      ? `<span class="badge badge-warning">${escapeHtml(t('category.manage.hiddenBadge'))}</span>`
+      : '';
+
+    const actions = isCustom ? `
+      <div class="category-manage-actions">
+        <button class="btn btn-ghost btn-sm" type="button" data-category-action="rename" data-category-id="${escapeHtml(category.id)}">${escapeHtml(t('category.manage.renameBtn'))}</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-category-action="toggle-hide" data-category-id="${escapeHtml(category.id)}">${escapeHtml(category.isHidden ? t('category.manage.unhideBtn') : t('category.manage.hideBtn'))}</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-category-action="delete" data-category-id="${escapeHtml(category.id)}">${escapeHtml(t('category.manage.deleteBtn'))}</button>
+      </div>
+    ` : '';
+
+    return `
+      <div class="settings-row category-manage-row">
+        <div class="settings-row-text category-manage-row-text">
+          <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
+          <p class="settings-row-title">${dot}${escapeHtml(translateCategory(category.name))} ${hiddenBadge}</p>
+        </div>
+        ${actions}
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('[data-category-action]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const categoryId = btn.getAttribute('data-category-id');
+      const category = appState.categories.find((item) => item.id === categoryId);
+      if (!category) return;
+
+      const action = btn.getAttribute('data-category-action');
+      if (action === 'rename') {
+        openCategoryFormModal_(category);
+      } else if (action === 'toggle-hide') {
+        handleToggleCategoryHiddenClick(category);
+      } else if (action === 'delete') {
+        handleDeleteCategoryClick(category);
+      }
+    });
+  });
+}
+
+/**
+ * 打开新增/编辑分类用的 Modal——不传 category 就是新增，传了就是编辑
+ * （沿用 renameTripModal 那套「同一个 Modal，靠 dataset 有没有存目标 id
+ * 分辨新增/编辑」的模式，见 handleRenameTripFormSubmit()）
+ * @param {Object} [category]
+ */
+function openCategoryFormModal_(category) {
+  const modalEl = document.getElementById('addCategoryModal');
+  const nameInput = document.getElementById('categoryNameInput');
+  const titleEl = document.getElementById('addCategoryModalTitle');
+
+  modalEl.dataset.targetCategoryId = category ? category.id : '';
+  nameInput.value = category ? category.name : '';
+  titleEl.textContent = category ? t('addCategoryModal.editTitle') : t('addCategoryModal.title');
+
+  renderCategoryIconPicker_(category ? category.icon : null);
+  openModal('addCategoryModal');
+}
+
+/**
+ * 渲染新增/编辑分类 Modal 里的图示选择格——沿用 getCategoryIconMeta() 既有的
+ * 6 组预设图示（见任务 6-3(c)：不重新设计一套自定义分类专属的图示），点选
+ * 後存的是 key（例如 'Transport'），不是重新画一次 SVG；不选任何一个也能
+ * 储存，届时显示会自动退回分类名首字的色块兜底
+ * @param {string|null} selectedIcon
+ */
+function renderCategoryIconPicker_(selectedIcon) {
+  const container = document.getElementById('categoryIconPicker');
+  if (!container) return;
+
+  container.innerHTML = Object.keys(CATEGORY_ICON_META).map((key) => {
+    const meta = CATEGORY_ICON_META[key];
+    const isActive = key === selectedIcon;
+    return `
+      <button type="button" class="category-icon-option activity-icon ${meta.cls}${isActive ? ' is-active' : ''}" data-icon-key="${escapeHtml(key)}" aria-label="${escapeHtml(key)}">
+        ${meta.svg}
+      </button>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.category-icon-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const alreadyActive = btn.classList.contains('is-active');
+      container.querySelectorAll('.category-icon-option').forEach((b) => b.classList.remove('is-active'));
+      // 再点一次同一个图示可以取消选取，退回「首字色块」兜底——不是每个
+      // 自定义分类都一定要有图示，给使用者反悔的空间
+      if (!alreadyActive) {
+        btn.classList.add('is-active');
+      }
+    });
+  });
+}
+
+/**
+ * 绑定设置页「分类管理」面板的「新增分类」按钮跟表单送出事件
+ */
+function initCategoryManage() {
+  const addBtn = document.getElementById('addCategoryBtn');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => openCategoryFormModal_());
+  }
+
+  const form = document.getElementById('categoryForm');
+  if (form) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      handleCategoryFormSubmit_();
+    });
   }
 }
 
@@ -9817,10 +10420,27 @@ function getSplitTypeBadgeInfo(splitType) {
   }
 }
 
+/**
+ * 分类文字显示的唯一出口——不管是筛选 chip、记账表单 pill、消费列表、PDF 报告，
+ * 全部都要走这支函式，不要各自 inline 组字串（见任务 6-5 的「统一出口」要求）。
+ * formatCategoryType() 那种「大类 · 子类」的複合格式，也是在这支函式的结果上
+ * 再包一层，不是另开一条自己的翻译路径。
+ *
+ * 系统内置分类（'Food'/'Transport'/…）继续走 STRINGS 的 category.* key；
+ * 自定义分类不翻译，两种语言下都显示使用者输入的原文——这是刻意的产品决定
+ * （见任务 6-3 的理由：使用者自己起的名字不是系统术语，强制填双语只会让
+ * 一半用户漏填，自动翻译又不可控）。这里不用另外判断「这是不是自定义分类」，
+ * 单纯利用「自定义分类的名字在 STRINGS 里必然查不到对应 key」这件事自然
+ * 达到「查得到就翻译、查不到就show原文」的效果——前提是新增分类时不能让
+ * 使用者把自定义分类取成跟内置分类一模一样的名字，这层验证在
+ * handleAddCategoryFormSubmit_() 里做
+ * @param {string} category 分类原始值（例如 'Hotel' 或使用者自订的 '潜水装备'）
+ * @return {string}
+ */
 function translateCategory(category) {
   const key = `category.${category}`;
   const translated = STRINGS[currentLang] && STRINGS[currentLang][key];
-  return translated || CATEGORY_LABEL_MAP[category] || category;
+  return translated || category || '';
 }
 
 /**
@@ -10414,7 +11034,14 @@ function initMemberPdfExport() {
 
     await autoFetchMissingRatesForExport();
 
-    document.getElementById('printReport').innerHTML = buildSingleMemberReportHtml(currentMemberDetailName);
+    // 只有查看自己、而且勾选框当下确实可见（代表真的有私人消费可以附加）才会
+    // 真的带上私人消费章节——即使有人想办法在看别人时把这个 checkbox 的 value
+    // 弄成 true，buildSingleMemberReportHtml() 内部也会再检查一次是不是自己，
+    // 不完全信任这里的画面状态
+    const includePersonalCheckbox = document.getElementById('includePersonalInReportCheckbox');
+    const includePersonal = !!(includePersonalCheckbox && includePersonalCheckbox.checked);
+
+    document.getElementById('printReport').innerHTML = buildSingleMemberReportHtml(currentMemberDetailName, includePersonal);
 
     const tripName = getTripName(currentTripId) || t('report.untitledTrip');
     maybeShowPrintQualityHint_();
@@ -10808,12 +11435,14 @@ function wrapReportPagesWithLogo(bodyHtml, footerRowHtml) {
 }
 
 /**
- * 组出「单一成员」的独立报告：元数据表头（含品牌与姓名）+ buildMemberReportBody() 的完整内容 + 页脚
- * 供同行页成员详情 Modal 的「汇出 PDF」使用
+ * 组出单一成员的完整报告 HTML（header + buildMemberReportBody() 的结算内容 +
+ * 可选的私人消费独立章节）。供同行页成员详情页的「汇出 PDF」使用
  * @param {string} name 成员姓名
+ * @param {boolean} [includePersonal] 是否要在最後附加「私人消费」独立章节——
+ *   只有汇出的是自己、且这个参数为 true 时才会真的附加，见 buildPersonalExpenseReportSection_()
  * @return {string} HTML 字串
  */
-function buildSingleMemberReportHtml(name) {
+function buildSingleMemberReportHtml(name, includePersonal) {
   const tripName = getTripName(currentTripId) || t('report.untitledTrip');
   const generatedAt = formatDateTimeForReport(new Date());
   const baseCurrency = appState.tripCurrency.baseCurrency || 'MYR';
@@ -10846,13 +11475,63 @@ function buildSingleMemberReportHtml(name) {
 
   const bodyHtml = buildMemberReportBody(name);
 
+  // 私人消费独立章节：只有汇出的是自己、而且有勾选才附加——这里不完全信任
+  // initMemberPdfExport() 传进来的 includePersonal，name === getViewerName()
+  // 再检查一次，双重保险（配合 RLS，其实看别人时 appState.personalExpenses
+  // 本来就不会有资料，但函式签名上不该假设呼叫端一定会做对这个判断）
+  const personalSectionHtml = (includePersonal && name === getViewerName())
+    ? buildPersonalExpenseReportSection_()
+    : '';
+
   // ---------- Footer：改成每页都重复出现在页底，而不是只出现在最后一页 ----------
   const footerRowHtml = `
     <span>${escapeHtml(t('report.reportId'))}: ${escapeHtml(reportId)}</span>
     <span>${escapeHtml(t('report.generatedAt'))}: ${escapeHtml(generatedAt)} · ${escapeHtml(baseCurrency)}</span>
   `;
 
-  return wrapReportPagesWithLogo(`<div class="pr-report">${headerHtml}${bodyHtml}</div>`, footerRowHtml);
+  return wrapReportPagesWithLogo(`<div class="pr-report">${headerHtml}${bodyHtml}${personalSectionHtml}</div>`, footerRowHtml);
+}
+
+/**
+ * 组出「私人消费」这个独立章节的 HTML——只在汇出自己的个人报告、且有勾选
+ * 「包含我的私人消费」时才会被拼进 buildSingleMemberReportHtml() 的结果里。
+ * 刻意跟 buildMemberReportBody() 的结算表格完全分开、不共用任何加总，用
+ * report-footer-note 那个既有的「小字免责声明」样式醒目标注「这个章节不参与
+ * 群组结算」，避免任何人把这部分金额误算进净结算/应收应付（见任务 7-5）
+ * @return {string} HTML 字串；appState.personalExpenses 是空的话回传空字串
+ */
+function buildPersonalExpenseReportSection_() {
+  if (!appState.personalExpenses || appState.personalExpenses.length === 0) {
+    return '';
+  }
+
+  const rows = appState.personalExpenses.map((expense) => ({
+    date: expense.Date,
+    html: buildPersonalExpenseTableRow(expense, expense.Amount)
+  }));
+
+  const breakdown = groupAmountsByCurrency(appState.personalExpenses, (item) => item.Amount, (item) => item.Currency);
+
+  return `
+    <div class="pr-section-block-flexible pr-page-break-before">
+      <p class="pr-section-title">${escapeHtml(t('personalReport.personalExpenseSection'))}</p>
+      <p class="report-footer-note">${escapeHtml(t('personalReport.personalExpenseDisclaimer'))}</p>
+      <table class="report-table pr-detail-table">
+        <thead><tr><th>${escapeHtml(t('table.date'))}</th><th>${escapeHtml(t('table.item'))}</th><th>${escapeHtml(t('personalReport.typeColumn'))}</th><th class="align-right">${escapeHtml(t('table.amount'))}</th></tr></thead>
+        <tbody>${joinRowsSortedByDate(rows)}</tbody>
+        <tfoot>
+          <tr class="report-table-total-row">
+            <td colspan="4" class="pr-total-row-cell">
+              <div class="pr-total-row-inner">
+                <span class="pr-total-row-label">${escapeHtml(t('report.total', { count: appState.personalExpenses.length }))}</span>
+                <span class="pr-total-row-amount">${escapeHtml(formatCurrencyBreakdownText(breakdown))}</span>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
 }
 
 /**

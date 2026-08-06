@@ -1702,6 +1702,21 @@ html {
   color: var(--text-on-accent);
 }
 
+/* 自定义分类在 chip／pill 上的极轻微视觉区分——一个小圆点，暗示「这是你
+   自己加的」。刻意用 currentColor 加低透明度而不是另开一个颜色/边框，
+   让它自然跟着 chip 目前的文字色走（预设态、hover、is-active 都不用
+   分别处理），份量也压得很低，不会在一整排 chip 里喧宾夺主（见任务 6-3(b)） */
+.chip-custom-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
+  margin-right: var(--space-2);
+  vertical-align: middle;
+}
+
 .select-control {
   height: 38px;
   padding: 0 var(--space-3);
@@ -2261,6 +2276,29 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-size: 16px;
 }
 
+/* 私人消费分区的列——跟其他 .balance-row 不同的是金额右边多接了「编辑／删除」
+   两颗按钮（私人消费在整个 App 裡就只有这一个入口，不像一般消费还有「消费
+   明细」Modal 可以点进去操作，直接放在列上），用 flex-direction:column 让
+   金额跟按钮上下堆叠，不跟左边的说明/日期文字抢横向空间 */
+.personal-expense-row-end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.personal-expense-row-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.personal-expense-row-actions .btn-sm {
+  height: 26px;
+  padding: 0 var(--space-2);
+  font-size: 12px;
+}
+
 .member-detail-section-label {
   font-size: 12px;
   font-weight: 700;
@@ -2498,6 +2536,55 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-size: 12.5px;
   color: var(--text-tertiary);
   margin-top: 2px;
+}
+
+/* 分类管理面板——沿用 .settings-row 的左右两栏排版，只是左边这栏（本来只放
+   文字）额外多塞一颗既有的 .activity-icon 图示圆圈，用 flex 横排接在一起，
+   不新造一套列表元件 */
+.category-manage-row {
+  padding: var(--space-2) 0;
+}
+
+.category-manage-row-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.category-manage-row-text .settings-row-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.category-manage-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* 新增/编辑分类 Modal 的图示选择格——沿用 .activity-icon 圆圈本身的尺寸/配色，
+   只加一圈外框表示「可以点选」跟「目前选中哪一个」，不是重新设计一套图示元件 */
+.category-icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.category-icon-option {
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.category-icon-option:hover {
+  transform: scale(1.05);
+}
+
+.category-icon-option.is-active {
+  border-color: var(--accent);
 }
 
 /* 设置页「目前旅程」切换器：目前旅程就是一般文字，不再套 pill 底色；
@@ -5275,6 +5362,16 @@ body {
 .activity-icon.cat-ticket { background: var(--owe-soft); color: var(--owe); }
 .activity-icon.cat-shopping { background: rgba(168, 130, 230, 0.14); color: #9d7de0; }
 .activity-icon.cat-others { background: var(--bg-subtle); color: var(--text-tertiary); }
+
+/* 自定义分类没选图示时的兜底——分类名首字，颜色沿用 .activity-icon 的预设
+   accent-soft／accent（见 getCategoryIconMeta()），这里只需要处理文字本身
+   的字体大小，不用额外定义背景色 */
+.activity-icon.cat-custom-fallback .cat-fallback-letter {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 
 .activity-info {
   flex: 1;

@@ -973,6 +973,25 @@
         </div>
       </div>
 
+      <!-- 分类管理：系统内置分类只显示，不给操作按钮（RLS 本来就不允许一般
+           使用者改内置分类）；自定义分类带改名/隐藏/删除三个动作。清单本身、
+           以及「新增分类」開的 Modal，都由 app.js 的 renderCategoryManageList()／
+           initCategoryManage() 动态产生，这里只放容器骨架 -->
+      <div class="panel" id="categoryManagePanel">
+        <div class="panel-header">
+          <h2 data-i18n="settings.categoriesPanel">分类管理</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <p class="form-hint" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
+          <div id="categoryManageList">
+            <!-- 分类清单由 renderCategoryManageList() 动态产生 -->
+          </div>
+          <div class="settings-actions">
+            <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
+          </div>
+        </div>
+      </div>
+
       <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
            「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
            合并成一个 category，标题换成跟上面几个面板（账户资料／偏好设置／财务设置）
@@ -1049,6 +1068,15 @@
         <!-- 该成员的消费明细由 app.js 动态产生 -->
       </div>
       <div class="member-detail-page-footer">
+        <label class="participant-label is-hidden" id="includePersonalInReportRow" style="margin-bottom: var(--space-2);">
+          <span class="checkbox">
+            <input type="checkbox" id="includePersonalInReportCheckbox">
+            <span class="checkbox-box">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5L10 17.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </span>
+          <span data-i18n="personalReport.includePersonalCheckbox">包含我的私人消费（作为独立章节附在最后，不参与结算）</span>
+        </label>
         <button class="btn btn-secondary" type="button" id="exportMemberPdfBtn">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 4V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16V18.5C5 19.6 5.9 20.5 7 20.5H17C18.1 20.5 19 19.6 19 18.5V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span data-i18n="summary.exportPdf">汇出 PDF</span>
@@ -1116,13 +1144,17 @@
 
   <form class="modal-body" id="expenseForm">
     <div class="form-grid">
-      <!-- 资金来源：只有这趟旅程开了搭伙金库才会出现，预设「正常记账」跟原本行为完全一样。
-           切成「金库支出」或「个人代垫归还」时，付款人/分账方式/参与人这几个跟拆账有关的
-           栏位会被隐藏——这两种钱本来就是从大家已经打进金库的预付款出，不需要再另外拆账 -->
-      <div class="form-field form-field-full pool-source-group is-hidden" id="poolSourceGroup">
+      <!-- 资金来源：正常记账／个人消费两项永远都在，金库支出这个选项才是有条件的——
+           只有这趟旅程开了搭伙金库、还有余额可以扣时才出现（见 resetExpenseForm()
+           对 deduct 按钮本身的显示判断，不再是整组一起藏）。切成「个人消费」或
+           「金库支出」时，付款人/分账方式/参与人这几个跟拆账有关的栏位会被隐藏——
+           金库支出的钱从大家已经打进金库的预付款出，个人消费根本不跟任何人分账，
+           两者都不需要再另外拆账 -->
+      <div class="form-field form-field-full pool-source-group" id="poolSourceGroup">
         <label data-i18n="expense.sourceLabel">资金来源</label>
-        <div class="segmented-control segmented-control-2" id="expenseSourceControl">
+        <div class="segmented-control segmented-control-3" id="expenseSourceControl">
           <button type="button" class="segmented-item is-active" data-expense-source="normal" data-i18n="expense.sourceNormal">正常记账</button>
+          <button type="button" class="segmented-item" data-expense-source="personal" data-i18n="expense.sourcePersonal">个人消费</button>
           <button type="button" class="segmented-item" data-expense-source="deduct" data-i18n="expense.sourceDeduct">金库支出</button>
         </div>
         <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分账方式结算。</p>
@@ -1498,6 +1530,38 @@
     <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
     <button class="btn btn-primary" type="submit" form="renameTripForm" id="renameTripSubmitBtn">
       <span class="btn-label" data-i18n="renameTripModal.save">储存</span>
+      <span class="btn-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 新增/编辑分类 Modal：同一个 Modal 两用，靠 dataset 上有没有存目标分类 id
+     分辨是新增还是编辑（跟 renameTripModal 同一套模式）。图示选择格由
+     app.js 的 renderCategoryIconPicker_() 动态产生 -->
+<div class="modal modal-sm" id="addCategoryModal" role="dialog" aria-modal="true" aria-labelledby="addCategoryModalTitle">
+  <div class="modal-header">
+    <h2 id="addCategoryModalTitle">新增分类</h2>
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <form class="modal-body" id="categoryForm">
+    <div class="form-field">
+      <label for="categoryNameInput" data-i18n="addCategoryModal.nameLabel">分类名称</label>
+      <input type="text" id="categoryNameInput" class="text-input" required autocomplete="off">
+      <p class="form-hint" data-i18n="addCategoryModal.nameHint">两种语言下都会直接显示你输入的名称，不会另外翻译。</p>
+    </div>
+    <div class="form-field">
+      <label data-i18n="addCategoryModal.iconLabel">图示（可选）</label>
+      <div class="category-icon-picker" id="categoryIconPicker">
+        <!-- 图示选择格由 renderCategoryIconPicker_() 动态产生 -->
+      </div>
+    </div>
+  </form>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" type="button" data-close-modal data-i18n="common.cancel">取消</button>
+    <button class="btn btn-primary" type="submit" form="categoryForm" id="categorySubmitBtn">
+      <span class="btn-label" data-i18n="addCategoryModal.save">储存</span>
       <span class="btn-spinner" aria-hidden="true"></span>
     </button>
   </div>
