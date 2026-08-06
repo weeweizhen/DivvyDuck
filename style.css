@@ -265,14 +265,10 @@ body {
    全程不会有任何视觉跳动。
    height:100% 是後补的——position:fixed 只给了 left/right/width，没给高度，
    body 的高度会退回内容高度（fixed 元素不参与正常文档流的高度撑开），
-   html 的可捲动区域也跟着塌陷。这个塌陷不只是「看起来没差」的小事——装成
-   iOS PWA 後，WKWebView 会在文档高度塌陷的那一刻把 100dvh 重新计算成
-   「不含安全区」的较小值，连带害底部那几个用 100dvh 撑高度的全屏图层
-   （.app-splash／.drawer-backdrop／.modal-backdrop／.side-drawer，见
-   .fullscreen-layer 的说明）短了一截、底部露出一条浅色带。
-   overscroll-behavior:none 是顺带处理的——纯 position:fixed 冻结背景後，
-   iOS 在背景内容边界仍然会触发橡皮筋回弹的视觉效果（虽然已经不能真的
-   滚动了，但手势拖到底那一下还是会弹一下），挡掉比较乾净 */
+   html 的可捲动区域也跟着塌陷。目前因为 Modal／抽屉的遮罩本来就是满屏的，
+   这个塌陷被遮罩盖住看不出来，但 unlockBodyScroll() 解锁時要用 JS 记下来的
+   bodyScrollLockY 把捲动位置还原回去，如果这段期间文档高度已经塌陷过，
+   还原可能失准 */
 .body-scroll-locked {
   position: fixed;
   left: 0;
@@ -280,7 +276,6 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 h1, h2, h3, h4, p {
@@ -337,37 +332,6 @@ ul, ol {
 /* 通用工具类：JS 动态显示 / 隐藏元素用 */
 .is-hidden {
   display: none !important;
-}
-
-/* 通用工具类：任何需要「铺满整个屏幕高度、底部一丝空白都不留」的全屏图层
-   （开机动画、抽屉遮罩、抽屉面板本身、Modal 遮罩……）都套这个，不要各自
-   写一份。
-   这里同时用了 bottom:0 锚底跟 min-height:100lvh 撑高度，两个都要、
-   缺一个都不安全——单用哪一个都会在特定情境下露出底部空隙：
-   - 只用 bottom:0（不给高度）：手机版网址列/工具列刚载入、还没收合的
-     那段时间，画面实际可视高度比工具列收合後还矮，元素虽然贴着「视口
-     底边」，但视口底边本身还没到位，工具列收合的瞬间画面会跳一下。
-   - 只用 100dvh（不锚 bottom）：100dvh 是动态视口高度，会随浏览器 UI
-     状态即时重算。装成 iOS PWA（viewport-fit=cover + apple-mobile-web-app-
-     capable + black-translucent）後，只要背景页面被 .body-scroll-locked
-     冻结、文档高度塌陷（见 .body-scroll-locked 的说明），WKWebView 就会
-     把 100dvh 重新算成「不含安全区」的较小值，这几个只靠 dvh 撑高度的
-     全屏图层会跟着短一截，底部露出一条浅色带——这正是真机测试抓到的
-     那个 bug，Safsafari 一般分页测不出来，因为一般分页不会触发这次重算。
-   两个一起用：dvh 被重新算小了，有 bottom:0 兜住，视觉上不会露出空隙；
-   bottom 单独对不齐工具列收合前後的过渡瞬间，有 min-height:100lvh 撑住
-   （lvh 是「工具列收合的最大可视高度」，是个常量，不参与 dvh 那套动态
-   重算，永远不会突然变矮）。超出可视区的部分对这几个全屏图层完全无害，
-   反正它们本来就没有内容会被裁到看得见的地方 */
-.fullscreen-layer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: auto;
-  min-height: 100vh;  /* 不支援 lvh 的旧浏览器兜底 */
-  min-height: 100lvh;
 }
 
 /* 键盘可视焦点 */
@@ -487,12 +451,8 @@ html {
 
 .app-main {
   grid-area: main;
-  /* 底部 padding 加上跟 .mobile-tabbar 同一份 env(safe-area-inset-bottom)——
-     底部导览列现在会把安全区净空算进自己的高度（见 .mobile-tabbar 的说明，
-     iOS PWA 下 Home Indicator 的净空是真实存在的，不是可以忽略的），
-     这里如果不跟着加，最後一笔账目/消费就会被导览列（含新垫高的安全区
-     那一截）遮住看不到 */
-  padding: var(--space-5) var(--space-5) calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px) + var(--space-8));
+  /* 底部 padding 不额外加 env(safe-area-inset-bottom)，理由同 .mobile-tabbar */
+  padding: var(--space-5) var(--space-5) calc(var(--tabbar-height) + var(--space-8));
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
@@ -783,6 +743,14 @@ html {
 }
 
 .drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-splash：改用 100dvh 直接量「现在看得到的画面高度」，不靠 inset:0
+     的 bottom:0 去对齐，避免手机版网址列还没收合时底部露出缝隙 */
+  height: 100vh;
+  height: 100dvh;
   background: rgba(10, 10, 14, 0.42);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
@@ -798,11 +766,14 @@ html {
 }
 
 .side-drawer {
-  left: auto; /* .fullscreen-layer 预设 left:0 会把它撑满整个宽度，这里要覆盖回去，
-                 只固定在右边、靠 width:75% 决定实际宽度，不是铺满整个屏幕宽 */
+  position: fixed;
+  top: 0;
+  right: 0;
   /* 原本是左侧窄面板（left:0 + max-width:84vw），后来一度改成从右侧滑入的
      全屏导览；现在收回成 3/4 屏宽——留一条能看到底下页面／点击关闭的缝，
      手感更接近原生 App 的侧滑导览，也不会让「打开导览」感觉像跳转到新页面 */
+  height: 100vh;
+  height: 100dvh;
   width: 75%;
   display: flex;
   flex-direction: column;
@@ -3175,6 +3146,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
    16. Modal
    ------------------------------------------------------------ */
 .modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-splash / .drawer-backdrop：改用 100dvh 直接量「现在看得到的画面高度」，
+     不靠 inset:0 的 bottom:0 去对齐，避免手机版网址列还没收合时底部露出缝隙 */
+  height: 100vh;
+  height: 100dvh;
   background: rgba(10, 10, 14, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -3454,19 +3433,10 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  /* 原本这里不加 env(safe-area-inset-bottom)，注释写的理由是「实测後加上
-     安全区反而多出留白，拿掉後更乾净」——这个结论在独立安装的 iOS PWA 下
-     是错的，多半是当初在 Safari 普通分页里测的：那种情境下 inset 会被
-     浏览器自己的工具列吸收掉，看起来加不加都一样乾净。装成 PWA
-     （viewport-fit=cover + apple-mobile-web-app-capable + black-translucent）
-     後 inset 是真实的 Home Indicator 净空（iPhone 上大约 34pt），不处理的话
-     标签文字会直接压在 Home Indicator 底下。这里改成用安全区撑高、
-     再用同样的量当 padding-bottom 把内容往上推，图示/文字维持在
-     --tabbar-height 那个原本的视觉高度内，只是底下多垫了安全区，不是
-     整条导览列被压扁；.app-main 的 padding-bottom 要同步加上同一个量，
-     不然最後一笔账目/消费会被导览列（含新垫高的安全区）挡住 */
-  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* 底部导览列固定用一般高度，不额外加 env(safe-area-inset-bottom) 净空——
+     实测後确认加上安全区反而在部分机型上造成底部多出一截不必要的留白，
+     拿掉後底部导览列贴齐屏幕底部，视觉更乾净 */
+  height: var(--tabbar-height);
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -3685,7 +3655,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
     width: auto !important;
     height: auto !important;
     overflow: visible !important;
-    overscroll-behavior: auto !important;
   }
 
   /* html/body 的背景色是跟着深色/浅色模式走的（body { background: var(--bg-subtle) }），
@@ -6047,14 +6016,24 @@ body {
 
 /* ============================================================
    23. 开机品牌动画 App Splash —— Logo + DivvyDuck 字样短暂动画
-   固定盖在所有内容最上层（z-index 高过 --z-toast，见 :root 那组统一尺度）。
+   固定盖在所有内容最上层（z-index 高过 --z-toast，见 :root 那组统一尺度，
+   任务 3.5-3 之前是写死的 10000，比 Toast 当时的 9999 高一点点就好）。
    背景跟随当下浅色/深色模式的 --bg，不再固定用深空靛蓝渐层——开机第一眼
    就跟之后看到的画面同一个色调，不会有「先看到一个深色画面、进 App 后
-   突然变白」的割裂感。动画结束后淡出交给登入闸门或 App 主体接手。
-   铺满整屏用共用的 .fullscreen-layer（见该 class 的说明），不再自己
-   单独写一份「只用 100dvh 撑高度」的旧写法——那个写法在装成 iOS PWA
-   後会在特定情境下露出底部空隙，已经排查清楚原因並修正 */
+   突然变白」的割裂感。动画结束后淡出交给登入闸门或 App 主体接手
+   ============================================================ */
 .app-splash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* 理由同 .app-shell：inset:0 靠浏览器自己拿 bottom:0 去对齐「真正看得到的画面底部」，
+     但 iOS Safari 网址列／工具列刚载入、还没收合的这段时间，这个对齐常常会跟工具列
+     收合后的最终位置对不上，底部因此会露出一截 body 背景色的缝隙——开机动画正好
+     每次都在这个「工具列还没收合」的时间点显示，特别容易中招。改用 100dvh 直接量
+     「现在这一刻真正看得到的画面高度」，不再靠 bottom:0 换算，就不会有这个落差 */
+  height: 100vh; /* 向後相容：不支援 dvh 的旧浏览器会用这个值 */
+  height: 100dvh;
   z-index: var(--z-splash);
   display: flex;
   flex-direction: column;
