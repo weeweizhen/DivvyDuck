@@ -873,61 +873,55 @@
         </div>
       </div>
 
+      <!-- 以下三个面板（财务设置／分类管理／搭伙鸭金库）只显示目前设定的摘要，
+           不在设置页里直接展开完整表单——实际编辑都收进各自的二级页面（见
+           page-currency-settings／page-category-manage／page-pool-manage），
+           点「更改」才切过去。摘要文字／分类 chips／金库状态都由 app.js
+           在 renderCurrencySettings()／renderCategoryManageList()／
+           renderPoolSettingsPanel() 内附带更新，这几个函式本来就会在资料
+           变动时被呼叫，不用额外找时机刷新摘要 -->
       <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="settings.financialPanel">财务设置</h2>
         </div>
         <div class="panel-body settings-body">
-          <div class="form-field">
-            <label for="baseCurrencySelect" data-i18n="currency.baseCurrencyLabel">基准货币</label>
-            <select class="select-control" id="baseCurrencySelect">
-            </select>
-            <p class="form-hint" data-i18n="currency.baseCurrencyHint">「结算总览」「建议还款」「还款纪录」都会以这个货币计算与显示</p>
-          </div>
-
-          <div id="exchangeRateWarning" class="currency-warning is-hidden"></div>
-
-          <div class="exchange-rate-toolbar">
-            <p class="form-hint" data-i18n="currency.wiseHint">汇率来自 Wise 中端市场汇率，仅供参考，储存前请自行确认。</p>
-            <button class="btn btn-secondary btn-sm" id="fetchAllRatesBtn" type="button" data-i18n="currency.fetchAllRates">抓取全部即时汇率</button>
-          </div>
-
-          <div id="exchangeRateFields">
-            <!-- 其他货币的汇率输入框由 app.js 动态产生 -->
-          </div>
-
-          <div class="settings-actions">
-            <button class="btn btn-primary btn-sm" id="saveCurrencyBtn" type="button" data-i18n="currency.save">储存货币设定</button>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="currency.baseCurrencyLabel">基准货币</p>
+              <p class="settings-row-desc" id="financialSettingsSummary">—</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="openCurrencySettingsBtn" data-i18n="account.changeBtn">更改</button>
           </div>
         </div>
       </div>
 
-      <!-- 分类管理：系统内置分类只显示，不给操作按钮（RLS 本来就不允许一般
-           使用者改内置分类）；自定义分类带改名/隐藏/删除三个动作。清单本身、
-           以及「新增分类」開的 Modal，都由 app.js 的 renderCategoryManageList()／
-           initCategoryManage() 动态产生，这里只放容器骨架 -->
       <div class="panel" id="categoryManagePanel">
         <div class="panel-header">
           <h2 data-i18n="settings.categoriesPanel">分类管理</h2>
         </div>
         <div class="panel-body settings-body">
-          <p class="form-hint" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
-          <div id="categoryManageList">
-            <!-- 分类清单由 renderCategoryManageList() 动态产生 -->
-          </div>
-          <div class="settings-actions">
-            <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <div class="category-preview-chips" id="categoryPreviewChips"><!-- 分类 chips 由 app.js 动态产生 --></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="openCategoryManageBtn" data-i18n="account.changeBtn">更改</button>
           </div>
         </div>
       </div>
 
-      <!-- 搭伙金库 (Divvy Pool)：既有旅程在这里补开，或管理已开启的金库打款状态；
-           内容由 renderPoolSettingsPanel() 全权接管 -->
       <div class="panel" id="poolSettingsCard">
         <div class="panel-header">
           <h2 data-i18n="pool.settings.enableTitle">搭伙鸭金库</h2>
         </div>
-        <div class="panel-body settings-body" id="poolSettingsPanel"></div>
+        <div class="panel-body settings-body">
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" id="poolSettingsSummaryTitle">—</p>
+              <p class="settings-row-desc" id="poolSettingsSummaryDesc"></p>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="openPoolManageBtn">更改</button>
+          </div>
+        </div>
       </div>
 
       <div class="danger-zone-box" id="dangerZoneBox">
@@ -1082,6 +1076,80 @@
   <div class="secondary-page-body" id="categoryExpensesList">
     <!-- 该分类的消费清单由 app.js 动态产生 -->
   </div>
+</section>
+
+<!-- 设置页「财务设置」摘要点「更改」进来的编辑页——内容原本直接摆在设置页
+     面板里，阶段 10 收进这个二级页面，设置页只留摘要文字 -->
+<section class="page secondary-page is-hidden" id="page-currency-settings" data-page-section="currency-settings">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="settings.financialPanel">财务设置</h1>
+    </div>
+  </div>
+  <div class="secondary-page-body">
+    <div class="form-field">
+      <label for="baseCurrencySelect" data-i18n="currency.baseCurrencyLabel">基准货币</label>
+      <select class="select-control" id="baseCurrencySelect">
+      </select>
+      <p class="form-hint" data-i18n="currency.baseCurrencyHint">「结算总览」「建议还款」「还款纪录」都会以这个货币计算与显示</p>
+    </div>
+
+    <div id="exchangeRateWarning" class="currency-warning is-hidden"></div>
+
+    <div class="exchange-rate-toolbar">
+      <p class="form-hint" data-i18n="currency.wiseHint">汇率来自 Wise 中端市场汇率，仅供参考，储存前请自行确认。</p>
+      <button class="btn btn-secondary btn-sm" id="fetchAllRatesBtn" type="button" data-i18n="currency.fetchAllRates">抓取全部即时汇率</button>
+    </div>
+
+    <div id="exchangeRateFields">
+      <!-- 其他货币的汇率输入框由 app.js 动态产生 -->
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn btn-primary btn-sm" id="saveCurrencyBtn" type="button" data-i18n="currency.save">储存货币设定</button>
+    </div>
+  </div>
+</section>
+
+<!-- 设置页「分类管理」摘要点「更改」进来的编辑页：系统内置分类只显示，
+     不给操作按钮（RLS 本来就不允许一般使用者改内置分类）；自定义分类带
+     改名/隐藏/删除三个动作。清单本身、以及「新增分类」開的 Modal，都由
+     app.js 的 renderCategoryManageList()／initCategoryManage() 动态产生 -->
+<section class="page secondary-page is-hidden" id="page-category-manage" data-page-section="category-manage">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="settings.categoriesPanel">分类管理</h1>
+      <p class="page-subtitle" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
+    </div>
+  </div>
+  <div class="secondary-page-body">
+    <div id="categoryManageList">
+      <!-- 分类清单由 renderCategoryManageList() 动态产生 -->
+    </div>
+    <div class="settings-actions">
+      <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
+    </div>
+  </div>
+</section>
+
+<!-- 设置页「搭伙鸭金库」摘要点「更改」进来的编辑页：既有旅程在这里补开，
+     或管理已开启的金库打款状态；内容由 renderPoolSettingsPanel() 全权接管 -->
+<section class="page secondary-page is-hidden" id="page-pool-manage" data-page-section="pool-manage">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="pool.settings.enableTitle">搭伙鸭金库</h1>
+    </div>
+  </div>
+  <div class="secondary-page-body" id="poolSettingsPanel"></div>
 </section>
 
   </main>

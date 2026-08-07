@@ -604,6 +604,7 @@ const STRINGS = {
     'common.close': '关闭',
     'common.back': '返回',
     'common.save': '储存',
+    'common.view': '查看',
     'confirm.title': '确定要删除吗？',
     'confirm.confirmDelete': '确认删除',
     'confirm.settleAllTitle': '确认结清',
@@ -727,6 +728,8 @@ const STRINGS = {
     'currency.missingWarning': '部分外币尚未设定汇率，目前暂以 1:1 计算，建议尽快补全。',
     'currency.save': '储存',
     'currency.allBaseCurrency': '所有消费都使用基准货币，不需要设定汇率。',
+    'settings.financialSummaryMissing': '还有 {count} 种货币未设定汇率',
+    'settings.financialSummaryAllSet': '已设定 {count} 种货币的汇率',
 
     // 分类管理
     'settings.categoriesPanel': '分类管理',
@@ -1012,6 +1015,7 @@ const STRINGS = {
     'pool.card.settleBtn': '结程退余',
 
     'pool.form.enableLabel': '开启搭伙鸭金库',
+    'pool.form.enableBtnShort': '开启',
     'pool.form.enableHint': '开启后，大家先把钱交给鸭鸭金库统一保管，旅程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！',
     'pool.form.perPersonLabel': '人均预付款',
 
@@ -1310,6 +1314,7 @@ const STRINGS = {
     'common.close': 'Close',
     'common.back': 'Back',
     'common.save': 'Save',
+    'common.view': 'View',
     'confirm.title': 'Are you sure?',
     'confirm.confirmDelete': 'Confirm Delete',
     'confirm.settleAllTitle': 'Confirm Settlement',
@@ -1426,6 +1431,8 @@ const STRINGS = {
     'currency.missingWarning': 'Some exchange rates are missing and default to 1:1. Complete them for accuracy.',
     'currency.save': 'Save',
     'currency.allBaseCurrency': 'All expenses use the base currency — no exchange rate needed.',
+    'settings.financialSummaryMissing': 'Missing exchange rate for {count} currency(ies)',
+    'settings.financialSummaryAllSet': 'Exchange rates set for {count} currency(ies)',
 
     // Category management
     'settings.categoriesPanel': 'Categories',
@@ -1702,6 +1709,7 @@ const STRINGS = {
     'pool.card.settleBtn': 'Settle & Refund',
 
     'pool.form.enableLabel': 'Enable Divvy Duck Pool',
+    'pool.form.enableBtnShort': 'Enable',
     'pool.form.enableHint': 'Logged payments go into a shared pool; trip expenses can be paid straight from it',
     'pool.form.perPersonLabel': 'Amount per person',
 
@@ -8774,12 +8782,48 @@ function handlePoolEnableButtonClick() {
  * （後端才有真正的资料去源，前端重算容易漏掉边界情况、也可能跟後端实际允许的动作对不上）
  * 容错：容器不存在（旧版 index.html 还没加这段）时安全跳过
  */
+/**
+ * 设置页「搭伙鸭金库」面板的摘要：不管目前是「还没开启」「已开启但唯读」
+ * 「已开启且能管理」哪一种状态，都只显示一行标题＋一行说明，不用点进
+ * page-pool-manage 二级页面就能看个大概；按钮文字也跟着状态换（还没开启
+ * 显示「开启」、已开启但不能管理显示「查看」、能管理才显示「更改」），
+ * 不是每种状态都适合叫「更改」——还没开启的东西没有「改」的对象
+ * @param {Object|null} pool appState.pool
+ * @param {boolean} canManage 目前这个账号是否有权限管理这个金库
+ */
+function renderPoolSettingsSummary_(pool, canManage) {
+  const titleEl = document.getElementById('poolSettingsSummaryTitle');
+  const descEl = document.getElementById('poolSettingsSummaryDesc');
+  const btnEl = document.getElementById('openPoolManageBtn');
+  if (!titleEl || !descEl || !btnEl) return;
+
+  if (!pool || !pool.enabled) {
+    titleEl.textContent = t('pool.form.enableLabel');
+    descEl.textContent = t('pool.form.enableHint');
+    btnEl.textContent = t('pool.form.enableBtnShort');
+    return;
+  }
+
+  if (!canManage) {
+    titleEl.textContent = t('pool.settings.readOnlyTitle');
+    descEl.textContent = t('pool.settings.readOnlyDesc');
+    btnEl.textContent = t('common.view');
+    return;
+  }
+
+  titleEl.textContent = t('pool.settings.statusTitle');
+  descEl.textContent = t('pool.settings.topupCountSummary', { count: pool.topupCount });
+  btnEl.textContent = t('account.changeBtn');
+}
+
 function renderPoolSettingsPanel() {
   const container = document.getElementById('poolSettingsPanel');
   if (!container) return;
 
   const pool = appState.pool;
   const canManage = !!(pool && pool.canManagePool);
+
+  renderPoolSettingsSummary_(pool, canManage);
 
   // ---- 状态一：金库还没开始用，而且使用者还没按下「启动金库」----
   if ((!pool || !pool.enabled) && !poolEnableFormRevealed_) {
@@ -10535,26 +10579,6 @@ function renderCategorySelectOptions() {
   }
 }
 
-/**
- * 渲染设置页「分类管理」面板的并列预览——不是完整可编辑清单（那份在
- * categoryManageModal 里，见 renderCategoryManageList()），这裡只是让使用者
- * 不用点开 Modal 就能一眼看到「目前有哪些分类」，用跟账目页筛选 chip 一样的
- * 小胶囊并排显示，不占版面高度。隐藏的自定义分类不出现在这裡——预览要反映
- * 的是「记账表单实际选得到的分类」，跟 renderCategorySelectOptions() 的
- * 过滤逻辑一致
- */
-function renderCategoryManagePreview_() {
-  const container = document.getElementById('categoryManagePreview');
-  if (!container) return;
-
-  container.innerHTML = appState.categories
-    .filter((category) => !category.isHidden)
-    .map((category) => {
-      const dot = category.tripId ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '';
-      return `<span class="chip category-preview-chip">${dot}${escapeHtml(translateCategory(category.name))}</span>`;
-    })
-    .join('');
-}
 
 /**
  * 渲染设置页「分类管理」面板的分类清单——系统内置分类只显示、不给任何操作
@@ -10611,6 +10635,38 @@ function renderCategoryManageList() {
       }
     });
   });
+
+  renderCategoryManagePreview_();
+}
+
+/**
+ * 设置页「分类管理」面板的摘要：把目前所有分类打横排成一排 chip（不给点击、
+ * 不带操作按钮），让使用者不用点进二级页面就能一眼看到「现在有哪些分类」。
+ * 隐藏的分类不出现在这裡——预览要反映的是「记账表单实际选得到的分类」，
+ * 跟 renderCategorySelectOptions() 的过滤逻辑一致，不是「分类管理」二级页面
+ * 那种连隐藏的都要看到、才好选回来取消隐藏的完整清单。真正的改名/隐藏/
+ * 删除/新增都收在 page-category-manage 里，点设置页这颗「更改」才切过去
+ * （见 openCategoryManagePage_()）
+ */
+function renderCategoryManagePreview_() {
+  const container = document.getElementById('categoryPreviewChips');
+  if (!container) return;
+
+  container.innerHTML = (appState.categories || [])
+    .filter((category) => !category.isHidden)
+    .map((category) => {
+      const dot = category.tripId ? '<span class="chip-custom-dot" aria-hidden="true"></span>' : '';
+      return `<span class="chip category-preview-chip">${dot}${escapeHtml(translateCategory(category.name))}</span>`;
+    })
+    .join('');
+}
+
+/**
+ * 设置页「分类管理」摘要的「更改」按钮：切到 page-category-manage 二级页面
+ */
+function openCategoryManagePage_() {
+  renderCategoryManageList();
+  showSecondaryPage_('category-manage');
 }
 
 /**
@@ -10682,6 +10738,11 @@ function initCategoryManage() {
       event.preventDefault();
       handleCategoryFormSubmit_();
     });
+  }
+
+  const openManageBtn = document.getElementById('openCategoryManageBtn');
+  if (openManageBtn) {
+    openManageBtn.addEventListener('click', openCategoryManagePage_);
   }
 }
 
@@ -10801,6 +10862,19 @@ function initSettingsPage() {
   document.getElementById('darkModeSwitch').addEventListener('change', (event) => {
     applyTheme(event.target.checked ? 'dark' : 'light');
   });
+
+  const openPoolManageBtn = document.getElementById('openPoolManageBtn');
+  if (openPoolManageBtn) {
+    openPoolManageBtn.addEventListener('click', openPoolManagePage_);
+  }
+}
+
+/**
+ * 设置页「搭伙鸭金库」摘要的按钮：切到 page-pool-manage 二级页面（还没开启、
+ * 已开启可管理、已开启唯读三种状态都在同一个二级页面里，见 renderPoolSettingsPanel()）
+ */
+function openPoolManagePage_() {
+  showSecondaryPage_('pool-manage');
 }
 
 
@@ -10842,6 +10916,18 @@ function initCurrencySettings() {
 
   document.getElementById('saveCurrencyBtn').addEventListener('click', handleSaveCurrencySettings);
   document.getElementById('fetchAllRatesBtn').addEventListener('click', handleFetchAllLiveRates);
+
+  const openBtn = document.getElementById('openCurrencySettingsBtn');
+  if (openBtn) {
+    openBtn.addEventListener('click', openCurrencySettingsPage_);
+  }
+}
+
+/**
+ * 设置页「财务设置」摘要的「更改」按钮：切到 page-currency-settings 二级页面
+ */
+function openCurrencySettingsPage_() {
+  showSecondaryPage_('currency-settings');
 }
 
 /**
@@ -10945,6 +11031,19 @@ function renderCurrencySettings() {
   const repaymentHint = document.getElementById('repaymentCurrencyHint');
   if (repaymentHint) {
     repaymentHint.textContent = t('repayment.currencyUnitHint', { currency: baseCurrency });
+  }
+
+  // 设置页「财务设置」摘要：基准货币 + 汇率设定进度，不用点进二级页面
+  // 就能一眼看出「还有没有货币没设汇率」，跟 exchangeRateWarning 用同一份
+  // missingCurrencies，两边不会对不上
+  const summaryEl = document.getElementById('financialSettingsSummary');
+  if (summaryEl) {
+    const statusText = usedCurrencies.length === 0
+      ? t('currency.allBaseCurrency')
+      : (missingCurrencies.length > 0
+        ? t('settings.financialSummaryMissing', { count: missingCurrencies.length })
+        : t('settings.financialSummaryAllSet', { count: usedCurrencies.length }));
+    summaryEl.textContent = `${baseCurrency} · ${statusText}`;
   }
 }
 
