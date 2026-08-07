@@ -2260,6 +2260,57 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 .balance-amount.is-negative { color: var(--danger); }
 .balance-amount.is-zero { color: var(--text-tertiary); }
 
+/* Dashboard 首页「谁欠谁」列表——只 scope 在 #balanceMatrixList 底下，
+   跟旁边「近期账目」(.activity-row) 对齐用：头像缩到跟 .activity-icon
+   一样大、金额字级对齐 .activity-amount。不动全局的 .avatar／
+   .balance-amount.mono——那两个 class 在其他十几个地方（成员明细、
+   分类清单…）已经调好了，不该被这裡的对齐需求牵动 */
+#balanceMatrixList .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+}
+
+#balanceMatrixList .balance-amount.mono {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 「提醒」改成固定在金额右侧的小图标按钮——不管这一行有没有提醒对象
+   （自己欠对方的那几行、跟搭伙金库有关的那几行都没有），都占同样的
+   宽度，每一行的金额才会对齐在同一个位置，不会因为某几行多一颗文字
+   按钮就把金额往左挤 */
+.balance-matrix-remind-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast, 140ms) var(--ease-out, ease), color var(--duration-fast, 140ms);
+}
+
+.balance-matrix-remind-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.balance-matrix-remind-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.balance-matrix-remind-btn.is-invisible {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .settlement-row {
   display: flex;
   align-items: center;
@@ -2426,10 +2477,28 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-weight: 600;
 }
 
+/* 金库设置页「充值记录」区块标题——独立一行（不在 .settings-row 里），
+   跟上面的充值表单拉开一点距离，不会看起来像充值表单的一部分 */
+.pool-topup-records-title {
+  margin-top: var(--space-5, 20px);
+  margin-bottom: var(--space-2, 8px);
+}
+
 .settings-row-desc {
   font-size: 12.5px;
   color: var(--text-tertiary);
   margin-top: 2px;
+}
+
+/* 「摘要」型设置行的第三行——标题说明目前是什么设定、说明文字讲这个设定
+   影响什么，这一行才是真正「现在的值」，字级／字重跟 .trip-current-name
+   对齐，让使用者一眼就找得到「现在设的是什么」，不会被上面的说明文字
+   一起淹没在同一种小灰字里 */
+.settings-row-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 6px;
 }
 
 /* 分类管理面板——沿用 .settings-row 的左右两栏排版，只是左边这栏（本来只放
@@ -5343,18 +5412,25 @@ body {
 
   /* 已付金额／个人消费／已收金额这三项，结算页面「每人收支」现在也看得到
      （见 .balance-row-breakdown），手机屏幕窄、Hero Card 又要显示吉祥物+净额，
-     三项明细放上去卡片会拉得太高，占掉太多第一屏空间，直接隐藏 */
-  .hero-breakdown,
-  .hero-breakdown-divider {
+     三项明细放上去卡片会拉得太高，占掉太多第一屏空间，直接隐藏。
+     但只在「没有金库卡片可以滑」的单卡情境才收合——金库卡片一旦存在，
+     两张卡是配成一组滑动着看的，金库卡本来就有吉祥物/徽章/余额/按钮一大串
+     内容，Hero 卡如果还收成只有净额一行，滑过去会像「资讯量突然掉了一大截」，
+     跟桌面版（不分卡不分屏，三项明细本来就一直显示）的份量感也对不上，
+     所以这裡改成只有 :not(.has-pool) 才收合 */
+  .dash-card-slider:not(.has-pool) .hero-breakdown,
+  .dash-card-slider:not(.has-pool) .hero-breakdown-divider {
     display: none;
   }
 
   /* 隐藏上面那三项之後，卡片本来该跟着变矮——但 .dash-card-slider .hero-card
      那条 min-height: 300px 是为了「容纳三项明细＋跟金库卡片对齐高度」设的固定值，
      手机版不显示那三项了，卡片没必要还撑到 300px 这么高，这里针对手机版单独调低。
-     （金库卡片如果比这个矮，syncDashCardHeights() 还是会用 JS inline style 把两张卡
-     动态对齐到同一高度，这条只是把「没有金库卡片、或金库卡片也很矮」时的下限调整） */
-  .dash-card-slider .hero-card {
+     只在同样「没有金库卡片」的情境下调低——有金库卡片时三项明细改回显示了
+     （见上），卡片需要跟桌面版一样的完整高度，才放得下这些内容，也才有
+     足够高度可以跟金库卡片对齐（金库卡片如果比这个矮，syncDashCardHeights()
+     还是会用 JS inline style 把两张卡动态对齐到同一高度） */
+  .dash-card-slider:not(.has-pool) .hero-card {
     min-height: var(--hero-card-min-height-compact) !important;
   }
 }

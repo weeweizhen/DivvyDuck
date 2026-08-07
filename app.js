@@ -498,6 +498,7 @@ const STRINGS = {
     'settings.languageRowTitle': '显示语言',
     'settings.tripPanelTitle': '旅程设置',
     'settings.currentTripLabel': '目前旅程',
+    'settings.currentTripHint': '以下设定都专属于这趟旅程',
     'languagePicker.title': '选择语言',
     'languagePicker.hint': '选好后介面文字会立刻切换',
 
@@ -552,9 +553,9 @@ const STRINGS = {
     // Balance Matrix：谁欠谁
     'dashboard.matrixTitle': '谁欠谁',
     'dashboard.matrixHint': '一眼看懂资金流向',
-    'dashboard.matrix.owesYou': '{name} 需要转给你',
-    'dashboard.matrix.youOwe': '你需要转给 {name}',
-    'dashboard.matrix.otherPair': '{from} 需要转给 {to}',
+    'dashboard.matrix.owesYouSub': '需要转给你',
+    'dashboard.matrix.youOweSub': '你需要转给对方',
+    'dashboard.matrix.otherPairSub': '待结算',
     'dashboard.matrix.remind': '提醒',
     'dashboard.matrix.collapse': '收起',
     'dashboard.matrix.reminderText': '嘎～{name}，鸭鸭掐指一算，你还欠 {amount} 没转喔，别让鸭鸭继续念叨啦 🦆\n点这里看明细、还能自己开个账号盯着：{link}',
@@ -728,8 +729,6 @@ const STRINGS = {
     'currency.missingWarning': '部分外币尚未设定汇率，目前暂以 1:1 计算，建议尽快补全。',
     'currency.save': '储存',
     'currency.allBaseCurrency': '所有消费都使用基准货币，不需要设定汇率。',
-    'settings.financialSummaryMissing': '还有 {count} 种货币未设定汇率',
-    'settings.financialSummaryAllSet': '已设定 {count} 种货币的汇率',
 
     // 分类管理
     'settings.categoriesPanel': '分类管理',
@@ -1088,8 +1087,7 @@ const STRINGS = {
     'pool.form.currencyHint': '之后还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
     'pool.settings.topupCountSummary': '已登记 {count} 笔打款',
     'pool.settings.topupBtn': '充值',
-    'pool.settings.editTopupBtn': '更改',
-    'pool.settings.editTopupTitle': '更改登记打款',
+    'pool.settings.recordsTitle': '充值记录',
     'pool.settings.editTopupEmptyTitle': '还没有登记纪录',
     'pool.settings.editTopupEmptyDesc': '先充值一笔，之后才能在这里更改。',
     'pool.settings.editTopupMemberCountNote': '总额会用这笔登记当时的人数（{count} 人）重新计算，不受目前成员异动影响。',
@@ -1215,6 +1213,7 @@ const STRINGS = {
     'settings.languageRowTitle': 'Display language',
     'settings.tripPanelTitle': 'Trip',
     'settings.currentTripLabel': 'Current Trip',
+    'settings.currentTripHint': 'The settings below are specific to this trip',
     'languagePicker.title': 'Choose language',
     'languagePicker.hint': "Switches instantly once you pick one",
 
@@ -1264,9 +1263,9 @@ const STRINGS = {
 
     'dashboard.matrixTitle': 'Who Owes Who',
     'dashboard.matrixHint': 'The money flow, at a glance',
-    'dashboard.matrix.owesYou': '{name} owes you',
-    'dashboard.matrix.youOwe': 'You owe {name}',
-    'dashboard.matrix.otherPair': '{from} owes {to}',
+    'dashboard.matrix.owesYouSub': 'owes you',
+    'dashboard.matrix.youOweSub': 'you owe them',
+    'dashboard.matrix.otherPairSub': 'pending settlement',
     'dashboard.matrix.remind': 'Remind',
     'dashboard.matrix.collapse': 'Collapse',
     'dashboard.matrix.reminderText': 'Hey {name}, DivvyDuck here \u{1F986} \u2014 you still have {amount} outstanding from our trip, whenever you get a chance!\nCheck the details (and set up your own account) here: {link}',
@@ -1431,8 +1430,6 @@ const STRINGS = {
     'currency.missingWarning': 'Some exchange rates are missing and default to 1:1. Complete them for accuracy.',
     'currency.save': 'Save',
     'currency.allBaseCurrency': 'All expenses use the base currency — no exchange rate needed.',
-    'settings.financialSummaryMissing': 'Missing exchange rate for {count} currency(ies)',
-    'settings.financialSummaryAllSet': 'Exchange rates set for {count} currency(ies)',
 
     // Category management
     'settings.categoriesPanel': 'Categories',
@@ -1782,8 +1779,7 @@ const STRINGS = {
     'pool.form.currencyHint': 'You can log future payments in a different currency too — e.g. Ringgit at the airport, then Yuan once you land.',
     'pool.settings.topupCountSummary': '{count} payment(s) logged',
     'pool.settings.topupBtn': 'Top up',
-    'pool.settings.editTopupBtn': 'Edit',
-    'pool.settings.editTopupTitle': 'Edit a Top-up',
+    'pool.settings.recordsTitle': 'Top-up Records',
     'pool.settings.editTopupEmptyTitle': 'No top-ups yet',
     'pool.settings.editTopupEmptyDesc': 'Log one first, then you can edit it here.',
     'pool.settings.editTopupMemberCountNote': 'The total is recalculated using the member count at the time this was logged ({count} people) \u2014 unaffected by membership changes since.',
@@ -8060,13 +8056,16 @@ function renderBalanceMatrix() {
   const renderRow = (item) => {
     const isYouOwe = viewerName && item.from === viewerName;
     const isOwesYou = viewerName && item.to === viewerName;
-    const fromDisplay = getExpensePayerDisplay(item.from);
-    const toDisplay = getExpensePayerDisplay(item.to);
-    const label = isOwesYou
-      ? t('dashboard.matrix.owesYou', { name: fromDisplay })
+    // 头像／名字都要显示「对方」，不是自己——youOwe 时 item.from 其实是自己
+    // （viewerName），旧版这裡一律显示 getInitials(item.from) 在这个情境下
+    // 会画出自己的头像，是个小 bug，这次一并修正
+    const counterpartRaw = isOwesYou ? item.from : item.to;
+    const counterpartDisplay = getExpensePayerDisplay(counterpartRaw);
+    const relationSub = isOwesYou
+      ? t('dashboard.matrix.owesYouSub')
       : isYouOwe
-        ? t('dashboard.matrix.youOwe', { name: toDisplay })
-        : t('dashboard.matrix.otherPair', { from: fromDisplay, to: toDisplay });
+        ? t('dashboard.matrix.youOweSub')
+        : t('dashboard.matrix.otherPairSub');
 
     // 跟「搭伙金库」有关的转账建议不是真人对真人，不提供「提醒」按钮
     // （金库不会看 WhatsApp，提醒了也没有意义）
@@ -8074,12 +8073,17 @@ function renderBalanceMatrix() {
 
     return `
       <div class="balance-row">
-        <div class="avatar">${escapeHtml(getInitials(item.from))}</div>
+        <div class="avatar">${escapeHtml(getInitials(counterpartRaw))}</div>
         <div class="balance-info">
-          <p class="balance-name">${escapeHtml(label)}</p>
+          <p class="balance-name">${escapeHtml(counterpartDisplay)}</p>
+          <p class="balance-sub">${escapeHtml(relationSub)}</p>
         </div>
         <p class="balance-amount mono">${formatMoney(item.amount)}</p>
-        ${showRemindBtn ? `<button class="btn btn-ghost btn-sm balance-matrix-remind-btn" type="button" data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}">${escapeHtml(t('dashboard.matrix.remind'))}</button>` : ''}
+        <button class="balance-matrix-remind-btn${showRemindBtn ? '' : ' is-invisible'}" type="button"
+          ${showRemindBtn ? `data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}"` : 'tabindex="-1" aria-hidden="true"'}
+          aria-label="${escapeHtml(t('dashboard.matrix.remind'))}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     `;
   };
@@ -8771,23 +8775,33 @@ function handlePoolEnableButtonClick() {
 }
 
 /**
- * 设置页「搭伙鸭金库」面板，依权限与开启状态分三种呈现：
- *   1. 还没开始用：只显示「启动金库」按钮，任何成员都看得到、点得下去——
- *      谁先按、谁填了第一笔充值，谁就顺便成为这个金库的「启动人」（後端权限判断的依据）
- *   2. 已经开始用，但这个账号不是启动人也不是旅程建立者：显示「金库已开启」+
- *      目前各货币余额的唯读摘要，不给充值表单／编辑按钮——充值与结程退余
- *      只有启动人或旅程建立者能做
- *   3. 已经开始用，而且这个账号有管理权限：维持原本的完整表单（摘要 + 充值 + 编辑）
- * 权限判断完全信任後端回传的 pool.canManagePool，不在前端自己重算一次
- * （後端才有真正的资料去源，前端重算容易漏掉边界情况、也可能跟後端实际允许的动作对不上）
- * 容错：容器不存在（旧版 index.html 还没加这段）时安全跳过
+ * 把金库目前各货币的「余额 / 这一轮累计收款」组成一行摘要文字，例如「MYR 0.00 / MYR 800.00」，
+ * 多货币用顿号分隔——「余额」是现在还剩多少能花，「累计收款」是这一轮（上次结程退余之後）
+ * 总共收了多少，两个数字放在一起才看得出「花了多少」，只看余额容易誤以为钱变少了、
+ * 其实是花掉了。这裡故意不用 c.collected（金库开通以来的历史总额）——结程退余、
+ * 重新开一轮之後，旧一轮已经退掉的结余不该算进「现在这一轮收了多少」，
+ * 不然明明这一轮才刚收满，摘要却显示一个混进上一轮结余的虚高数字，
+ * 跟 renderDivvyPoolCard()／renderPoolSettingsPanel() 的进度条算法保持一致
+ * @param {Object} pool appState.pool，必须是 pool.enabled 为 true 的情况才呼叫
+ * @return {string}
  */
+function formatPoolBalanceSummary_(pool) {
+  return (pool.currencies || [])
+    .map((c) => {
+      const roundCollected = c.roundCollected > 0 ? c.roundCollected : c.collected;
+      return `${formatMoney(c.balance, c.currency)} / ${formatMoney(roundCollected, c.currency)}`;
+    })
+    .join('、');
+}
+
 /**
  * 设置页「搭伙鸭金库」面板的摘要：不管目前是「还没开启」「已开启但唯读」
  * 「已开启且能管理」哪一种状态，都只显示一行标题＋一行说明，不用点进
  * page-pool-manage 二级页面就能看个大概；按钮文字也跟着状态换（还没开启
  * 显示「开启」、已开启但不能管理显示「查看」、能管理才显示「更改」），
- * 不是每种状态都适合叫「更改」——还没开启的东西没有「改」的对象
+ * 不是每种状态都适合叫「更改」——还没开启的东西没有「改」的对象。已开启
+ * 的两种状态（唯读／可管理）说明文字都是「现在还有多少余额」，不是登记
+ * 笔数——使用者点进设置页第一眼想知道的是「钱还够不够」，不是「记了几笔」
  * @param {Object|null} pool appState.pool
  * @param {boolean} canManage 目前这个账号是否有权限管理这个金库
  */
@@ -8804,17 +8818,35 @@ function renderPoolSettingsSummary_(pool, canManage) {
     return;
   }
 
+  const balanceSummary = formatPoolBalanceSummary_(pool);
+
   if (!canManage) {
     titleEl.textContent = t('pool.settings.readOnlyTitle');
-    descEl.textContent = t('pool.settings.readOnlyDesc');
+    descEl.textContent = balanceSummary;
     btnEl.textContent = t('common.view');
     return;
   }
 
   titleEl.textContent = t('pool.settings.statusTitle');
-  descEl.textContent = t('pool.settings.topupCountSummary', { count: pool.topupCount });
+  descEl.textContent = balanceSummary;
   btnEl.textContent = t('account.changeBtn');
 }
+
+/**
+ * 设置页「搭伙鸭金库」面板，依权限与开启状态分三种呈现：
+ *   1. 还没开始用：只显示「启动金库」按钮，任何成员都看得到、点得下去——
+ *      谁先按、谁填了第一笔充值，谁就顺便成为这个金库的「启动人」（後端权限判断的依据）
+ *   2. 已经开始用，但这个账号不是启动人也不是旅程建立者：显示「金库已开启」+
+ *      目前各货币余额的唯读摘要，不给充值表单／编辑按钮——充值与结程退余
+ *      只有启动人或旅程建立者能做
+ *   3. 已经开始用，而且这个账号有管理权限：摘要 + 充值表单 + 所有充值记录
+ *      （记录直接列在充值表单下面，点其中一笔就地展开编辑，不用再另外点一次
+ *      「更改」跳进别的画面——这个「更改」按钮以前是打开另一个 Modal，等于
+ *      要点两次才看得到记录，阶段 10 拿掉了这层，记录改成一直显示）
+ * 权限判断完全信任後端回传的 pool.canManagePool，不在前端自己重算一次
+ * （後端才有真正的资料去源，前端重算容易漏掉边界情况、也可能跟後端实际允许的动作对不上）
+ * 容错：容器不存在（旧版 index.html 还没加这段）时安全跳过
+ */
 
 function renderPoolSettingsPanel() {
   const container = document.getElementById('poolSettingsPanel');
@@ -8862,35 +8894,11 @@ function renderPoolSettingsPanel() {
   }
 
   // ---- 状态三：有管理权限（启动人或旅程建立者），或者还没开始用、刚按下「启动金库」----
-  let summaryHtml = '';
-  if (pool && pool.enabled) {
-    summaryHtml = `
-      <div class="settings-row">
-        <div class="settings-row-text">
-          <p class="settings-row-title">${escapeHtml(t('pool.settings.statusTitle'))}</p>
-          <p class="settings-row-desc">${escapeHtml(t('pool.settings.topupCountSummary', { count: pool.topupCount }))}</p>
-        </div>
-        ${pool.topupCount > 0 ? `
-          <button type="button" class="btn btn-ghost btn-sm" onclick="openPoolTopupEditListModal()">
-            ${escapeHtml(t('pool.settings.editTopupBtn'))}
-          </button>` : ''}
-      </div>
-      <div class="pool-settings-currency-list">
-        ${pool.currencies.map((c) => `
-          <div class="pool-settings-currency-row">
-            <span>${escapeHtml(c.currency)}</span>
-            <span class="mono">${escapeHtml(formatMoney(c.balance, c.currency))} / ${escapeHtml(formatMoney(c.collected, c.currency))}</span>
-          </div>`).join('')}
-      </div>
-    `;
-  }
-
   // 充值表单一律显示，不因为「目前刚好结清」就锁住——结程只是把当下的余额退掉，
   // 金库本身还是可以继续用，欢迎再充值开始新的一轮
   const memberCount = (appState.members || []).length;
 
   container.innerHTML = `
-    ${summaryHtml}
     <div class="settings-row">
       <div class="settings-row-text">
         <p class="settings-row-title" data-i18n="pool.settings.topupFormTitle">${escapeHtml(t('pool.settings.topupFormTitle'))}</p>
@@ -8906,10 +8914,14 @@ function renderPoolSettingsPanel() {
       </button>
     </div>
     <p class="form-hint" id="poolTopupPreview"></p>
+
+    <p class="settings-row-title pool-topup-records-title" data-i18n="pool.settings.recordsTitle">${escapeHtml(t('pool.settings.recordsTitle'))}</p>
+    <div id="poolTopupRecordsBody"></div>
   `;
 
   renderCurrencySelectOptions('poolTopupCurrencySelect', appState.tripCurrency.baseCurrency);
   updatePoolTopupPreview();
+  renderPoolTopupEditList();
 }
 
 /**
@@ -8980,29 +8992,17 @@ async function handlePoolTopupSubmit() {
 }
 
 /**
- * 打开「更改登记打款」Modal，先显示所有登记纪录让使用者挑选要改哪一笔
- * （以防充值的时候金额/货币输错了，事後还有得救，不用整笔作废重登记）
- */
-function openPoolTopupEditListModal() {
-  const pool = appState.pool;
-  if (!pool) return;
-
-  renderPoolTopupEditList();
-  openModal('poolTopupEditModal');
-}
-
-/**
  * Modal 的「列表」画面：列出这趟旅程所有登记打款纪录，点其中一笔进「编辑」画面
  */
 function renderPoolTopupEditList() {
   const pool = appState.pool;
-  const bodyEl = document.getElementById('poolTopupEditBody');
+  const bodyEl = document.getElementById('poolTopupRecordsBody');
   if (!pool || !bodyEl) return;
 
   const topups = pool.topups || [];
 
   if (topups.length === 0) {
-    renderEmptyBlock('poolTopupEditBody', t('pool.settings.editTopupEmptyTitle'), t('pool.settings.editTopupEmptyDesc'));
+    renderEmptyBlock('poolTopupRecordsBody', t('pool.settings.editTopupEmptyTitle'), t('pool.settings.editTopupEmptyDesc'));
     return;
   }
 
@@ -9034,7 +9034,7 @@ function renderPoolTopupEditList() {
  */
 function renderPoolTopupEditForm(topupId) {
   const pool = appState.pool;
-  const bodyEl = document.getElementById('poolTopupEditBody');
+  const bodyEl = document.getElementById('poolTopupRecordsBody');
   const item = (pool && pool.topups || []).find((topup) => topup.id === topupId);
   if (!item || !bodyEl) return;
 
@@ -9058,7 +9058,8 @@ function renderPoolTopupEditForm(topupId) {
 }
 
 /**
- * 送出「更改登记打款」：呼叫後端 poolUpdateTopup，成功後关掉 Modal、重绘金库卡片
+ * 送出「更改登记打款」：呼叫後端 poolUpdateTopup，成功後重绘整个金库设置面板——
+ * 会连带回到充值记录清单画面（不是继续停在编辑表单），使用者能立刻看到改好的结果
  * @param {string} topupId 要编辑的登记打款 ID
  */
 async function handlePoolTopupEditSubmit(topupId) {
@@ -9085,7 +9086,6 @@ async function handlePoolTopupEditSubmit(topupId) {
     if (updateError) throw updateError;
     appState.pool = await fetchPoolStatus_();
 
-    closeActiveModal();
     renderEverything(); // Hero Card 的「已付金额」也可能因为改了金额/币种而跟着变
   } catch (error) {
     showToast('error', t('pool.settings.editTopupFailed'), error.message);
@@ -11033,17 +11033,12 @@ function renderCurrencySettings() {
     repaymentHint.textContent = t('repayment.currencyUnitHint', { currency: baseCurrency });
   }
 
-  // 设置页「财务设置」摘要：基准货币 + 汇率设定进度，不用点进二级页面
-  // 就能一眼看出「还有没有货币没设汇率」，跟 exchangeRateWarning 用同一份
-  // missingCurrencies，两边不会对不上
+  // 设置页「财务设置」摘要：标题／说明都是固定文字（写在 index.html），
+  // 这裡只负责补上第三行「现在的值」——汇率设定得完不完整的细节，
+  // 留给点进二级页面後的 exchangeRateWarning 讲，摘要只讲「现在用哪个货币」
   const summaryEl = document.getElementById('financialSettingsSummary');
   if (summaryEl) {
-    const statusText = usedCurrencies.length === 0
-      ? t('currency.allBaseCurrency')
-      : (missingCurrencies.length > 0
-        ? t('settings.financialSummaryMissing', { count: missingCurrencies.length })
-        : t('settings.financialSummaryAllSet', { count: usedCurrencies.length }));
-    summaryEl.textContent = `${baseCurrency} · ${statusText}`;
+    summaryEl.textContent = baseCurrency;
   }
 }
 

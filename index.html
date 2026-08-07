@@ -851,6 +851,7 @@
           <div class="settings-row">
             <div class="settings-row-text">
               <p class="settings-row-title" data-i18n="settings.currentTripLabel">目前旅程</p>
+              <p class="settings-row-desc" data-i18n="settings.currentTripHint">以下设定都专属于这趟旅程</p>
               <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程" data-i18n-aria-label="fab.switchTrip">
                 <span class="trip-current-name" id="tripPillCurrentName">—</span>
                 <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
@@ -888,7 +889,8 @@
           <div class="settings-row">
             <div class="settings-row-text">
               <p class="settings-row-title" data-i18n="currency.baseCurrencyLabel">基准货币</p>
-              <p class="settings-row-desc" id="financialSettingsSummary">—</p>
+              <p class="settings-row-desc" data-i18n="currency.baseCurrencyHint">结算总览、建议还款、还款纪录都以这个货币计算</p>
+              <p class="settings-row-value" id="financialSettingsSummary">—</p>
             </div>
             <button class="btn btn-ghost btn-sm" type="button" id="openCurrencySettingsBtn" data-i18n="account.changeBtn">更改</button>
           </div>
@@ -902,6 +904,7 @@
         <div class="panel-body settings-body">
           <div class="settings-row">
             <div class="settings-row-text">
+              <p class="settings-row-desc" data-i18n="category.manage.desc">除了预设的分类，你也可以为这趟旅程新增专属的分类。</p>
               <div class="category-preview-chips" id="categoryPreviewChips"><!-- 分类 chips 由 app.js 动态产生 --></div>
             </div>
             <button class="btn btn-ghost btn-sm" type="button" id="openCategoryManageBtn" data-i18n="account.changeBtn">更改</button>
@@ -1423,19 +1426,6 @@
   <div class="modal-footer">
     <button class="btn btn-primary" type="button" data-close-modal data-i18n="common.close">关闭</button>
   </div>
-</div>
-
-<!-- 更改登记打款 Modal：设置页「更改」按钮打开，先列出所有登记纪录选一笔，
-     再改人均金额／货币（以防充值当下输错了）——列表跟编辑表单共用同一个 Modal，
-     用 renderPoolTopupEditList()／renderPoolTopupEditForm() 切换内容 -->
-<div class="modal modal-sm" id="poolTopupEditModal" role="dialog" aria-modal="true" aria-labelledby="poolTopupEditTitle">
-  <div class="modal-header">
-    <h2 id="poolTopupEditTitle" data-i18n="pool.settings.editTopupTitle">更改登记打款</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body" id="poolTopupEditBody"></div>
 </div>
 
 <!-- 选择旅程 Modal：设置页「目前旅程」pill 或「更改」按钮点了都会开这个——
