@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260806a">
+<link rel="stylesheet" href="style.css?v=20260807a">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -831,6 +831,48 @@
         </div>
       </div>
 
+      <!-- 以下几个面板都是「旅程专属」设置（换一趟旅程，这些内容就跟着换），
+           统一收在账户资料／偏好设置这两个「账户级」面板之後，彼此之间也
+           按「先看的是哪趟旅程、再看这趟旅程怎么设定」的顺序排：旅程设置
+           （切换/邀请码）→ 财务设置 → 分类管理 → 搭伙鸭金库 → 危险区 -->
+
+      <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
+           「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
+           合并成一个 category，标题换成跟其他面板（账户资料／偏好设置／财务设置）
+           同一种命名习惯的「旅程设置」。「目前旅程」这行是 pill 式切换器：
+           左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
+           小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
+           选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
+      <div class="panel" id="settingsTripSwitcherPanel">
+        <div class="panel-header">
+          <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
+        </div>
+        <div class="panel-body settings-body">
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="settings.currentTripLabel">目前旅程</p>
+              <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程" data-i18n-aria-label="fab.switchTrip">
+                <span class="trip-current-name" id="tripPillCurrentName">—</span>
+                <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-sm" type="button" id="openTripPickerBtn" data-i18n="account.changeBtn">更改</button>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-row-text">
+              <p class="settings-row-title" data-i18n="invite.panelTitle">邀请码</p>
+              <p class="settings-row-desc" data-i18n="invite.rowDesc">分享给朋友，让他们加入这趟旅程</p>
+            </div>
+          </div>
+          <div class="invite-card" id="inviteCard">
+            <span class="inline-field-label" data-i18n="invite.label">邀请码</span>
+            <code class="invite-card-code" id="inviteCodeText">—</code>
+            <button class="btn btn-ghost btn-sm" id="copyInviteCodeBtn" type="button" data-i18n="invite.copyBtn">复制</button>
+          </div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-header">
           <h2 data-i18n="settings.financialPanel">财务设置</h2>
@@ -875,43 +917,6 @@
           </div>
           <div class="settings-actions">
             <button class="btn btn-secondary btn-sm" id="addCategoryBtn" type="button" data-i18n="category.manage.addBtn">＋ 新增分类</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
-           「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
-           合并成一个 category，标题换成跟上面几个面板（账户资料／偏好设置／财务设置）
-           同一种命名习惯的「旅程设置」。「目前旅程」这行是 pill 式切换器：
-           左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
-           小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
-           选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
-      <div class="panel" id="settingsTripSwitcherPanel">
-        <div class="panel-header">
-          <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
-        </div>
-        <div class="panel-body settings-body">
-          <div class="settings-row">
-            <div class="settings-row-text">
-              <p class="settings-row-title" data-i18n="settings.currentTripLabel">目前旅程</p>
-              <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程" data-i18n-aria-label="fab.switchTrip">
-                <span class="trip-current-name" id="tripPillCurrentName">—</span>
-                <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
-              </button>
-            </div>
-            <button class="btn btn-ghost btn-sm" type="button" id="openTripPickerBtn" data-i18n="account.changeBtn">更改</button>
-          </div>
-
-          <div class="settings-row">
-            <div class="settings-row-text">
-              <p class="settings-row-title" data-i18n="invite.panelTitle">邀请码</p>
-              <p class="settings-row-desc" data-i18n="invite.rowDesc">分享给朋友，让他们加入这趟旅程</p>
-            </div>
-          </div>
-          <div class="invite-card" id="inviteCard">
-            <span class="inline-field-label" data-i18n="invite.label">邀请码</span>
-            <code class="invite-card-code" id="inviteCodeText">—</code>
-            <button class="btn btn-ghost btn-sm" id="copyInviteCodeBtn" type="button" data-i18n="invite.copyBtn">复制</button>
           </div>
         </div>
       </div>
@@ -1682,7 +1687,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260806a"></script>
+<script src="app.js?v=20260807a"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

@@ -197,10 +197,14 @@ body {
                           dvh 才能确保「实际内容高度」跟真正看得到的整个屏幕（含
                           Home Indicator 安全区）一样高，不会比屏幕矮一截、
                           底下露出还没铺到颜色的空白 */
-  /* html/body 两层都直接给一个跟 body 光晕背景相同的纯色兜底，就算某些机型上
-     .app-shell / .app-splash 用 100dvh 撑出来的高度跟真正的屏幕高度之间有一丁点
-     计算落差，露出来的也是这个跟画面其余部分一致的底色，不会是浏览器预设的白色 */
-  background-color: var(--bg-subtle);
+  /* html/body 两层都直接给一个纯色兜底，就算某些机型上 .app-shell / .app-splash
+     用 100dvh／inset:0 撑出来的高度跟真正的屏幕高度之间有一丁点计算落差，露出来的
+     也不会是浏览器预设的白色。这里刻意用 --bg 而不是 --bg-subtle——开机动画
+     .app-splash 的背景色正是 --bg，两者要完全一致，缝隙露出来的这一小截才会
+     跟上面的画面无缝接上；如果用 --bg-subtle（跟 --bg 其实是两个深浅相近但
+     肉眼看得出差异的米白色），实测在加入主屏幕的 standalone 模式下，开机画面
+     底部会看到一小截明显比背景更灰的横条，就是这个颜色没对齐造成的 */
+  background-color: var(--bg);
   /* 手机版视口 meta 已经用 user-scalable=no 关掉双指缩放，但 iOS Safari 有时候
      基於无障碍考量会忽略这个设定；双击快速点两下造成的「双击缩放」更是完全独立於
      viewport meta 之外的另一套机制，只能靠这个 CSS 属性关掉——两者加起来才能确保
@@ -4956,6 +4960,11 @@ body {
 /* -------------------- Hero Card 顶部：吉祥物微交互（跟金库卡片同一套手感） -------------------- */
 
 .hero-card-top {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
   margin-bottom: var(--space-4, 16px);
 }
 
