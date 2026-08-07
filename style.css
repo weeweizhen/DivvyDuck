@@ -188,6 +188,15 @@
 html,
 body {
   height: 100%;
+  min-height: 100vh; /* 向後相容：不支援 dvh 的旧浏览器用这个值 */
+  min-height: 100dvh; /* 加入主画面後 iOS 是 standalone 全屏模式，html/body 也要用
+                          dvh 才能确保「实际内容高度」跟真正看得到的整个屏幕（含
+                          Home Indicator 安全区）一样高，不会比屏幕矮一截、
+                          底下露出还没铺到颜色的空白 */
+  /* html/body 两层都直接给一个跟 body 光晕背景相同的纯色兜底，就算某些机型上
+     .app-shell / .app-splash 用 100dvh 撑出来的高度跟真正的屏幕高度之间有一丁点
+     计算落差，露出来的也是这个跟画面其余部分一致的底色，不会是浏览器预设的白色 */
+  background-color: var(--bg-subtle);
   /* 手机版视口 meta 已经用 user-scalable=no 关掉双指缩放，但 iOS Safari 有时候
      基於无障碍考量会忽略这个设定；双击快速点两下造成的「双击缩放」更是完全独立於
      viewport meta 之外的另一套机制，只能靠这个 CSS 属性关掉——两者加起来才能确保
@@ -389,6 +398,10 @@ html {
                           （dynamic viewport height）会跟着工具列即时调整，才是
                           真正「现在看得到的这块画面」的高度，不支援的浏览器
                           会直接忽略这行、退回上面那行 100vh */
+  /* 跟 html/body 用同一份底色兜底——加到主画面後底部安全区如果有任何一丁点
+     没被 body 背景盖到的缝隙，露出来的也是这个跟整个 App 一致的颜色，
+     不会看到系统默认的白色 */
+  background-color: var(--bg-subtle);
   /* 注意：这里刻意不加 overflow-x:hidden——html/body 那层已经有同样的安全网了，
      在这里再加一次会触发 CSS 一个冷知识规则：只要 overflow-x 不是 visible，
      浏览器会自动把 overflow-y 也悄悄变成 auto，讓 .app-shell 意外变成自己
@@ -451,8 +464,11 @@ html {
 
 .app-main {
   grid-area: main;
-  /* 底部 padding 不额外加 env(safe-area-inset-bottom)，理由同 .mobile-tabbar */
-  padding: var(--space-5) var(--space-5) calc(var(--tabbar-height) + var(--space-8));
+  /* 底部导览列的实际总高度现在是 var(--tabbar-height) 再加上
+     env(safe-area-inset-bottom)（见 .mobile-tabbar），这里的留白要跟着补上
+     同一段安全区，不然最後一批内容在有 Home Indicator 的机型上会被
+     变高後的导览列多盖住那一截 */
+  padding: var(--space-5) var(--space-5) calc(var(--tabbar-height) + env(safe-area-inset-bottom) + var(--space-8));
   max-width: 1180px;
   width: 100%;
   margin: 0 auto;
@@ -3252,6 +3268,13 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   justify-content: flex-end;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
+  /* 手机版（<720px）.modal 是贴齐屏幕底部的 bottom sheet（见 .modal 的
+     bottom:0），这里的按钮列就是整张 Modal 最底下那一排——跟 .mobile-tabbar
+     一样必须自己让出 env(safe-area-inset-bottom)，不然「储存」「取消」这类
+     按钮会被 Home Indicator 盖住一截，甚至点不到。桌面版（≥720px）.modal
+     改成置中浮层、不再贴底，这段 env() 在没有安全区的机型/桌面上算出来是 0，
+     不会多出任何留白，两边不用分别写规则 */
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -3433,10 +3456,18 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  /* 底部导览列固定用一般高度，不额外加 env(safe-area-inset-bottom) 净空——
-     实测後确认加上安全区反而在部分机型上造成底部多出一截不必要的留白，
-     拿掉後底部导览列贴齐屏幕底部，视觉更乾净 */
-  height: var(--tabbar-height);
+  /* 加入主画面後（standalone + viewport-fit=cover）画面延伸到 Home Indicator
+     底下，这一条固定在屏幕最底部的导览列必须自己用 padding-bottom 把
+     env(safe-area-inset-bottom) 这段安全区吃掉，不然图示／文字会被 Home
+     Indicator 盖住，或是配色只画到「一般高度」那一截，安全区那段仍然是
+     没铺到背景色的空白（这正是本次要修的缝隙）。整个元素预设是
+     box-sizing: border-box（见文件最上面的 reset），所以底下再加高度、
+     加 padding 并不会把上面的图示往下挤出可视范围，height 用 calc 把
+     两者加总，padding-bottom 再把其中「安全区」那部分让出来，
+     align-items:center 会照 content-box（扣掉 padding 後）置中，
+     图示自然维持在原本的視覺高度，不会被推进安全区 */
+  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
   align-items: center;
   justify-content: space-around;
