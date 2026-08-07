@@ -781,7 +781,6 @@ const STRINGS = {
     // 常用 Toast / 确认文字
     'toast.expenseDeleted': '已删除',
     'toast.expenseDeletedMsg': '这笔消费已移除。',
-    'toast.expenseDeleteBlockedPool': '这笔记录来自搭伙金库，无法直接删除，请到搭伙金库管理',
     'toast.memberDeleted': '已删除',
     'toast.memberDeletedMsg': '成员「{name}」已移除。',
     'toast.memberAlreadyExists': '成员已存在：{name}',
@@ -931,6 +930,7 @@ const STRINGS = {
     'personalReport.typeRepaymentOut': '还款',
     'personalReport.typeRepaymentIn': '收款',
     'personalReport.typePoolRefund': '金库退款',
+    'personalReport.typePoolExpenseRefund': '消费退款',
     'personalReport.paidToItem': '还给 {name}',
     'personalReport.receivedFromItem': '收到 {name} 的还款',
     'personalReport.noOutflow': '目前没有支出纪录',
@@ -1051,6 +1051,7 @@ const STRINGS = {
     'pool.report.perPersonRefund': '每人应退',
     'pool.report.treatment': '处理方式',
     'pool.report.cashRefundNote': '现金退还',
+    'pool.report.expenseRefundNote': '消费退款',
     'pool.report.membersListNote': '适用成员：{members}',
     'pool.report.poolSplitBadge': '金库',
 
@@ -1083,6 +1084,14 @@ const STRINGS = {
     'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆账。',
 
     'pool.expense.deductFailed': '金库支出失败',
+    'pool.expense.editBlockedSettledTitle': '无法编辑',
+    'pool.expense.editBlockedSettledMsg': '这笔消费所在的那一轮金库已经结算退余，金额没有对象可以多退少补了，只能删除（删除会照现在的成员人数打散退款）。',
+    'pool.expense.editFailed': '编辑金库消费失败',
+    'pool.expense.deleteFailed': '删除金库消费失败',
+    'pool.expense.insufficientBalanceTitle': '金库余额不足',
+    'pool.expense.insufficientBalanceMsg': '改成这个金额需要 {amount}，先去金库充值再回来编辑。',
+    'pool.expense.deleteRefundedMsg': '这笔消费已删除，金额已经退回金库余额。',
+    'pool.expense.deleteSettledRefundTitle': '已按人数打散退款',
 
     'pool.form.currencyHint': '之后还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
     'pool.settings.topupCountSummary': '已登记 {count} 笔打款',
@@ -1480,7 +1489,6 @@ const STRINGS = {
 
     'toast.expenseDeleted': 'Deleted',
     'toast.expenseDeletedMsg': 'This expense has been removed.',
-    'toast.expenseDeleteBlockedPool': "This entry came from the shared pool and can't be deleted directly — manage it from the pool instead.",
     'toast.memberDeleted': 'Deleted',
     'toast.memberDeletedMsg': '"{name}" has been removed.',
     'toast.memberAlreadyExists': 'Member already exists: {name}',
@@ -1625,6 +1633,7 @@ const STRINGS = {
     'personalReport.typeRepaymentOut': 'Repayment',
     'personalReport.typeRepaymentIn': 'Received',
     'personalReport.typePoolRefund': 'Pool refund',
+    'personalReport.typePoolExpenseRefund': 'Expense refund',
     'personalReport.paidToItem': 'Paid to {name}',
     'personalReport.receivedFromItem': 'Received from {name}',
     'personalReport.noOutflow': 'No outflow recorded yet',
@@ -1743,6 +1752,7 @@ const STRINGS = {
     'pool.report.perPersonRefund': 'Per-person refund',
     'pool.report.treatment': 'Treatment',
     'pool.report.cashRefundNote': 'Cash refund',
+    'pool.report.expenseRefundNote': 'Expense refund',
     'pool.report.membersListNote': 'Applies to: {members}',
     'pool.report.poolSplitBadge': 'Pool',
 
@@ -1775,6 +1785,14 @@ const STRINGS = {
     'expense.sourceDeductHint': 'Paid straight from the Divvy Duck Pool — no split needed.',
 
     'pool.expense.deductFailed': 'Pool expense failed',
+    'pool.expense.editBlockedSettledTitle': "Can't edit this",
+    'pool.expense.editBlockedSettledMsg': "This expense's pool round has already been settled and refunded, so there's no balance left to adjust against. You can only delete it (deletion will split the refund evenly across current members).",
+    'pool.expense.editFailed': 'Could not edit pool expense',
+    'pool.expense.deleteFailed': 'Could not delete pool expense',
+    'pool.expense.insufficientBalanceTitle': 'Not enough pool balance',
+    'pool.expense.insufficientBalanceMsg': 'This amount needs {amount} — top up the pool first, then come back and edit.',
+    'pool.expense.deleteRefundedMsg': 'Expense deleted — the amount has been refunded back to the pool balance.',
+    'pool.expense.deleteSettledRefundTitle': 'Refund split across members',
 
     'pool.form.currencyHint': 'You can log future payments in a different currency too — e.g. Ringgit at the airport, then Yuan once you land.',
     'pool.settings.topupCountSummary': '{count} payment(s) logged',
@@ -4311,9 +4329,11 @@ function computeMemberPoolShares_(name) {
     consumptionTotals[expense.Currency] = (consumptionTotals[expense.Currency] || 0) + share;
   });
 
+  // 「已收」除了结程退余（refund），也包含金库消费在结算後被删除、均分退回给
+  // 每位成员的「消费退款」（expense_refund）——两种对成员来说都是「从金库收到钱」
   const refundTotals = {};
   const filteredRefundTxs = ((pool && pool.transactions) || [])
-    .filter((tx) => tx.type === 'refund' && isAfterJoining(tx.createdAt));
+    .filter((tx) => (tx.type === 'refund' || tx.type === 'expense_refund') && isAfterJoining(tx.createdAt));
   filteredRefundTxs.forEach((tx) => {
     const snapshot = tx.memberCountSnapshot || currentMemberCount;
     const share = tx.amount / (snapshot || 1);
@@ -4387,7 +4407,12 @@ function expenseRowToOldShape_(row) {
     Remark: row.remark || '',
     Deleted: !!row.deleted,
     Scope: row.scope || 'group',
-    CanManage: row.split_type !== 'pool' && (!row.created_by || (session && row.created_by === session.userId) || appState.canDeleteTrip),
+    // 金库支出以前完全不给编辑/删除（split_type!=='pool' 这个排除条件），阶段 11
+    // 拿掉了——现在权限规则统一跟其他消费一样（本人记的，或旅程建立者），删除/
+    // 编辑金库支出会连带处理金库余额的多退少补，见 handleDeleteExpenseClick()／
+    // handlePoolFundedExpenseEditSubmit_() 呼叫的 pool_expense_delete／
+    // pool_expense_update 这两个後端函式
+    CanManage: !row.created_by || (session && row.created_by === session.userId) || appState.canDeleteTrip,
     ExchangeRateSnapshot: Number(row.exchange_rate_snapshot) || 0
   };
 }
@@ -4710,6 +4735,11 @@ async function fetchPoolStatus_() {
   transactions.forEach((tx) => {
     if (tx.type === 'refund') {
       ensureCurrency(tx.currency).refunded += tx.amount;
+    } else if (tx.type === 'expense_refund') {
+      // 已结算那一轮的金库消费被删除时补记的「消费退款」——钱已经照人数打散
+      // 实际退给大家了，不是退回「现在这一轮」还能动用的余额，所以故意不计进
+      // spent 也不计进 refunded，只留在 transactions 清单里给交易明细/报告显示，
+      // 不影响 balance 的算法（跟 pool_expense_delete() 後端那边的设计一致）
     } else {
       ensureCurrency(tx.currency).spent += tx.amount;
     }
@@ -6018,7 +6048,13 @@ function openConfirmModal(message, onConfirm, options) {
     setButtonLoading(freshBtn, true);
     try {
       await onConfirm();
-      closeActiveModal();
+      // onConfirm 有可能自己已经关掉 confirmModal 又开了别的 Modal（比如结程／
+      // 删除已结算金库消费後跳出的退款明细），这种时候堆叠最上层已经不是
+      // confirmModal 了，不能再关一次，不然会把 onConfirm 刚打开的那颗新 Modal
+      // 关掉——只在 confirmModal 还在最上层（onConfirm 没动过 Modal）时才关
+      if (modalStack[modalStack.length - 1] === 'confirmModal') {
+        closeActiveModal();
+      }
     } catch (error) {
       showToast('error', t('toast.actionFailed'), error.message);
     } finally {
@@ -6420,6 +6456,7 @@ function resetExpenseForm() {
 
   document.getElementById('expenseForm').reset();
   document.getElementById('expenseCurrency').value = appState.tripCurrency.baseCurrency || 'MYR';
+  document.getElementById('expenseCurrency').disabled = false; // 编辑金库支出时会锁住，離开表单要还原
   setExpenseCategoryValue_('');
   setDefaultExpenseDate();
   setSplitTypeControl('equal');
@@ -6456,6 +6493,22 @@ function resetExpenseForm() {
  * 将表单切换为「编辑模式」，并把指定消费的资料带入表单（含日期）
  * @param {string} expenseId 要编辑的消费 ID
  */
+/**
+ * 判断一笔金库消费所在的那一轮金库，现在是不是已经结算退余过了——用来判断
+ * 「多退少补」还有没有对象可以补：找出这笔消费当初对应的那笔 deduct 交易，
+ * 再看同一个货币底下，有没有比它更晚发生的 refund 交易（有的话代表钱已经
+ * 在那之後被结清退还过一轮了，这笔消费所在的旧回合已经关账）
+ * @param {Object} expense 消费纪录（旧 shape，含 .ID／.Currency）
+ * @return {boolean}
+ */
+function isPoolExpenseSettled_(expense) {
+  const transactions = (appState.pool && appState.pool.transactions) || [];
+  const deductTx = transactions.find((tx) => tx.type === 'deduct' && tx.expenseId === expense.ID);
+  if (!deductTx) return false; // 找不到对应的扣款纪录，交给後端做最终把关，前端先当作还能编辑
+  return transactions.some((tx) => tx.type === 'refund' && tx.currency === deductTx.currency
+    && new Date(tx.createdAt) > new Date(deductTx.createdAt));
+}
+
 function openExpenseFormForEdit(expenseId) {
   const expense = appState.expenses.find((item) => item.ID === expenseId)
     || appState.personalExpenses.find((item) => item.ID === expenseId);
@@ -6464,20 +6517,39 @@ function openExpenseFormForEdit(expenseId) {
     return;
   }
 
+  const isPoolExpense = expense.SplitType === 'pool';
+
+  // 金库支出如果所在那一轮已经结算退余过了，「多退少补」没有对象可以补——
+  // 那一轮的余额已经是 0、钱已经实际退给大家了，编辑金额没有意义，只能删除
+  // （删除会走 pool_expense_delete() 的「已结算」分支，按人数打散退款）。
+  // 这裡先在前端拦一次，不用等後端丢中文错误回来才知道不能编辑
+  if (isPoolExpense && isPoolExpenseSettled_(expense)) {
+    showToast('error', t('pool.expense.editBlockedSettledTitle'), t('pool.expense.editBlockedSettledMsg'));
+    return;
+  }
+
   editingExpenseId = expenseId;
   document.getElementById('addExpenseTitle').textContent = t('expenseModal.titleEdit');
   document.getElementById('expenseSubmitBtn').querySelector('.btn-label').textContent = t('expenseModal.saveEdit');
 
-  // 编辑一定维持原本的资金来源类型，不给切换——金库支出从来不会有能编辑的入口
-  // （见 handleExpenseFormSubmitInner_ 一开始就把 'deduct' 分流去别的函式，
-  // 不会写出一笔「SplitType='pool' 但走这支函式编辑」的纪录）；正常记账／个人消费
-  // 这两种编辑时也不给互相切换，选择器直接隐藏，避免使用者以为可以把一笔正常消费
-  // 临时改成个人消费（反之亦然）——依 expense.Scope 决定要把栏位配置成哪一种模式
+  // 编辑一定维持原本的资金来源类型，不给切换——正常记账／个人消费／金库支出
+  // 这三种编辑时都不给互相切换，选择器直接隐藏，避免使用者以为可以把一笔正常
+  // 消费临时改成个人消费（反之亦然）——依 expense.Scope／SplitType 决定要把
+  // 欄位配置成哪一种模式
   const poolSourceGroup = document.getElementById('poolSourceGroup');
   if (poolSourceGroup) {
     poolSourceGroup.classList.add('is-hidden');
   }
-  setExpenseSourceControl(expense.Scope === 'personal' ? 'personal' : 'normal');
+  setExpenseSourceControl(isPoolExpense ? 'deduct' : (expense.Scope === 'personal' ? 'personal' : 'normal'));
+
+  // 金库支出编辑时货币锁死不能改——货币一换，等於原本那笔扣款要整个撤销、
+  // 新货币要重新扣一笔，複杂度/风险都不成比例，要换币别请刪除後重新记一笔
+  // （後端 pool_expense_update() 也有同样的限制，这裡只是先在前端把栏位鎖起来，
+  // 使用者不会点了才发现改不了）
+  const currencySelect = document.getElementById('expenseCurrency');
+  if (currencySelect) {
+    currencySelect.disabled = isPoolExpense;
+  }
 
   document.getElementById('expensePayer').value = expense.Payer;
   document.getElementById('expenseAmount').value = expense.Amount;
@@ -6542,9 +6614,15 @@ async function handleExpenseFormSubmit() {
 async function handleExpenseFormSubmitInner_() {
   // 金库支出：这种消费不需要拆账、不影响成员间的结算，提前分流去呼叫 poolDeduct，
   // 不要往下走一般消费的欄位驗證與 addExpense（这笔钱还是会写进 Expenses 表，
-  // 只是 SplitType='pool'，见後端 appendPoolFundedExpenseRow_）
+  // 只是 SplitType='pool'，见後端 appendPoolFundedExpenseRow_）。编辑既有的
+  // 金库支出走另一支函式（pool_expense_update，多退少补、锁定货币），
+  // 靠 editingExpenseId 有没有值分辨这次是新增还是编辑
   if (currentExpenseSource === 'deduct') {
-    await handlePoolFundedExpenseSubmit_();
+    if (editingExpenseId) {
+      await handlePoolFundedExpenseEditSubmit_();
+    } else {
+      await handlePoolFundedExpenseSubmit_();
+    }
     return;
   }
 
@@ -6790,11 +6868,117 @@ async function handlePoolFundedExpenseSubmit_() {
   }
 }
 
+/**
+ * 编辑既有金库支出送出处理：金额多退少补，货币锁死不能改（表单栏位本身也
+ * disabled 了，这裡再读一次原本的货币，不理会栏位实际的值）。金额变大時
+ * 前端先自己算一次「扣掉这笔消费自己原本占用的那份之後，金库还剩多少」，
+ * 不够的话直接在这裡拦下来、提示去充值，不用把这个中文错误訊息丟给後端
+ * 的 raise exception 再原样显示——那样英文模式下会看到中文
+ */
+async function handlePoolFundedExpenseEditSubmit_() {
+  const expense = appState.expenses.find((item) => item.ID === editingExpenseId);
+  if (!expense) {
+    showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
+    return;
+  }
+
+  const amount = parseFloat(document.getElementById('expenseAmount').value);
+  const category = document.getElementById('expenseCategory').value;
+  const description = document.getElementById('expenseDescription').value.trim();
+  const date = document.getElementById('expenseDate').value;
+
+  if (!amount || amount <= 0) {
+    showToast('error', t('toast.amountMustBePositive'), '');
+    return;
+  }
+
+  const currency = expense.Currency;
+  const poolCurrency = (appState.pool && appState.pool.currencies || []).find((c) => c.currency === currency);
+  const currentBalance = poolCurrency ? poolCurrency.balance : 0;
+  // 这笔消费自己原本扣掉的那份，加回目前余额，才是「不算这笔消费」金库真正还有多少
+  const balanceExcludingThis = currentBalance + (Number(expense.Amount) || 0);
+
+  if (amount > balanceExcludingThis + AMOUNT_TOLERANCE) {
+    const shortfall = formatMoney(amount - balanceExcludingThis, currency);
+    showToast('error', t('pool.expense.insufficientBalanceTitle'), t('pool.expense.insufficientBalanceMsg', { amount: shortfall }));
+    return;
+  }
+
+  const note = description || category || '';
+  const submitBtn = document.getElementById('expenseSubmitBtn');
+  setButtonLoading(submitBtn, true);
+
+  try {
+    const { error } = await supabaseClient.rpc('pool_expense_update', {
+      _trip_id: currentTripId,
+      _expense_id: editingExpenseId,
+      _amount: amount,
+      _category: category,
+      _note: note,
+      _date: date || null
+    });
+    if (error) throw error;
+
+    appState.pool = await fetchPoolStatus_();
+
+    clearExpenseDraft();
+    closeActiveModal();
+    await refreshExpensesAndSummary();
+  } catch (error) {
+    showToast('error', t('pool.expense.editFailed'), error.message);
+  } finally {
+    setButtonLoading(submitBtn, false);
+  }
+}
+
 function handleDeleteExpenseClick(expenseId, descriptionText) {
+  // 消费详情页（expense-detail）的删除按钮跟编辑按钮不一样：编辑是点了就直接
+  // 关页面换页，删除中间隔了一层确认弹窗，不能一点就关（万一使用者按取消，
+  // 结果画面已经先跳走了）。所以先记住「删除前是不是正站在详情页」，等真的
+  // 删除成功後才补关，取消或失败都不动这个页面
+  const wasOnExpenseDetailPage = secondaryPageStack[secondaryPageStack.length - 1] === 'expense-detail';
+
   openConfirmModal(t('confirm.deleteExpense', { name: descriptionText }), async () => {
     const expense = appState.expenses.find((item) => item.ID === expenseId);
+
+    // 金库支出：删除不是单纯软删除就结束，还要连带处理金库那边的钱——
+    // 还没结算的那一轮直接把钱退回余额，已经结算过的那一轮改按现在的成员
+    // 人数打散退款，两种都交给 pool_expense_delete() 一次处理完，细节见
+    // 该函式的注解
     if (expense && expense.SplitType === 'pool') {
-      throw new Error(t('toast.expenseDeleteBlockedPool'));
+      const { data, error: deleteError } = await supabaseClient.rpc('pool_expense_delete', {
+        _trip_id: currentTripId,
+        _expense_id: expenseId
+      });
+      if (deleteError) throw deleteError;
+
+      appState.pool = await fetchPoolStatus_();
+      appState.expenses = appState.expenses.filter((item) => item.ID !== expenseId);
+      closeActiveModal();
+      if (wasOnExpenseDetailPage) {
+        closeSecondaryPage_();
+      }
+      appState.summary = sortSummaryAlphabetically(computeSummaryClient_());
+      appState.categorySummary = computeCategorySummaryClient_();
+      renderEverything();
+
+      const result = (data || [])[0];
+      if (result && result.was_settled) {
+        const refunds = [{
+          currency: result.currency,
+          perPersonAmount: Number(result.per_person_amount) || 0,
+          totalAmount: Number(result.total_amount) || 0,
+          memberCount: result.member_count
+        }];
+        showToast('success', t('pool.expense.deleteSettledRefundTitle'), '');
+        const posterData = buildPoolRefundPoster_(refunds, appState.members);
+        if (posterData && typeof openPoolRefundPoster === 'function') {
+          openPoolRefundPoster(posterData);
+        }
+      } else {
+        showToast('success', t('toast.expenseDeleted'), t('pool.expense.deleteRefundedMsg'));
+      }
+      return;
     }
 
     const { error } = await supabaseClient
@@ -6810,6 +6994,9 @@ function handleDeleteExpenseClick(expenseId, descriptionText) {
     appState.personalExpenses = appState.personalExpenses.filter((item) => item.ID !== expenseId);
     showToast('success', t('toast.expenseDeleted'), t('toast.expenseDeletedMsg'));
     closeActiveModal();
+    if (wasOnExpenseDetailPage) {
+      closeSecondaryPage_();
+    }
     appState.summary = sortSummaryAlphabetically(computeSummaryClient_());
     appState.categorySummary = computeCategorySummaryClient_();
     renderDashboard();
@@ -8602,6 +8789,7 @@ function handlePoolSettle() {
     }));
 
     appState.pool = await fetchPoolStatus_();
+    closeActiveModal();
 
     // 金库退款不会写入 repayments 表、也不是 expenses（不影响应收/应付、也不会
     // 出现在账目页），但 Hero Card 的「已收金额」小格子、金库设定页要跟着更新
@@ -11700,7 +11888,7 @@ function buildMemberReportBody(name) {
     html: buildOutflowRow(
       tx.createdAt,
       t('personalReport.receivedFromItem', { name: t('pool.expense.payerDisplayName') }),
-      t('personalReport.typePoolRefund'),
+      tx.type === 'expense_refund' ? t('personalReport.typePoolExpenseRefund') : t('personalReport.typePoolRefund'),
       tx.amount / (tx.memberCountSnapshot || appState.members.length || 1),
       tx.currency,
       undefined,
@@ -12147,9 +12335,11 @@ function buildPoolReportSection() {
     reimburse: t('pool.report.typeReimburse'),
     refund: t('pool.report.typeRefund')
   };
-  // 「支出明细」只放金库支出／代垫归还这两种真正的支出，退余(refund)已经改到
-  // 独立的「退余明细」章节呈现（见下方 refundSection），这里不再重复列出
-  const nonRefundTxs = (pool.transactions || []).filter((tx) => tx.type !== 'refund');
+  // 「支出明细」只放金库支出／代垫归还这两种真正的支出，退余(refund)、消费退款
+  // (expense_refund，删除已结算金库消费時补记的那笔) 都改到独立的「退余明细」
+  // 章节呈现（见下方 refundSection），这里不再重复列出——两者都是「钱退回去」，
+  // 不是新的支出，混在支出明细裡会看起来像多花了一笔錢
+  const nonRefundTxs = (pool.transactions || []).filter((tx) => tx.type !== 'refund' && tx.type !== 'expense_refund');
   const txRows = nonRefundTxs.map((tx) => `
     <tr>
       <td>${escapeHtml(formatDateDisplay(tx.createdAt))}</td>
@@ -12162,17 +12352,24 @@ function buildPoolReportSection() {
 
   // 退款章节改看「有没有退款的历史纪录」，不是「目前刚好结清」——结程後还能继续
   // 充值开始新的一轮，isTripSettled 只反映「此时此刻」的余额状态，用它来决定这个
-  // 章节要不要出现的话，充值後历史上的退款记录反而会不见，报告应该是完整的流水账
-  const allRefundTxs = (pool.transactions || []).filter((tx) => tx.type === 'refund');
+  // 章节要不要出现的话，充值後历史上的退款记录反而会不见，报告应该是完整的流水账。
+  // expense_refund（已结算的金库消费被删除时补记的退款）本质上也是「钱退回去」，
+  // 一併收进这个章节，只是「处理方式」这栏文字换成「消费退款」跟结程退余的
+  // 「现金退还」区分开——这就是使用者要的「报告里可以注明是消费退款」
+  const allRefundTxs = (pool.transactions || []).filter((tx) => tx.type === 'refund' || tx.type === 'expense_refund');
   let refundSection = '';
   if (allRefundTxs.length > 0) {
     const memberCount = appState.members.length || 1;
     const refundRows = allRefundTxs.map((tx) => {
-      const perPerson = tx.amount / memberCount;
+      // expense_refund 已经在 pool_expense_delete() 後端算好 member_count_snapshot
+      // (删除当下的成员人数)，退余(refund) 则沿用报告一贯的「用目前人数」算法
+      const perPersonCount = tx.type === 'expense_refund' ? (tx.memberCountSnapshot || memberCount) : memberCount;
+      const perPerson = tx.amount / perPersonCount;
+      const treatmentNote = tx.type === 'expense_refund' ? t('pool.report.expenseRefundNote') : t('pool.report.cashRefundNote');
       return `
         <tr>
           <td>${escapeHtml(formatDateDisplay(tx.createdAt))}</td>
-          <td>${escapeHtml(t('pool.report.cashRefundNote'))} [${escapeHtml(tx.currency)}]</td>
+          <td>${escapeHtml(treatmentNote)} [${escapeHtml(tx.currency)}]</td>
           <td class="align-right">${escapeHtml(formatMoney(tx.amount, tx.currency))}</td>
           <td class="align-right">${escapeHtml(formatMoney(perPerson, tx.currency))}</td>
         </tr>

@@ -100,17 +100,21 @@
      个位十位（30/40/50），侧边抽屉自己另开一套百位（400/410），两套刻度
      混用，数字之间「谁该盖过谁」全靠巧合对齐，改一个地方很容易不小心
      打乱另一边。这裡统一成一组间隔 10 的刻度，由下到上分别是：
-     底部导览列 → Modal 遮罩 → Modal 本身 → 抽屉遮罩 → 抽屉本身 → Toast
-     通知 → App 开机動畫。数字越大代表越靠上层。
+     底部导览列 → Modal 遮罩 → Modal 本身 → 抽屉遮罩 → 抽屉本身 → 登入闸门
+     → Toast 通知 → App 开机動畫。数字越大代表越靠上层。
      Modal 实际打开时是 app.js 用 JS 动态写 inline z-index（不是这裡的
      --z-modal 固定值，Modal 可能一层层往上叠），JS 那套算式也已经同步
      改成落在 --z-modal(50) 到 --z-toast(80) 这个区间内爬升，不会再各自
-     用一套不相干的数字，见 app.js 的 MODAL_BASE_Z_INDEX／MODAL_Z_INDEX_STEP */
+     用一套不相干的数字，见 app.js 的 MODAL_BASE_Z_INDEX／MODAL_Z_INDEX_STEP。
+     --z-auth-gate 当初这次统一漏掉了 .auth-gate，它自己写死 200，结果盖过
+     --z-toast(80)——登入/注册失败跳出的错误 Toast 因此被闸门整个挡住，
+     使用者完全看不到（例如密码打错也没反应），见任务补的这个修正 */
   --z-tabbar: 30;
   --z-modal-backdrop: 40;
   --z-modal: 50;
   --z-drawer-backdrop: 60;
   --z-drawer: 70;
+  --z-auth-gate: 75;
   --z-toast: 80;
   --z-splash: 90;
 
@@ -5518,7 +5522,7 @@ body {
 .auth-gate {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-auth-gate);
   display: flex;
   flex-direction: column;
   align-items: center;
