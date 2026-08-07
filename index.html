@@ -238,7 +238,7 @@
 <div class="app-shell is-hidden" id="appShell">
 
   <!-- ---------------- Sidebar (桌面版) ---------------- -->
-  <aside class="sidebar" aria-label="主导航">
+  <aside class="sidebar" aria-label="主导航" data-i18n-aria-label="nav.primaryAriaLabel">
     <div class="sidebar-brand">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -285,7 +285,7 @@
         </span>
         <span class="theme-label" id="langToggleLabel">English</span>
       </button>
-      <button class="theme-toggle" id="themeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式">
+      <button class="theme-toggle" id="themeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式" data-i18n-aria-label="settings.themeToggleAriaLabel">
         <span class="theme-icon theme-icon-light" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5V4.5M12 19.5V21.5M21.5 12H19.5M4.5 12H2.5M18.4 5.6L17 7M7 17L5.6 18.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </span>
@@ -294,7 +294,7 @@
         </span>
         <span class="theme-label" id="themeToggleLabel">深色模式</span>
       </button>
-      <button class="theme-toggle" id="sidebarLogoutBtn" type="button" aria-label="登出">
+      <button class="theme-toggle" id="sidebarLogoutBtn" type="button" aria-label="登出" data-i18n-aria-label="account.logoutBtn">
         <span class="theme-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><path d="M15 4H18C19.1 4 20 4.9 20 6V18C20 19.1 19.1 20 18 20H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M10 16L14 12L10 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 12H4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </span>
@@ -305,7 +305,7 @@
 
   <!-- ---------------- 移动版侧滑抽屉（补齐手机上看不到的完整导航，例如设置） ---------------- -->
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
-  <aside class="side-drawer" id="sideMenu" aria-label="主导航（移动版）">
+  <aside class="side-drawer" id="sideMenu" aria-label="主导航（移动版）" data-i18n-aria-label="nav.primaryMobileAriaLabel">
     <div class="sidebar-brand">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -351,7 +351,7 @@
         </span>
         <span class="theme-label" id="drawerLangToggleLabel">English</span>
       </button>
-      <button class="theme-toggle" id="drawerThemeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式">
+      <button class="theme-toggle" id="drawerThemeToggle" type="button" data-theme-toggle-btn aria-label="切换深色模式" data-i18n-aria-label="settings.themeToggleAriaLabel">
         <span class="theme-icon theme-icon-light" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5V4.5M12 19.5V21.5M21.5 12H19.5M4.5 12H2.5M18.4 5.6L17 7M7 17L5.6 18.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </span>
@@ -382,8 +382,8 @@
     </div>
     <div class="header-right">
       <div class="trip-switcher">
-        <select class="select-control" id="tripSelect" aria-label="选择旅程"></select>
-        <button class="icon-btn" type="button" data-open-modal="addTripModal" aria-label="新增旅程">
+        <select class="select-control" id="tripSelect" aria-label="选择旅程" data-i18n-aria-label="trip.selectAriaLabel"></select>
+        <button class="icon-btn" type="button" data-open-modal="addTripModal" aria-label="新增旅程" data-i18n-aria-label="tripModal.title">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
         </button>
       </div>
@@ -396,7 +396,7 @@
        用固定侧栏。放在 .app-header 外面还有个附带好处：不受 header 的 backdrop-filter
        影响 fixed 定位基准（原因同 headerActionBtn 那段注解），桌面版底下就不用另外
        处理这个问题 -->
-  <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单">
+  <button class="icon-btn drawer-open" id="drawerOpenBtn" type="button" aria-label="开启导航选单" data-i18n-aria-label="nav.openMenuAriaLabel">
     <svg viewBox="0 0 24 24" fill="none"><path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
   </button>
 
@@ -455,7 +455,7 @@
         <div class="dash-header-left">
           <div class="dash-trip-title-row">
             <h1 class="dash-trip-title" id="dashTripTitle" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
-            <button class="icon-btn dash-switch-trip-btn" id="dashSwitchTripBtn" type="button" data-open-modal="renameTripModal" aria-label="更改旅程名称">
+            <button class="icon-btn dash-switch-trip-btn" id="dashSwitchTripBtn" type="button" data-open-modal="renameTripModal" aria-label="更改旅程名称" data-i18n-aria-label="renameTripModal.title">
               <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
           </div>
@@ -486,7 +486,7 @@
               <div class="hero-content is-hidden" id="heroContent">
                 <div class="hero-card-top">
                   <div class="hero-mascot-wrap">
-                    <button type="button" class="hero-mascot" onclick="onHeroMascotTap(this)" aria-label="搭伙鸭吉祥物，点一下换句话">
+                    <button type="button" class="hero-mascot" onclick="onHeroMascotTap(this)" aria-label="搭伙鸭吉祥物，点一下换句话" data-i18n-aria-label="dashboard.mascotAriaLabel">
                       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                           <linearGradient id="ddLogoHeroBeak" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -537,8 +537,8 @@
 
         <!-- 分页圆点：只有金库卡开启时才会显示（见 updateDashCardSliderState） -->
         <div class="dash-card-dots" id="dashCardDots">
-          <button type="button" class="dash-card-dot" data-slide-index="0" aria-label="搭伙鸭金库"></button>
-          <button type="button" class="dash-card-dot" data-slide-index="1" aria-label="个人净额总览"></button>
+          <button type="button" class="dash-card-dot" data-slide-index="0" aria-label="搭伙鸭金库" data-i18n-aria-label="dashboard.poolCardDotAriaLabel"></button>
+          <button type="button" class="dash-card-dot" data-slide-index="1" aria-label="个人净额总览" data-i18n-aria-label="dashboard.netCardDotAriaLabel"></button>
         </div>
       </div>
 
@@ -620,7 +620,7 @@
       <div class="page-normal-content" id="expensesNormalContent">
       <div class="search-box" id="expensesSearchBox">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="M20 20L16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        <input type="text" id="expenseSearchInput" placeholder="搜寻说明、金额、分类、成员、日期…" aria-label="搜寻说明、金额、分类、成员、日期" data-i18n-placeholder="header.searchPlaceholder">
+        <input type="text" id="expenseSearchInput" placeholder="搜寻说明、金额、分类、成员、日期…" aria-label="搜寻说明、金额、分类、成员、日期" data-i18n-placeholder="header.searchPlaceholder" data-i18n-aria-label="header.searchPlaceholder">
       </div>
 
       <div class="toolbar">
@@ -894,7 +894,7 @@
           <div class="settings-row">
             <div class="settings-row-text">
               <p class="settings-row-title" data-i18n="settings.currentTripLabel">目前旅程</p>
-              <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程">
+              <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程" data-i18n-aria-label="fab.switchTrip">
                 <span class="trip-current-name" id="tripPillCurrentName">—</span>
                 <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
               </button>
@@ -934,7 +934,7 @@
 
       <p class="about-footer">
         <span class="about-text" data-i18n="settings.aboutText">DivvyDuck 搭伙鸭 · 聚会分账，鸭力全无！</span>
-        <span class="about-version">版本 1.0.0</span>
+        <span class="about-version" data-i18n="settings.aboutVersion">版本 1.0.0</span>
       </p>
     </section>
 
@@ -990,8 +990,8 @@
     <p class="expense-detail-remark is-hidden" id="expenseDetailRemark"></p>
     <div class="expense-detail-receipt is-hidden" id="expenseDetailReceiptWrap">
       <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.receiptLabel">收据照片</p>
-      <button type="button" class="expense-detail-receipt-thumb" id="expenseDetailReceiptThumb" aria-label="查看收据照片">
-        <img src="" alt="收据照片" id="expenseDetailReceiptImg">
+      <button type="button" class="expense-detail-receipt-thumb" id="expenseDetailReceiptThumb" aria-label="查看收据照片" data-i18n-aria-label="expenseDetailModal.viewReceiptAriaLabel">
+        <img src="" alt="收据照片" id="expenseDetailReceiptImg" data-i18n-alt="expenseDetailModal.receiptLabel">
       </button>
     </div>
     <p class="member-detail-section-label member-detail-section-label-spaced" data-i18n="expenseDetailModal.splitBreakdown">分摊明细</p>
@@ -1083,7 +1083,7 @@
 </div>
 
 <!-- ---------------- 移动版底部导航 ---------------- -->
-<nav class="mobile-tabbar" id="mobileTabbar" aria-label="主导航">
+<nav class="mobile-tabbar" id="mobileTabbar" aria-label="主导航" data-i18n-aria-label="nav.primaryAriaLabel">
   <!-- 「概览／账目／结算／同行」四个分页按钮由 app.js 的 renderMainNav()／
        NAV_ITEMS 统一产生（渲染时会插入下面这颗 FAB 前後，顺序不变）——
        跟桌面侧栏／手机抽屉共用同一份资料，图示只在那边写一次。「设置」不放
@@ -1095,7 +1095,7 @@
        再靠一个中间按钮打开选单去做这些事。这颗是吉祥物插画，不是线性图标，
        不适合塞进 NAV_ITEMS 共用资料，继续手写在这里，renderMainNav() 会
        原地保留它、只重新产生它左右两侧的按钮 -->
-  <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" data-open-modal="addExpenseModal" aria-label="新增消费">
+  <button class="tab-item tab-item-fab" id="mobileFabBtn" type="button" data-open-modal="addExpenseModal" aria-label="新增消费" data-i18n-aria-label="fab.addExpense">
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id="ddPurpleFab" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -1132,7 +1132,7 @@
 <div class="modal" id="addExpenseModal" role="dialog" aria-modal="true" aria-labelledby="addExpenseTitle">
   <div class="modal-header">
     <h2 id="addExpenseTitle" data-i18n="expenseModal.titleAdd">新增消费</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1156,7 +1156,7 @@
       </div>
 
       <div class="form-field form-field-full">
-        <div class="category-pills" id="expenseCategoryPills" role="group" aria-label="分类"></div>
+        <div class="category-pills" id="expenseCategoryPills" role="group" aria-label="分类" data-i18n-aria-label="expense.categoryGroupAriaLabel"></div>
         <input type="hidden" id="expenseCategory">
       </div>
 
@@ -1171,7 +1171,7 @@
         <label for="expenseAmount" data-i18n="expense.amountLabel">金额</label>
         <div class="input-with-suffix">
           <input type="number" id="expenseAmount" class="text-input" placeholder="0.00" min="0" step="0.01" required>
-          <select class="suffix-select" id="expenseCurrency" aria-label="币别">
+          <select class="suffix-select" id="expenseCurrency" aria-label="币别" data-i18n-aria-label="expense.currencyAriaLabel">
           </select>
         </div>
       </div>
@@ -1225,14 +1225,14 @@
         <input type="hidden" id="expenseReceipt" value="">
         <div class="receipt-uploader" id="receiptUploader">
           <div class="receipt-upload-box" id="receiptUploadBox">
-            <img class="receipt-preview-img is-hidden" id="receiptPreviewImg" alt="收据预览">
+            <img class="receipt-preview-img is-hidden" id="receiptPreviewImg" alt="收据预览" data-i18n-alt="expense.receiptPreviewAlt">
             <svg class="receipt-upload-icon" id="receiptUploadIcon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 8.5C4 7.4 4.9 6.5 6 6.5H8L9 4.5H15L16 6.5H18C19.1 6.5 20 7.4 20 8.5V17C20 18.1 19.1 19 18 19H6C4.9 19 4 18.1 4 17V8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
               <circle cx="12" cy="12.5" r="3.3" stroke="currentColor" stroke-width="1.6"/>
               <path d="M12 15.3V15.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
             </svg>
-            <input type="file" id="receiptFileInput" accept="image/*" class="receipt-upload-input" aria-label="上传收据照片，可拍照、选相簿或档案">
-            <button type="button" class="icon-btn receipt-remove-btn is-hidden" id="receiptRemoveBtn" aria-label="移除照片">
+            <input type="file" id="receiptFileInput" accept="image/*" class="receipt-upload-input" aria-label="上传收据照片，可拍照、选相簿或档案" data-i18n-aria-label="expense.receiptUploadAriaLabel">
+            <button type="button" class="icon-btn receipt-remove-btn is-hidden" id="receiptRemoveBtn" aria-label="移除照片" data-i18n-aria-label="expense.removePhotoAriaLabel">
               <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             </button>
           </div>
@@ -1260,7 +1260,7 @@
 <div class="modal modal-sm" id="addMemberModal" role="dialog" aria-modal="true" aria-labelledby="addMemberTitle">
   <div class="modal-header">
     <h2 id="addMemberTitle" data-i18n="memberModal.title">邀请同行伙伴加入账本</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1295,7 +1295,7 @@
       <h2 id="languagePickerTitle" data-i18n="languagePicker.title">选择语言</h2>
       <p class="panel-hint" data-i18n="languagePicker.hint">选好之後介面文字会立刻切换</p>
     </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1311,7 +1311,7 @@
       <h2 id="mergeMemberTitle" data-i18n="mergeMemberModal.title">合并重复成员</h2>
       <p class="panel-hint" data-i18n="mergeMemberModal.hint">选到「这是我」的那一位，合并后这笔旧纪录会消失，历史消费/还款都会接续到你身上，此操作无法复原。</p>
     </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1325,12 +1325,12 @@
 <div class="modal modal-sm receipt-viewer-modal" id="receiptViewerModal" role="dialog" aria-modal="true" aria-labelledby="receiptViewerTitle">
   <div class="modal-header">
     <h2 id="receiptViewerTitle" data-i18n="expenseDetailModal.receiptLabel">收据照片</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
   <div class="modal-body receipt-viewer-body">
-    <img src="" alt="收据照片" id="receiptViewerImg" class="receipt-viewer-img">
+    <img src="" alt="收据照片" id="receiptViewerImg" class="receipt-viewer-img" data-i18n-alt="expenseDetailModal.receiptLabel">
   </div>
 </div>
 
@@ -1342,7 +1342,7 @@
       <h2 id="poolRefundTitle" data-i18n="pool.poster.title">搭伙鸭金库结算</h2>
       <p class="panel-hint" data-i18n="pool.poster.subtitle">结程後的每人退款明细</p>
     </div>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1358,7 +1358,7 @@
 <div class="modal modal-sm" id="poolTopupEditModal" role="dialog" aria-modal="true" aria-labelledby="poolTopupEditTitle">
   <div class="modal-header">
     <h2 id="poolTopupEditTitle" data-i18n="pool.settings.editTopupTitle">更改登记打款</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1371,7 +1371,7 @@
 <div class="modal modal-sm" id="tripPickerModal" role="dialog" aria-modal="true" aria-labelledby="tripPickerTitle">
   <div class="modal-header">
     <h2 id="tripPickerTitle" data-i18n="tripPicker.title">选择旅程</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1389,7 +1389,7 @@
 <div class="modal modal-sm" id="renameTripModal" role="dialog" aria-modal="true" aria-labelledby="renameTripTitle">
   <div class="modal-header">
     <h2 id="renameTripTitle" data-i18n="renameTripModal.title">更改旅程名称</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1414,7 +1414,7 @@
 <div class="modal modal-sm" id="addCategoryModal" role="dialog" aria-modal="true" aria-labelledby="addCategoryModalTitle">
   <div class="modal-header">
     <h2 id="addCategoryModalTitle">新增分类</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1444,7 +1444,7 @@
 <div class="modal" id="addTripModal" role="dialog" aria-modal="true" aria-labelledby="addTripTitle">
   <div class="modal-header">
     <h2 id="addTripTitle" data-i18n="tripModal.title">新增旅程</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1484,7 +1484,7 @@
       <label for="poolPerPersonAmount" data-i18n="pool.form.perPersonLabel">人均预付款</label>
       <div class="input-with-suffix">
         <input type="number" id="poolPerPersonAmount" class="text-input" min="0" step="0.01" placeholder="0.00">
-        <select class="suffix-select" id="poolCurrencySelect" aria-label="金库货币"></select>
+        <select class="suffix-select" id="poolCurrencySelect" aria-label="金库货币" data-i18n-aria-label="pool.currencyAriaLabel"></select>
       </div>
       <p class="form-hint" data-i18n="pool.form.currencyHint">之後还可以用别种货币再登记打款，例如在机场先收马币、到当地再收人民币。</p>
     </div>
@@ -1523,7 +1523,7 @@
 <div class="modal" id="addRepaymentModal" role="dialog" aria-modal="true" aria-labelledby="addRepaymentTitle">
   <div class="modal-header">
     <h2 id="addRepaymentTitle" data-i18n="repaymentModal.title">记录还款</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1581,7 +1581,7 @@
 <div class="modal modal-sm" id="repaymentActionModal" role="dialog" aria-modal="true" aria-labelledby="repaymentActionTitle">
   <div class="modal-header">
     <h2 id="repaymentActionTitle" data-i18n="summary.repaymentPanel">还款纪录</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1599,7 +1599,7 @@
 <div class="modal" id="editRepaymentModal" role="dialog" aria-modal="true" aria-labelledby="editRepaymentTitle">
   <div class="modal-header">
     <h2 id="editRepaymentTitle" data-i18n="editRepaymentModal.title">编辑还款纪录</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>
@@ -1644,7 +1644,7 @@
 <div class="modal modal-sm" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
   <div class="modal-header">
     <h2 id="confirmTitle" data-i18n="confirm.title">确定要删除吗？</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭">
+    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
   </div>

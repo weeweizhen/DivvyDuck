@@ -297,20 +297,6 @@ function getUserSession() {
 }
 
 /**
- * 更新目前账号的显示名称（存到 Supabase Auth 的 user_metadata 里）
- * 目前唯一的呼叫端是「设置」页编辑显示名称，见 initAccountPanel
- * @param {{displayName: string}} partial
- */
-async function setUserSession(partial) {
-  if (partial && partial.displayName !== undefined) {
-    const { error } = await supabaseClient.auth.updateUser({
-      data: { nickname: partial.displayName }
-    });
-    if (error) throw error;
-  }
-}
-
-/**
  * 登出
  */
 async function clearUserSession() {
@@ -390,6 +376,23 @@ const STRINGS = {
     // 其实一直跟完整版一模一样（从没真的缩短过），且 members 从来没补过对应的
     // short key——三处导览统一改成共用同一份 NAV_ITEMS 资料後，直接一律用
     // 完整标签，不再维护这组形同虚设的短版本（见 renderMainNav()）
+
+    // 纯 aria-label 用的无障碍文案（没有对应的可见文字），原本大多是「静态、
+    // 跟语言无关」的场景所以没接进 data-i18n-aria-label 机制，最终检查时
+    // 一次补齐，确保英文模式下屏幕阅读器念出来的也是英文
+    'nav.primaryAriaLabel': '主导航',
+    'nav.primaryMobileAriaLabel': '主导航（移动版）',
+    'nav.openMenuAriaLabel': '开启导航选单',
+    'settings.themeToggleAriaLabel': '切换深色模式',
+    'trip.selectAriaLabel': '选择旅程',
+    'dashboard.mascotAriaLabel': '搭伙鸭吉祥物，点一下换句话',
+    'dashboard.poolCardDotAriaLabel': '搭伙鸭金库',
+    'dashboard.netCardDotAriaLabel': '个人净额总览',
+    'expense.categoryGroupAriaLabel': '分类',
+    'expense.currencyAriaLabel': '币别',
+    'expense.removePhotoAriaLabel': '移除照片',
+    'expense.receiptPreviewAlt': '收据预览',
+    'pool.currencyAriaLabel': '金库货币',
 
     // 页首标题 / 副标题（每个页面）
     'page.dashboard.title': '概览',
@@ -521,6 +524,8 @@ const STRINGS = {
     'account.changePasswordBtn': '更改密码',
     'account.passwordChangeFailedTitle': '更改密码失败',
     'account.passwordFieldsRequired': '请输入目前密码与新密码',
+    'account.sessionEmailMissing': '找不到目前登入的账号邮箱',
+    'account.currentPasswordIncorrect': '目前密码不正确',
     'account.displayNameSaveFailedTitle': '更新显示名称失败',
 
     // Hero Card：个人净额
@@ -592,6 +597,7 @@ const STRINGS = {
     'expense.fillRemainingBtn': '均分剩余金额',
     'expense.receiptLabel': '收据照片（选填）',
     'expense.receiptHint': '点一下选择拍照、相簿或档案。',
+    'expense.receiptUploadAriaLabel': '上传收据照片，可拍照、选相簿或档案',
     'expense.remarkLabel': '备注（选填）',
     'expense.remarkPlaceholder': '备注内容',
     'common.cancel': '取消',
@@ -705,9 +711,9 @@ const STRINGS = {
 
     // 选择旅程
     'tripPicker.title': '选择旅程',
-    'fab.switchTrip': '切换行程',
+    'fab.switchTrip': '切换旅程',
     'fab.addExpense': '新增消费',
-    'fab.exportReport': '导出报告',
+    'fab.exportReport': '汇出报告',
     'tripPicker.addBtn': '＋ 新增旅程',
 
     // 设置页
@@ -760,6 +766,7 @@ const STRINGS = {
     'settings.deleteTrip': '删除目前旅程',
     'settings.leaveTrip': '退出目前旅程',
     'settings.aboutText': 'DivvyDuck 搭伙鸭 · 聚会分账，鸭力全无！',
+    'settings.aboutVersion': '版本 1.0.0',
 
     // 分类翻译
     'category.Food': '餐饮',
@@ -772,8 +779,12 @@ const STRINGS = {
     // 常用 Toast / 确认文字
     'toast.expenseDeleted': '已删除',
     'toast.expenseDeletedMsg': '这笔消费已移除。',
+    'toast.expenseDeleteBlockedPool': '这笔记录来自搭伙金库，无法直接删除，请到搭伙金库管理',
     'toast.memberDeleted': '已删除',
     'toast.memberDeletedMsg': '成员「{name}」已移除。',
+    'toast.memberAlreadyExists': '成员已存在：{name}',
+    'toast.memberNotFound': '找不到该成员：{name}',
+    'toast.memberInUseCannotDelete': '该成员在此旅程已有相关消费纪录，无法删除：{name}',
     'toast.memberMerged': '合并成功',
     'toast.memberMergedMsg': '「{name}」的历史纪录已并入你的账号。',
     'toast.repaymentDeleted': '已删除',
@@ -881,6 +892,7 @@ const STRINGS = {
     'expenseDetailModal.splitBreakdown': '分摊明细',
     'expenseDetailModal.payerTag': '付款人',
     'expenseDetailModal.receiptLabel': '收据照片',
+    'expenseDetailModal.viewReceiptAriaLabel': '查看收据照片',
     'repayment.currencyUnitHint': '金额单位：{currency}（旅程基准货币）',
     'trip.noTripSelected': '（尚未选择旅程）',
     'toast.closeAriaLabel': '关闭通知',
@@ -976,6 +988,10 @@ const STRINGS = {
     'toast.rateAutoFetched': '已自动补上汇率',
     'toast.rateAutoFetchedMsg': '1 {currency} = {rate} {base}（来源：Wise），已存进这趟旅程，不准确可到设置页调整。',
     'toast.rateFetchFailed': '抓取失败',
+    'toast.rateMissingParams': '缺少必要参数: source / target',
+    'toast.rateConnectionFailed': '无法连线至汇率服务，请改用手动输入汇率。',
+    'toast.rateBadResponse': '汇率服务回应异常（状态码 {status}），请改用手动输入汇率。',
+    'toast.rateUnsupportedPair': '无法取得 {source} → {target} 的汇率（可能是这个货币代码不受支援），请改用手动输入汇率。',
     'toast.allRatesFetched': '已自动补上即时汇率',
     'toast.allRatesFetchedMsg': '成功抓取并存好 {count} 笔汇率，不准确可再手动调整。',
     'toast.noCurrenciesToFetch': '没有需要抓取的货币',
@@ -996,7 +1012,7 @@ const STRINGS = {
     'pool.card.settleBtn': '结程退余',
 
     'pool.form.enableLabel': '开启搭伙鸭金库',
-    'pool.form.enableHint': '开启后，大家先把钱交给鸭鸭金库统一保管，行程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！',
+    'pool.form.enableHint': '开启后，大家先把钱交给鸭鸭金库统一保管，旅程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！',
     'pool.form.perPersonLabel': '人均预付款',
 
     'pool.error.invalidAmount': '请输入有效的金额',
@@ -1006,6 +1022,8 @@ const STRINGS = {
     'pool.alert.lowBalanceMessage': '{currency} 余额偏低，建议尽快补充值',
 
     'pool.settle.confirmMessage': '结程后金库将不能再扣款，确定要按目前余额平分退款给每位成员吗？',
+    'pool.settle.confirmTitle': '确认结程',
+    'pool.settle.confirmLabel': '确认结程',
     'pool.poster.title': '搭伙鸭金库结算',
     'pool.poster.refundLine': '{name} 退 {refund}',
     'pool.poster.subtitle': '结程后的每人退款明细',
@@ -1052,7 +1070,6 @@ const STRINGS = {
     'pool.settings.noMembers': '这趟旅程还没有成员，先加成员再充值',
     'pool.error.initFailed': '充值失败',
     'pool.topup.failedTitle': '充值失败',
-    'pool.settle.failedTitle': '结程失败',
 
     'expense.sourceLabel': '资金来源',
     'expense.sourceNormal': '正常记账',
@@ -1084,6 +1101,20 @@ const STRINGS = {
     'nav.summary': 'Settle',
     'nav.members': 'Members',
     'nav.settings': 'Settings',
+
+    'nav.primaryAriaLabel': 'Primary navigation',
+    'nav.primaryMobileAriaLabel': 'Primary navigation (mobile)',
+    'nav.openMenuAriaLabel': 'Open navigation menu',
+    'settings.themeToggleAriaLabel': 'Toggle dark mode',
+    'trip.selectAriaLabel': 'Select trip',
+    'dashboard.mascotAriaLabel': 'DivvyDuck mascot, tap for a new line',
+    'dashboard.poolCardDotAriaLabel': 'Shared pool',
+    'dashboard.netCardDotAriaLabel': 'Personal net balance overview',
+    'expense.categoryGroupAriaLabel': 'Category',
+    'expense.currencyAriaLabel': 'Currency',
+    'expense.removePhotoAriaLabel': 'Remove photo',
+    'expense.receiptPreviewAlt': 'Receipt preview',
+    'pool.currencyAriaLabel': 'Pool currency',
 
     'page.dashboard.title': 'Overview',
     'page.dashboard.subtitle': 'Your trip, at a glance',
@@ -1204,6 +1235,8 @@ const STRINGS = {
     'account.changePasswordBtn': 'Change Password',
     'account.passwordChangeFailedTitle': 'Could not change password',
     'account.passwordFieldsRequired': 'Enter your current and new password',
+    'account.sessionEmailMissing': "Couldn't find your logged-in account email",
+    'account.currentPasswordIncorrect': 'Current password is incorrect',
     'account.displayNameSaveFailedTitle': 'Could not update display name',
 
     'hero.receivableLabel': 'Expected back',
@@ -1222,7 +1255,7 @@ const STRINGS = {
     'hero.mascot.settled.1': "Not a cent owed, feeling light",
     'hero.mascot.settled.2': "All clear \u2014 back to the fun part",
 
-    'dashboard.qaSettle': 'Best Payout',
+    'dashboard.qaSettle': 'Settle Up',
     'dashboard.qaStats': 'Bill Stats',
 
     'dashboard.matrixTitle': 'Who Owes Who',
@@ -1237,7 +1270,7 @@ const STRINGS = {
     'empty.noExpenses.desc': 'Add your first expense to start tracking.',
     'empty.noSettlement.title': 'Nothing to settle',
     'empty.noSettlement.desc': 'Everyone is squared up.',
-    'empty.noCategory.title': 'No category data yet',
+    'empty.noCategory.title': "DivvyDuck hasn't crunched the numbers yet",
     'empty.noCategory.desc': "Add some expenses and your breakdown will show up here.",
 
     'expenses.filterAll': 'All',
@@ -1269,6 +1302,7 @@ const STRINGS = {
     'expense.customSplitHint': 'Custom amounts must add up to the total',
     'expense.fillRemainingBtn': 'Split the rest evenly',
     'expense.receiptLabel': 'Receipt Photo (optional)',
+    'expense.receiptUploadAriaLabel': 'Upload receipt photo — take a photo, choose from library, or pick a file',
     'expense.receiptHint': 'Tap to choose camera, library, or file.',
     'expense.remarkLabel': 'Remark (optional)',
     'expense.remarkPlaceholder': 'Add a note',
@@ -1325,7 +1359,7 @@ const STRINGS = {
     'summary.repaymentPanel': 'Repayment History',
     'summary.addRepayment': '+ Record Repayment',
     'summary.repaymentHint': "Log who's actually paid whom back — balances update automatically",
-    'empty.noBalance.title': 'No balances yet',
+    'empty.noBalance.title': "DivvyDuck can't tell who owes who yet",
     'empty.noBalance.desc': "Add some expenses and balances will show up here.",
     'empty.noRepayment.title': 'No repayments yet',
     'empty.noRepayment.desc': 'Once someone pays back, log it above.',
@@ -1345,7 +1379,7 @@ const STRINGS = {
 
     'members.addBtn': 'Add Member',
     'members.participatedIn': '{count} expense(s)',
-    'empty.noMembers.title': 'No members yet',
+    'empty.noMembers.title': "DivvyDuck's trip is a party of one",
     'empty.noMembers.desc': 'Add your Members to start tracking expenses.',
     'members.duplicateBanner.title': 'Unlinked legacy members found',
     'members.duplicateBanner.desc': "If one of these is actually you, merging carries their past expenses over to your account.",
@@ -1431,6 +1465,7 @@ const STRINGS = {
     'settings.deleteTrip': 'Delete This Trip',
     'settings.leaveTrip': 'Leave This Trip',
     'settings.aboutText': 'DivvyDuck · Split the bill, lose the stress.',
+    'settings.aboutVersion': 'Version 1.0.0',
 
     'category.Food': 'Food',
     'category.Transport': 'Transport',
@@ -1441,8 +1476,12 @@ const STRINGS = {
 
     'toast.expenseDeleted': 'Deleted',
     'toast.expenseDeletedMsg': 'This expense has been removed.',
+    'toast.expenseDeleteBlockedPool': "This entry came from the shared pool and can't be deleted directly — manage it from the pool instead.",
     'toast.memberDeleted': 'Deleted',
     'toast.memberDeletedMsg': '"{name}" has been removed.',
+    'toast.memberAlreadyExists': 'Member already exists: {name}',
+    'toast.memberNotFound': "Couldn't find that member: {name}",
+    'toast.memberInUseCannotDelete': "This member already has expenses on this trip and can't be deleted: {name}",
     'toast.memberMerged': 'Merged',
     'toast.memberMergedMsg': "\"{name}\"'s history now belongs to your account.",
     'toast.repaymentDeleted': 'Deleted',
@@ -1514,19 +1553,19 @@ const STRINGS = {
     'toast.noDataToExport': 'Nothing to export yet',
     'toast.noDataToExportMsg': 'Add at least one expense first.',
 
-    'system.unknownError': 'Something went wrong. Refresh the page and try again.',
-    'toast.refreshFailed': 'Refresh failed',
+    'system.unknownError': "Even DivvyDuck isn't sure what happened — refreshing the page usually fixes it.",
+    'toast.refreshFailed': 'DivvyDuck got stuck refreshing',
 
     'offline.banner': "You're offline — new expenses save on this device for now",
-    'offline.bannerSyncing': 'Back online — syncing {count} record(s)…',
+    'offline.bannerSyncing': 'Back online — DivvyDuck is syncing {count} record(s)…',
     'offline.pendingBadge': 'Pending sync',
     'offline.expenseQueuedTitle': 'Saved offline',
-    'offline.expenseQueuedMsg': "Stored on this device — it'll sync once you're back online.",
+    'offline.expenseQueuedMsg': "Stored on this device — DivvyDuck will sync it automatically once you're back online.",
     'offline.syncSuccessTitle': 'Synced',
     'offline.syncSuccessMsg': '{count} offline expense(s) synced successfully.',
     'offline.syncFailedTitle': 'Some records failed to sync',
     'offline.syncFailedMsg': "{count} still pending — we'll retry next time you're online.",
-    'offline.staleDataBanner': "You're offline — showing data from your last connection ({time})",
+    'offline.staleDataBanner': "DivvyDuck's offline for now — showing data from your last connection ({time})",
     'trip.noTripOption': 'No trips',
     'members.noMembersYet': 'No members yet — add some on the Members page.',
     'expense.customSplitSummary': 'Allocated {currency} {allocated} / Total {currency} {total}',
@@ -1546,6 +1585,7 @@ const STRINGS = {
     'expenseDetailModal.splitBreakdown': 'Split Breakdown',
     'expenseDetailModal.payerTag': 'Paid this',
     'expenseDetailModal.receiptLabel': 'Receipt Photo',
+    'expenseDetailModal.viewReceiptAriaLabel': 'View receipt photo',
     'repayment.currencyUnitHint': 'Currency: {currency} (trip base currency)',
     'trip.noTripSelected': '(no trip selected)',
     'toast.closeAriaLabel': 'Dismiss notification',
@@ -1638,6 +1678,10 @@ const STRINGS = {
     'toast.rateAutoFetched': 'Rate filled in',
     'toast.rateAutoFetchedMsg': '1 {currency} = {rate} {base} (via Wise), saved for this trip. Adjust in Settings if it looks off.',
     'toast.rateFetchFailed': 'Fetch failed',
+    'toast.rateMissingParams': 'Missing required parameters: source / target',
+    'toast.rateConnectionFailed': "Couldn't connect to the exchange rate service. Please enter the rate manually.",
+    'toast.rateBadResponse': 'Exchange rate service returned an error (status {status}). Please enter the rate manually.',
+    'toast.rateUnsupportedPair': "Couldn't get the {source} → {target} rate (this currency may not be supported). Please enter the rate manually.",
     'toast.allRatesFetched': 'Live rates filled in',
     'toast.allRatesFetchedMsg': 'Fetched and saved {count} rate(s). Adjust manually if any look off.',
     'toast.noCurrenciesToFetch': 'Nothing to fetch',
@@ -1668,6 +1712,8 @@ const STRINGS = {
     'pool.alert.lowBalanceMessage': '{currency} balance is running low — log another payment soon',
 
     'pool.settle.confirmMessage': 'Once settled, the pool can\u2019t take more deductions. Split the remaining balance equally among everyone?',
+    'pool.settle.confirmTitle': 'Confirm Settlement',
+    'pool.settle.confirmLabel': 'Confirm Settlement',
     'pool.poster.title': 'Divvy Duck Pool Settlement',
     'pool.poster.refundLine': '{name} refund {refund}',
     'pool.poster.subtitle': 'Per-person refund breakdown after settling',
@@ -1714,7 +1760,6 @@ const STRINGS = {
     'pool.settings.noMembers': 'No members on this trip yet — add members first',
     'pool.error.initFailed': 'Failed to log payment',
     'pool.topup.failedTitle': 'Failed to log payment',
-    'pool.settle.failedTitle': 'Settlement failed',
 
     'expense.sourceLabel': 'Funding source',
     'expense.sourceNormal': 'Normal expense',
@@ -1766,6 +1811,7 @@ function t(key, params) {
  */
 function applyLanguage() {
   document.documentElement.setAttribute('lang', currentLang === 'zh' ? 'zh-Hans' : 'en');
+  document.title = `${t('brand.name')} · ${t('brand.slogan')}`;
 
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     el.textContent = t(el.getAttribute('data-i18n'));
@@ -1783,6 +1829,10 @@ function applyLanguage() {
   // 不用再各自写一段 JS 手动同步
   document.querySelectorAll('[data-i18n-aria-label]').forEach((el) => {
     el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
+  });
+
+  document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+    el.setAttribute('alt', t(el.getAttribute('data-i18n-alt')));
   });
 
   // 导览上的语言按钮（桌面侧栏、手机抽屉、登入页）现在都是「一点击就直接换下一个语言」，
@@ -1850,6 +1900,10 @@ let currentSplitType = 'equal';
 // 只有金库开启的旅程才会显示这个选择器，预设一律是 normal，行为跟合并这个功能之前完全一样
 let currentExpenseSource = 'normal';
 let modalStack = []; // Modal Stack Manager：依开启顺序记录目前所有开着的 Modal id
+// 跟 modalStack 一一对应：每层 Modal 开启当下「原本聚焦在哪个元素」，关闭时要
+// 把焦点还回去，键盘／萤幕阅读器使用者才不会在 Modal 关闭后「跟丢」，得从头
+// Tab 一次才能回到原本在操作的按钮（见 openModal()／closeTopModalLayer_()）
+let modalFocusStack = [];
 let secondaryPageStack = []; // 二级页面堆叠：依开启顺序记录目前一路钻进来的二级页面
 // id（例如从「账单统计」点进某个分类的「分类消费清单」，会是 ['category-stats',
 // 'category-expenses']）。跟 modalStack 是同一个概念，只是这边管的是 .page
@@ -2356,8 +2410,16 @@ function initAuthGate() {
     setButtonLoading(submitBtn, true);
 
     try {
-      const firstName = document.getElementById('authSignupFirstName').value.trim();
-      const lastName = document.getElementById('authSignupLastName').value.trim();
+      // 这两个栏位的「物理顺序」依语言做了在地化对调：中文姓氏在前、英文 First Name
+      // 在前（见 index.html #authSignupFirstName／#authSignupLastName 分別绑定
+      // authGate.firstNameLabel／authGate.lastNameLabel 这两个 key，中文版顯示的
+      // 其实是「姓氏」「名字」，跟 DOM id 上的 First/Last 字面意思是反过来的）。
+      // 千万不能直接假设 DOM id 里的 First/Last 就等于语意上的名/姓，不然中文注册的
+      // 使用者会把姓氏存进 first_name 栏位，日后没填昵称时问候语也会显示成姓氏
+      const authSignupFirstFieldValue = document.getElementById('authSignupFirstName').value.trim();
+      const authSignupLastFieldValue = document.getElementById('authSignupLastName').value.trim();
+      const givenName = currentLang === 'zh' ? authSignupLastFieldValue : authSignupFirstFieldValue;
+      const surname = currentLang === 'zh' ? authSignupFirstFieldValue : authSignupLastFieldValue;
       const nickname = document.getElementById('authSignupNickname').value.trim();
       const password = document.getElementById('authSignupPassword').value;
       const email = document.getElementById('authSignupEmail').value.trim();
@@ -2383,13 +2445,13 @@ function initAuthGate() {
       // 空字串代表使用者选的是「不是以上任何一位」，两种都当成「不认领」
       const rawClaimValue = claimSelect.value;
       const claimMemberId = (rawClaimValue && rawClaimValue !== '__unselected__') ? rawClaimValue : null;
-      const displayName = nickname || firstName;
+      const displayName = nickname || givenName;
 
       const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, nickname: displayName }
+          data: { first_name: givenName, last_name: surname, nickname: displayName }
         }
       });
       if (signUpError) throw signUpError;
@@ -3650,13 +3712,13 @@ function initAccountPanel() {
         // 也能在真的打错目前密码时给出清楚的错误，而不是让人误以为密码已经改了
         const session = getUserSession();
         if (!session || !session.email) {
-          throw new Error('找不到目前登入的账号邮箱');
+          throw new Error(t('account.sessionEmailMissing'));
         }
         const { error: verifyError } = await supabaseClient.auth.signInWithPassword({
           email: session.email,
           password: currentPassword
         });
-        if (verifyError) throw new Error('目前密码不正确');
+        if (verifyError) throw new Error(t('account.currentPasswordIncorrect'));
 
         const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
         if (error) throw error;
@@ -4041,26 +4103,6 @@ function convertToBaseCurrency_(amount, currency, tripCurrency, snapshotRate) {
     rate = 1;
   }
   return roundAmount_(amount * rate);
-}
-
-function initializeZeroMap_(names) {
-  const map = {};
-  names.forEach((name) => { map[name] = 0; });
-  return map;
-}
-
-function mergeMapKeys_(mapA, mapB) {
-  const seen = {};
-  const result = [];
-  [mapA, mapB].forEach((map) => {
-    Object.keys(map).forEach((key) => {
-      if (!seen[key]) {
-        seen[key] = true;
-        result.push(key);
-      }
-    });
-  });
-  return result;
 }
 
 /**
@@ -4498,7 +4540,7 @@ async function fetchLiveRate_(source, target) {
   const tgt = String(target || '').trim().toUpperCase();
 
   if (!src || !tgt) {
-    throw new Error('缺少必要参数: source / target');
+    throw new Error(t('toast.rateMissingParams'));
   }
   if (src === tgt) {
     return { rate: 1, source: src, target: tgt, fetchedAt: new Date().toISOString() };
@@ -4508,18 +4550,18 @@ async function fetchLiveRate_(source, target) {
   try {
     response = await fetch(`https://api.frankfurter.dev/v2/rate/${encodeURIComponent(src)}/${encodeURIComponent(tgt)}`);
   } catch (error) {
-    throw new Error('无法连线至汇率服务，请改用手动输入汇率。');
+    throw new Error(t('toast.rateConnectionFailed'));
   }
 
   if (!response.ok) {
-    throw new Error('汇率服务回应异常（状态码 ' + response.status + '），请改用手动输入汇率。');
+    throw new Error(t('toast.rateBadResponse', { status: response.status }));
   }
 
   const data = await response.json();
   const rate = data && data.rate;
 
   if (!rate || isNaN(rate) || rate <= 0) {
-    throw new Error('无法取得 ' + src + ' → ' + tgt + ' 的汇率（可能是这个货币代码不受支援），请改用手动输入汇率。');
+    throw new Error(t('toast.rateUnsupportedPair', { source: src, target: tgt }));
   }
 
   return { rate, source: src, target: tgt, fetchedAt: new Date().toISOString() };
@@ -5481,6 +5523,34 @@ function initModals() {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && modalStack.length > 0) {
       closeActiveModal();
+      return;
+    }
+
+    // 焦点困住（Focus Trap）：Modal 开着的时候，Tab／Shift+Tab 只能在最上层
+    // Modal 内部的可聚焦元素之间循环，不能穿透跑到被压在背景、变暗且不能
+    // 互动的内容上——不然键盘使用者会「Tab 着 Tab 着人就跑出 Modal 外」
+    if (event.key === 'Tab' && modalStack.length > 0) {
+      const topModal = document.getElementById(modalStack[modalStack.length - 1]);
+      const focusables = getFocusableElements_(topModal);
+      if (focusables.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      } else if (!topModal.contains(document.activeElement)) {
+        // 焦点不知何故（例如画面重画）掉到 Modal 外面了，拉回来
+        event.preventDefault();
+        first.focus();
+      }
     }
   });
 
@@ -5742,6 +5812,22 @@ function initSecondaryPageBackButtons_() {
 const MODAL_BASE_Z_INDEX = 50;
 const MODAL_Z_INDEX_STEP = 5;
 
+// 判断「可以被键盘 Tab 到」的元素范围：常见可聚焦标签 + 没被 disabled／
+// tabindex="-1" 排除，也顺便排除画面上还隐藏著的（display:none 或 .is-hidden
+// 让 offsetParent 变 null），焦点管理／Tab 循环都靠这份清单
+const FOCUSABLE_SELECTOR_ = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * 取得容器内目前「看得到、可以被 Tab 到」的可聚焦元素清单
+ * @param {HTMLElement} container
+ * @return {HTMLElement[]}
+ */
+function getFocusableElements_(container) {
+  if (!container) return [];
+  return Array.from(container.querySelectorAll(FOCUSABLE_SELECTOR_))
+    .filter((el) => el.offsetParent !== null || el === document.activeElement);
+}
+
 /**
  * 开启一个 Modal，推入堆叠最上层
  * @param {string} modalId Modal 的 DOM id
@@ -5765,6 +5851,13 @@ function openModal(modalId) {
     }
   }
 
+  // 记住这颗 Modal 打开当下焦点原本在哪个元素上，关闭时要还回去（见
+  // closeTopModalLayer_()）；同一颗 Modal 重复点开不重複记录，理由跟下面
+  // modalStack 不重複推入一样
+  if (!isAlreadyTopmost) {
+    modalFocusStack.push(document.activeElement);
+  }
+
   // 同一个 Modal 不重复推入堆叠
   modalStack = modalStack.filter((id) => id !== modalId);
   modalStack.push(modalId);
@@ -5782,6 +5875,23 @@ function openModal(modalId) {
   if (modalId === 'addExpenseModal') {
     updateCustomSplitTotal();
   }
+
+  // 把焦点移进刚打开的 Modal——优先给第一个可聚焦的表单栏位／按钮，找不到的话
+  // （例如纯展示内容的 Modal）退而求其次聚焦 Modal 本身，不然键盘/萤幕阅读器
+  // 使用者的焦点还留在背景已经变暗、不能互动的页面上，会「看得到却摸不到」。
+  // 用 setTimeout 让画面先套用 .is-open（含 display 变化）再抓可聚焦元素，
+  // 不然这一刻元素可能都还是 offsetParent === null 的隐藏状态，抓不到
+  setTimeout(() => {
+    const focusables = getFocusableElements_(modal);
+    if (focusables.length > 0) {
+      focusables[0].focus();
+    } else {
+      if (!modal.hasAttribute('tabindex')) {
+        modal.setAttribute('tabindex', '-1');
+      }
+      modal.focus();
+    }
+  }, 0);
 
   if (!isAlreadyTopmost) {
     pushAppHistoryState_({ appNavType: 'modal', modalId });
@@ -5811,6 +5921,15 @@ function closeTopModalLayer_(shouldPopHistory) {
   }
 
   document.getElementById(topModalId).classList.remove('is-open');
+
+  // 把焦点还给打开这颗 Modal 之前原本聚焦的元素（通常是触发它的按钮），
+  // 使用者才不会在 Modal 关闭後「跟丢」焦点、还得自己重新 Tab 一次去找。
+  // 如果那个元素已经不在画面上了（例如背景资料整个重画过），就不勉强，
+  // 交给浏览器预设行为（通常会落到 body）
+  const previouslyFocused = modalFocusStack.pop();
+  if (previouslyFocused && document.body.contains(previouslyFocused) && typeof previouslyFocused.focus === 'function') {
+    previouslyFocused.focus();
+  }
 
   if (modalStack.length === 0) {
     document.getElementById('modalBackdrop').classList.remove('is-visible');
@@ -6671,7 +6790,7 @@ function handleDeleteExpenseClick(expenseId, descriptionText) {
   openConfirmModal(t('confirm.deleteExpense', { name: descriptionText }), async () => {
     const expense = appState.expenses.find((item) => item.ID === expenseId);
     if (expense && expense.SplitType === 'pool') {
-      throw new Error('这笔记录来自搭伙金库，无法直接删除，请到搭伙金库管理');
+      throw new Error(t('toast.expenseDeleteBlockedPool'));
     }
 
     const { error } = await supabaseClient
@@ -7040,7 +7159,7 @@ async function handleMemberFormSubmit() {
     // 跟旧版一样先在前端挡一次明显重复（真正的最後防线是之後可以加的资料库唯一限制，
     // 这里先用简单版本，重复概率很低——两个人几乎同时新增同名成员才会漏网）
     if (appState.members.includes(name)) {
-      throw new Error('成员已存在: ' + name);
+      throw new Error(t('toast.memberAlreadyExists', { name }));
     }
 
     const { error } = await supabaseClient
@@ -7080,11 +7199,11 @@ function handleDeleteMemberClick(name) {
   openConfirmModal(t('confirm.deleteMember', { name }), async () => {
     const memberId = appState.memberIndex && appState.memberIndex.byName[name];
     if (!memberId) {
-      throw new Error('找不到该成员: ' + name);
+      throw new Error(t('toast.memberNotFound', { name }));
     }
 
     if (await isMemberInUse_(memberId)) {
-      throw new Error('该成员在此旅程已有相关消费纪录，无法删除: ' + name);
+      throw new Error(t('toast.memberInUseCannotDelete', { name }));
     }
 
     const { error } = await supabaseClient.from('members').delete().eq('id', memberId);
@@ -7626,7 +7745,7 @@ function renderDashboard() {
   renderWelcomeBanner();
   renderDashboardHeader();
   renderHeroCard();
-  renderDivvyPoolCard();
+  checkPoolLowBalanceAlert();
 
   // 这趟旅程完全没有任何消费纪录的话，「谁欠谁」「近期账目」两个面板都不会
   // 有东西可以显示——与其各自放一个小空状态，不如直接换成一整块「还没有
@@ -8206,15 +8325,6 @@ function getPoolStatus(pool) {
   return POOL_STATUS.COLLECTING;
 }
 
-/**
- * 四舍五入到分（2 位小数）
- * @param {number} value
- * @return {number}
- */
-function round2(value) {
-  return Math.round((Number(value) || 0) * 100) / 100;
-}
-
 /* ===== 10B-2. 智能预警 (Alert) ===== */
 
 // 避免同一趟旅程重复弹出低余额 Toast，只在「刚跌破阈值」的那一刻提醒一次
@@ -8464,17 +8574,11 @@ function renderDivvyPoolCard() {
  * 结程一键退余：先跳确认（不可逆动作），确认後才呼叫後端 poolSettle 结算——
  * 这是公家的钱，退余一律按目前成员人数平分，每种还有余额的货币各自算一次
  */
-async function handlePoolSettle() {
+function handlePoolSettle() {
   const pool = appState.pool;
   if (!pool) return;
 
-  const confirmed = window.confirm(t('pool.settle.confirmMessage'));
-  if (!confirmed) return;
-
-  const btn = document.querySelector('.pool-btn-settle');
-  setButtonLoading(btn, true);
-
-  try {
+  openConfirmModal(t('pool.settle.confirmMessage'), async () => {
     const { data, error: settleError } = await supabaseClient.rpc('pool_settle', { _trip_id: currentTripId });
     if (settleError) throw settleError;
 
@@ -8486,7 +8590,6 @@ async function handlePoolSettle() {
     }));
 
     appState.pool = await fetchPoolStatus_();
-    setButtonLoading(btn, false);
 
     // 金库退款不会写入 repayments 表、也不是 expenses（不影响应收/应付、也不会
     // 出现在账目页），但 Hero Card 的「已收金额」小格子、金库设定页要跟着更新
@@ -8496,10 +8599,11 @@ async function handlePoolSettle() {
     if (posterData && typeof openPoolRefundPoster === 'function') {
       openPoolRefundPoster(posterData);
     }
-  } catch (error) {
-    showToast('error', t('pool.settle.failedTitle'), error.message);
-    setButtonLoading(btn, false);
-  }
+  }, {
+    title: t('pool.settle.confirmTitle'),
+    confirmLabel: t('pool.settle.confirmLabel'),
+    danger: false // 结程不是删除/危险操作，改用一般强调色按钮，不要吓到人
+  });
 }
 
 /**
@@ -8751,7 +8855,7 @@ function renderPoolSettingsPanel() {
     </div>
     <div class="pool-settings-enable-row">
       <input type="number" class="text-input" id="poolTopupPerPersonInput" min="0" step="0.01" placeholder="${escapeHtml(t('pool.form.perPersonLabel'))}" oninput="updatePoolTopupPreview()">
-      <select class="suffix-select" id="poolTopupCurrencySelect" aria-label="货币" onchange="updatePoolTopupPreview()"></select>
+      <select class="suffix-select" id="poolTopupCurrencySelect" aria-label="${escapeHtml(t('table.currency'))}" onchange="updatePoolTopupPreview()"></select>
       <button type="button" class="btn btn-primary btn-sm" id="poolTopupSubmitBtn" onclick="handlePoolTopupSubmit()">
         <span class="btn-label">${escapeHtml(t('pool.settings.topupBtn'))}</span>
         <span class="btn-spinner" aria-hidden="true"></span>
@@ -8783,7 +8887,7 @@ function updatePoolTopupPreview() {
     return;
   }
 
-  const total = round2(perPerson * memberCount);
+  const total = roundAmount_(perPerson * memberCount);
   previewEl.textContent = t('pool.settings.topupPreview', {
     count: memberCount,
     perPerson: formatMoney(perPerson, currency),
@@ -8896,7 +9000,7 @@ function renderPoolTopupEditForm(topupId) {
       <label for="poolTopupEditAmount">${escapeHtml(t('pool.form.perPersonLabel'))}</label>
       <div class="input-with-suffix">
         <input type="number" class="text-input" id="poolTopupEditAmount" min="0" step="0.01" value="${item.perPersonAmount}">
-        <select class="suffix-select" id="poolTopupEditCurrency" aria-label="货币"></select>
+        <select class="suffix-select" id="poolTopupEditCurrency" aria-label="${escapeHtml(t('table.currency'))}"></select>
       </div>
       <p class="form-hint">${escapeHtml(t('pool.settings.editTopupMemberCountNote', { count: item.memberCount }))}</p>
     </div>
@@ -9884,26 +9988,6 @@ function computeExpenseCountByMember() {
     }
   });
   return expenseCountByMember;
-}
-
-/**
- * 绑定一张可点击统计卡片的点击／键盘事件（Enter、空白键都能触发）
- * @param {string} elementId 卡片的 DOM id
- * @param {Function} handler 点击后要执行的函式
- */
-function bindClickableCard(elementId, handler) {
-  const card = document.getElementById(elementId);
-  if (!card) {
-    return;
-  }
-
-  card.addEventListener('click', handler);
-  card.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handler();
-    }
-  });
 }
 
 /**
