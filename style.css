@@ -193,6 +193,20 @@
   box-sizing: border-box;
 }
 
+html {
+  /* 只给 html 铺纯色兜底，不要连 body 也一起给——body 自己不建立 stacking
+     context，它的 background-color 会盖过 body::before 那层固定定位的品牌
+     渐层（见下面 body 的说明），之前 html/body 共用同一条规则时两层都有
+     背景色，就是渐层完全看不到的root cause 之一。html 这层不受影响，
+     可以放心保留：它是「画布」层级的兜底，不会跟 body::before 的 z-index
+     排到同一个绘制阶段去竞争。这里刻意用 --bg 而不是 --bg-subtle——开机动画
+     .app-splash 的背景色正是 --bg，两者要完全一致，缝隙露出来的这一小截才会
+     跟上面的画面无缝接上；如果用 --bg-subtle（跟 --bg 其实是两个深浅相近但
+     肉眼看得出差异的米白色），实测在加入主屏幕的 standalone 模式下，开机画面
+     底部会看到一小截明显比背景更灰的横条，就是这个颜色没对齐造成的 */
+  background-color: var(--bg);
+}
+
 html,
 body {
   height: 100%;
@@ -201,14 +215,6 @@ body {
                           dvh 才能确保「实际内容高度」跟真正看得到的整个屏幕（含
                           Home Indicator 安全区）一样高，不会比屏幕矮一截、
                           底下露出还没铺到颜色的空白 */
-  /* html/body 两层都直接给一个纯色兜底，就算某些机型上 .app-shell / .app-splash
-     用 100dvh／inset:0 撑出来的高度跟真正的屏幕高度之间有一丁点计算落差，露出来的
-     也不会是浏览器预设的白色。这里刻意用 --bg 而不是 --bg-subtle——开机动画
-     .app-splash 的背景色正是 --bg，两者要完全一致，缝隙露出来的这一小截才会
-     跟上面的画面无缝接上；如果用 --bg-subtle（跟 --bg 其实是两个深浅相近但
-     肉眼看得出差异的米白色），实测在加入主屏幕的 standalone 模式下，开机画面
-     底部会看到一小截明显比背景更灰的横条，就是这个颜色没对齐造成的 */
-  background-color: var(--bg);
   /* 手机版视口 meta 已经用 user-scalable=no 关掉双指缩放，但 iOS Safari 有时候
      基於无障碍考量会忽略这个设定；双击快速点两下造成的「双击缩放」更是完全独立於
      viewport meta 之外的另一套机制，只能靠这个 CSS 属性关掉——两者加起来才能确保
@@ -251,31 +257,50 @@ body {
 body {
   margin: 0;
   font-family: var(--font-ui);
-  /* 品牌渐层氛围：复用 Logo 本身的三色（靛紫／琥珀金／天蓝），做成模糊的光晕铺在
-     底色上，整个 App 背景不再是一片死板单色。固定不跟着内容捲动（background-attachment:
-     fixed），氛围感维持稳定，不会捲动时露出色块边界。透明度比导览抽屉自己的背景
-     （见 .side-drawer::before）淡一些，全站背景是「常驻」的，导览是「偶尔跳出来的
-     强调层」，两者要有层次感，不能一样浓 */
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: color var(--duration-base) var(--ease-out);
+  /* ⚠️ 这裡刻意不写 background-color——body 自己不建立 stacking context，
+     它的背景其实是在「根层级」以正常文档流的身份绘制，時機比下面
+     body::before 这个 z-index:-1 的固定定位图层还要晚（浏览器绘制顺序：
+     ...→ 负 z-index 的定位后代 → 正常流后代，body 自己的背景算在後面那一类），
+     结果是 body 一旦自己有不透明的背景色，会整个盖过 ::before 那层渐层，
+     使用者只看得到 body 的纯色、完全看不到光晕——这正是先前「渐层怎么调
+     位置/透明度都看不到」的真正原因，跟渐层数值本身无关。纯色兜底改放进
+     ::before 自己的 background 最後一层（见下面），两者不再互相竞争 */
+}
+
+/* 品牌渐层氛围：复用 Logo 本身的三色（靛紫／琥珀金／天蓝），做成模糊的光晕铺在
+   底色上，整个 App 背景不再是一片死板单色。数值本身没变过，跟 .side-drawer::before
+   同一份色彩语言，透明度刻意比抽屉自己的背景淡一些——全站背景是「常驻」的，
+   导览是「偶尔跳出来的强调层」，两者要有层次感，不能一样浓。
+   用固定定位的 ::before 铺满视口，是 .side-drawer::before 已经在用的同一招——
+   跟原本试过的 background-attachment: fixed 比，不受 iOS Safari 对那个属性
+   的已知限制影响，不管页面捲多长都会稳稳贴在视口上。
+   纯色兜底（var(--bg-subtle)）放在这份 background 的最後一层，不要另外写在
+   body 自己的 background-color 上——原因见上面 body 的说明，两者会互相竞争，
+   z-index:-1 的这层会被 body 自己的背景盖住 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.24), transparent 60%),
     radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.16), transparent 60%),
     radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.09), transparent 65%),
     var(--bg-subtle);
-  background-attachment: fixed;
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  transition: background var(--duration-base) var(--ease-out), color var(--duration-base) var(--ease-out);
 }
 
-[data-theme="dark"] body {
+[data-theme="dark"] body::before {
   /* 深色模式背景本身够暗，光晕透明度可以拉高一点才看得出来，不然会几乎隐形 */
   background:
     radial-gradient(ellipse 520px 420px at 96% -6%, rgba(129, 140, 248, 0.32), transparent 60%),
     radial-gradient(ellipse 460px 380px at -10% 88%, rgba(245, 158, 11, 0.2), transparent 60%),
     radial-gradient(ellipse 560px 460px at 50% 45%, rgba(56, 189, 248, 0.12), transparent 65%),
     var(--bg-subtle);
-  background-attachment: fixed;
 }
 
 /* Modal／侧边抽屉打开时，用这个 class 冻结背景页面（见 app.js 的 lockBodyScroll()）。
@@ -410,10 +435,12 @@ html {
                           （dynamic viewport height）会跟着工具列即时调整，才是
                           真正「现在看得到的这块画面」的高度，不支援的浏览器
                           会直接忽略这行、退回上面那行 100vh */
-  /* 跟 html/body 用同一份底色兜底——加到主画面後底部安全区如果有任何一丁点
-     没被 body 背景盖到的缝隙，露出来的也是这个跟整个 App 一致的颜色，
-     不会看到系统默认的白色 */
-  background-color: var(--bg-subtle);
+  /* 刻意用 transparent，不要写死不透明的 background-color——这层如果不透明，
+     会整个盖住 body 那份品牌渐层氛围背景（见 body 的说明），使用者会完全看不到
+     颜色。body 自己有 background-color: var(--bg-subtle) 兜底，.app-shell 是
+     body 的子层，不透明也不会露出比 body 更底层的东西，改成 transparent 不影响
+     安全区兜底效果 */
+  background-color: transparent;
   /* 注意：这里刻意不加 overflow-x:hidden——html/body 那层已经有同样的安全网了，
      在这里再加一次会触发 CSS 一个冷知识规则：只要 overflow-x 不是 visible，
      浏览器会自动把 overflow-y 也悄悄变成 auto，讓 .app-shell 意外变成自己
@@ -1340,8 +1367,22 @@ html {
      二级页面的「返回」键（.secondary-page-back-btn，见下方）是 position:fixed，
      藏在 .page 底下当子元素；只要祖先有 transform 或 will-change:transform，
      fixed 子元素就会改成相对那个祖先定位，不再相对整个视口，会跟同样
-     fixed、但不在 .page 里面的汉堡按钮对不齐 */
+     fixed、但不在 .page 里面的汉堡按钮对不齐。
+     ⚠️ 这条注释写完後其实一直没兑现：下面这行 fadeSlideIn 自己就带 transform
+     （translateY + scale），等於自己違反自己写的规则——二级页面进场那 0.42 秒
+     动画播放期间，.page 一直带着非 none 的 transform，返回键因此被劫持、
+     整段动画时间里都相对 .page（还在滑动/缩放中的那个盒子）定位，算出来
+     的位置明显偏低；动画结束、transform 归零的瞬间，返回键的 fixed 定位
+     "跳"回真正相对视口算出来的正确位置——这就是使用者会看到返回键
+     「先偏低、再跳回原位」的根本原因。一般分页（.page 但不是二级页面）
+     没有 fixed 定位的子元素，不受影响，回弹动画照常保留；只有二级页面
+     （.page.secondary-page，见下面那条覆写）改用不含 transform 的淡入，
+     从源头避免 .page 在动画期间变成 fixed 子元素的 containing block */
   animation: fadeSlideIn 0.42s var(--ease-pop);
+}
+
+.page.secondary-page {
+  animation: fadeInOnly 0.28s var(--ease-out);
 }
 
 .page.is-hidden {
@@ -1521,6 +1562,15 @@ html {
   white-space: nowrap;
   scroll-snap-align: start;
   scroll-snap-stop: always; /* 快速滑动也一定逐个胶囊停，不会飞过好几个直接停在切一半的地方 */
+  /* .chip 大多数地方套在 <button> 上，浏览器原生就会把内容大致垂直置中，
+     文字看起来没问题；但设置页「分类管理」预览那排（.category-preview-chip，
+     见 renderCategoryManagePreview_()）用的是 <span>，纯 inline 元素不吃
+     height，文字只会照字体本身的行高沿基线排列，跟上面写的 32px 完全对不上，
+     看起来就是文字贴在胶囊上緣、没有垂直置中。加 inline-flex 置中後
+     两种元素（button／span）都会真的照 height 置中，不用挑元素类型 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chip:hover {
@@ -2252,7 +2302,11 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-weight: 700;
   text-align: right;
   white-space: normal;
-  max-width: 150px;
+  /* 原本 150px，手机版窄屏下金额栏会挤掉姓名栏的空间——"Tan Yean How" 这种
+     正常长度的英文名字因此被迫两行、行高变高、看起来不齐。实际金额文字很少
+     超过 110px（例如 "MYR 1,069.00" 实测约 100px 出头），收紧到 110px 还是
+     绰绰有余，把多出来的空间还给姓名栏 */
+  max-width: 110px;
 }
 
 .balance-amount.mono {
@@ -2281,38 +2335,35 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   color: var(--text-primary);
 }
 
-/* 「提醒」改成固定在金额右侧的小图标按钮——不管这一行有没有提醒对象
-   （自己欠对方的那几行、跟搭伙金库有关的那几行都没有），都占同样的
-   宽度，每一行的金额才会对齐在同一个位置，不会因为某几行多一颗文字
-   按钮就把金额往左挤 */
-.balance-matrix-remind-btn {
+/* 「提醒」原本是金额右侧独立一栏的圆形图示按钮，不管这一行有没有提醒
+   对象都要占同样宽度，窄手机屏幕上会跟姓名栏抢空间，视觉上也比较突兀。
+   改成跟金额同一栏、垂直堆叠在金额下方的小文字连结——.balance-row-end
+   是这一栏的外层容器，金额跟「提醒」都靠右对齐、纵向排；不能提醒的行
+   （自己欠对方／金库相关）JS 那边就不会渲染这个连结，不需要占位撑对齐，
+   那几行会自然矮一截 */
+.balance-row-end {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.balance-matrix-remind-link {
   border: none;
-  border-radius: var(--radius-full);
-  background: var(--bg-subtle);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background var(--duration-fast, 140ms) var(--ease-out, ease), color var(--duration-fast, 140ms);
-}
-
-.balance-matrix-remind-btn svg {
-  width: 15px;
-  height: 15px;
-}
-
-.balance-matrix-remind-btn:hover {
-  background: var(--accent-soft);
+  background: none;
+  padding: 2px 0;
+  margin: -2px 0;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--accent);
+  cursor: pointer;
+  transition: color var(--duration-fast, 140ms) var(--ease-out, ease);
 }
 
-.balance-matrix-remind-btn.is-invisible {
-  visibility: hidden;
-  pointer-events: none;
+.balance-matrix-remind-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 .settlement-row {
@@ -3454,6 +3505,16 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 二级页面进场专用——只淡入、不带 transform，见 .page.secondary-page 的说明：
+   二级页面裡固定定位的返回键是 .page 的子元素，.page 只要在动画期间带
+   transform，返回键就会被劫持到相对 .page 定位，动画结束瞬间再跳回正确
+   位置，肉眼看得到那一下「先偏低、再跳回」。拿掉 transform 只保留淡入，
+   这个问题从源头就不会发生 */
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes spin {
@@ -4616,17 +4677,27 @@ body {
   color: var(--success);
 }
 
-.member-card-status.is-pending {
-  color: var(--warning);
+/* 待清算按方向分色，跟结算页 .balance-amount.is-positive／is-negative
+   同一套 --success／--danger，不再不分方向统一用琥珀色——「别人欠你」
+   跟「你欠别人」在两个页面要长得一样，使用者才不会读错 */
+.member-card-status.is-receivable {
+  color: var(--success);
+}
+
+.member-card-status.is-payable {
+  color: var(--danger);
 }
 
 .member-card-status.is-settled .member-card-status-dot,
-.member-card-status.is-pending .member-card-status-dot {
+.member-card-status.is-receivable .member-card-status-dot,
+.member-card-status.is-payable .member-card-status-dot {
   background: currentColor;
 }
 
-/* 「待清算」的点用柔和的呼吸式脉动提醒还有帐没结清；已结清的维持静止，不需要抓视线 */
-.member-card-status.is-pending .member-card-status-dot {
+/* 还没结清的点（不管待收或待付）用柔和的呼吸式脉动提醒还有帐没结清；
+   已结清的维持静止，不需要抓视线 */
+.member-card-status.is-receivable .member-card-status-dot,
+.member-card-status.is-payable .member-card-status-dot {
   animation: memberStatusPulse 1.6s ease-in-out infinite;
 }
 
@@ -4636,7 +4707,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .member-card-status.is-pending .member-card-status-dot {
+  .member-card-status.is-receivable .member-card-status-dot,
+  .member-card-status.is-payable .member-card-status-dot {
     animation: none;
   }
 }
@@ -5304,6 +5376,13 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;
+  /* 没另外设 line-height 的话会吃 body 的 1.55，跟旁边「谁欠谁」的金额
+     （#balanceMatrixList .balance-amount.mono，line-height: 1.4）字级、
+     字重都一样，只有这个数字不同——同样 14px/700 却因为行高差了 0.15，
+     实际渲染出来的文字框高度多了快 2px（19.6px vs 21.7px），两份名单
+     并排放在一起，才会觉得「近期账目」的数字明显大一号。两边都是
+     mono 数字，行高统一成 1.4 才会是同一个视觉节奏 */
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

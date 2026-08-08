@@ -370,7 +370,7 @@ const STRINGS = {
     'nav.dashboard': '概览',
     'nav.expenses': '账目',
     'nav.summary': '结算',
-    'nav.members': '同行',
+    'nav.members': '成员',
     'nav.settings': '设置',
     // 原本 expensesShort/summaryShort 两个「短标签」是给底部导览用的，但值
     // 其实一直跟完整版一模一样（从没真的缩短过），且 members 从来没补过对应的
@@ -401,7 +401,7 @@ const STRINGS = {
     'page.expenses.subtitle': '所有人的每一笔花费',
     'page.summary.title': '结算',
     'page.summary.subtitle': '转账次数最少的还款方案',
-    'page.members.title': '同行',
+    'page.members.title': '成员',
     'page.members.subtitle': '这趟旅程的所有成员',
     'page.settings.title': '设置',
     'page.settings.subtitle': '外观、分类与连线',
@@ -445,7 +445,7 @@ const STRINGS = {
     'authGate.lastNameLabel': '名字',
     'authGate.lastNamePlaceholder': 'Wei Ling',
     'authGate.nicknameLabel': 'Nickname',
-    'authGate.nicknamePlaceholder': '同行会看到的名字，例如「小伟」',
+    'authGate.nicknamePlaceholder': '成员会看到的名字，例如「小伟」',
     'authGate.inviteCodeLabel': '邀请码（选填）',
     'authGate.inviteCodePlaceholder': '有的话填在这里',
     'authGate.inviteCodeHint': '有邀请码会直接加入朋友的旅程；没有的话，注册后可以自己建一个。',
@@ -480,7 +480,7 @@ const STRINGS = {
     'invite.copyBtn': '分享',
     'invite.shareMessage': '嘎～我在搭伙鸭上开了一趟旅程「{tripName}」，点这个链接就能加入，一起记账不心累：{link}',
     'invite.copiedTitle': '已复制',
-    'invite.copiedMsg': '分享给同行的人，注册或登入后就能加入。',
+    'invite.copiedMsg': '分享给成员，注册或登入后就能加入。',
 
     // 新增旅程 Modal 的「加入旅程」分页
     'joinTrip.tab': '加入旅程',
@@ -488,7 +488,7 @@ const STRINGS = {
     'joinTrip.inviteCodeLabel': '邀请码',
     'joinTrip.inviteCodePlaceholder': '输入朋友分享的邀请码',
     'joinTrip.submit': '加入旅程',
-    'joinTrip.hint': '向已经在旅程里的同行索取邀请码。',
+    'joinTrip.hint': '向已经在旅程里的成员索取邀请码。',
     'joinTrip.failedTitle': '加入失败',
 
     // 账号（登出按钮实际放在左边导览栏，不在设置页里）
@@ -518,7 +518,7 @@ const STRINGS = {
     'account.passwordLabel': '密码',
     'account.passwordDots': '••••••••',
     'account.displayNameLabel': 'Nickname',
-    'account.displayNamePlaceholder': '同行会看到的名字',
+    'account.displayNamePlaceholder': '成员会看到的名字',
     'account.displayNameHint': '会同步更新到这个账号目前所在的所有旅程，包含既有的。',
     'account.currentPasswordLabel': '目前密码',
     'account.newPasswordLabel': '新密码',
@@ -690,7 +690,7 @@ const STRINGS = {
     'mergeMemberModal.confirmBtn': '这是我，合并',
     'mergeMemberModal.empty.title': '没有需要合并的成员',
     'mergeMemberModal.empty.desc': '这趟旅程目前没有还没连结账号的旧成员。',
-    'memberModal.title': '邀请同行加入账本',
+    'memberModal.title': '邀请成员加入账本',
     'memberModal.nameLabel': '成员姓名',
     'memberModal.namePlaceholder': '例如：Wei',
     'memberModal.save': '新增成员',
@@ -1079,7 +1079,7 @@ const STRINGS = {
     'expense.sourceNormal': '正常记账',
     'expense.sourcePersonal': '私人消费',
     'expense.sourceDeduct': '金库支出',
-    'expense.sourceNormalHint': '照一般方式记账，跟同行的人依分账方式结算。',
+    'expense.sourceNormalHint': '照一般方式记账，跟成员依分账方式结算。',
     'expense.sourcePersonalHint': '只有你自己看得到，不出现在账目页，也不参与任何分账/结算。',
     'expense.sourceDeductHint': '这笔钱直接从搭伙鸭金库扣，不会再跟任何人拆账。',
 
@@ -1109,7 +1109,7 @@ const STRINGS = {
     'brand.slogan': 'Split the bill, lose the stress.',
     'nav.dashboard': 'Overview',
     'nav.expenses': 'Expenses',
-    'nav.summary': 'Settle',
+    'nav.summary': 'Settle Up',
     'nav.members': 'Members',
     'nav.settings': 'Settings',
 
@@ -8258,6 +8258,11 @@ function renderBalanceMatrix() {
     // （金库不会看 WhatsApp，提醒了也没有意义）
     const showRemindBtn = !isYouOwe && !item.isPoolSettlement;
 
+    // 「提醒」原本是行尾独立一栏的圆形图示按钮，不管这一行能不能提醒都要
+    // 佔同样宽度（见 is-invisible 占位），在窄手机屏幕上会跟姓名栏抢空间。
+    // 改成金额栏底下的小文字连结，跟金额同一栏垂直堆叠、不再多佔一栏横向
+    // 空间；不能提醒的行（自己欠对方／金库相关）就直接不渲染这行连结，
+    // 不需要占位撑对齐，行会自然矮一截，也顺便区分出「这行能不能提醒」
     return `
       <div class="balance-row">
         <div class="avatar">${escapeHtml(getInitials(counterpartRaw))}</div>
@@ -8265,12 +8270,14 @@ function renderBalanceMatrix() {
           <p class="balance-name">${escapeHtml(counterpartDisplay)}</p>
           <p class="balance-sub">${escapeHtml(relationSub)}</p>
         </div>
-        <p class="balance-amount mono">${formatMoney(item.amount)}</p>
-        <button class="balance-matrix-remind-btn${showRemindBtn ? '' : ' is-invisible'}" type="button"
-          ${showRemindBtn ? `data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}"` : 'tabindex="-1" aria-hidden="true"'}
-          aria-label="${escapeHtml(t('dashboard.matrix.remind'))}">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
+        <div class="balance-row-end">
+          <p class="balance-amount mono">${formatMoney(item.amount)}</p>
+          ${showRemindBtn ? `
+          <button class="balance-matrix-remind-link" type="button"
+            data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}">
+            ${escapeHtml(t('dashboard.matrix.remind'))}
+          </button>` : ''}
+        </div>
       </div>
     `;
   };
@@ -8305,7 +8312,7 @@ function renderBalanceMatrix() {
  * 不用只凭一句「你还欠多少钱」的文字乾等着被催
  */
 function bindBalanceMatrixRemindButtons_() {
-  document.querySelectorAll('.balance-matrix-remind-btn').forEach((btn) => {
+  document.querySelectorAll('.balance-matrix-remind-link').forEach((btn) => {
     btn.addEventListener('click', () => {
       const name = btn.getAttribute('data-remind-name');
       const amount = Number(btn.getAttribute('data-remind-amount')) || 0;
@@ -10037,10 +10044,14 @@ async function handleEditRepaymentFormSubmit() {
    ------------------------------------------------------------ */
 
 /**
- * 依成员姓名取得「财务状态徽章」的文字与语意（已结清 / 待清算）
- * 找不到结算资料（例如刚新增、尚无消费）时，一律视为已结清
+ * 依成员姓名取得「财务状态徽章」的文字与语意（已结清 / 待收 / 待付）
+ * 找不到结算资料（例如刚新增、尚无消费）时，一律视为已结清。
+ * 待清算的方向（isReceivable）刻意跟结算页 .balance-amount.is-positive／
+ * is-negative 用同一份 balance 正负号判断、同一组 --success／--danger 颜色，
+ * 不然使用者在结算页学会「绿色=别人欠你、红色=你欠别人」，切到同行页看到的
+ * 却是不分方向、一律琥珀色的「Pending」，同一件事两种颜色语言，容易误读
  * @param {string} name 成员姓名
- * @return {{text: string, isSettled: boolean}}
+ * @return {{text: string, isSettled: boolean, isReceivable: boolean}}
  */
 function getMemberStatusBadge(name) {
   const stat = (appState.summary.balances || []).find((item) => item.name === name);
@@ -10050,10 +10061,10 @@ function getMemberStatusBadge(name) {
     // 已结清：不再用「财务平衡，心照不宣」这类俏皮文案，改为直接显示消费合计（绿色字体，见 .member-card-status.is-settled）
     const baseCurrency = appState.tripCurrency.baseCurrency || 'MYR';
     const shouldPay = stat ? Number(stat.shouldPay || 0) : 0;
-    return { text: t('memberStatus.settled', { amount: formatMoney(shouldPay, baseCurrency) }), isSettled: true };
+    return { text: t('memberStatus.settled', { amount: formatMoney(shouldPay, baseCurrency) }), isSettled: true, isReceivable: false };
   }
 
-  return { text: t('memberStatus.pending', { amount: formatMoney(Math.abs(balance)) }), isSettled: false };
+  return { text: t('memberStatus.pending', { amount: formatMoney(Math.abs(balance)) }), isSettled: false, isReceivable: balance > 0 };
 }
 
 function renderMembersPage() {
@@ -10079,7 +10090,7 @@ function renderMembersPage() {
       <div class="member-card-info">
         <p class="member-card-name">${escapeHtml(name)}</p>
         <p class="member-card-meta">${escapeHtml(t('members.participatedIn', { count: expenseCountByMember[name] || 0 }))}</p>
-        <p class="member-card-status ${status.isSettled ? 'is-settled' : 'is-pending'}">
+        <p class="member-card-status ${status.isSettled ? 'is-settled' : (status.isReceivable ? 'is-receivable' : 'is-payable')}">
           <span class="member-card-status-dot" aria-hidden="true"></span>${escapeHtml(status.text)}
         </p>
       </div>

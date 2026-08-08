@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260807a">
+<link rel="stylesheet" href="style.css?v=20260808h">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -157,7 +157,7 @@
         </div>
         <div class="form-field">
           <label for="authSignupNickname" data-i18n="authGate.nicknameLabel">Nickname</label>
-          <input type="text" id="authSignupNickname" class="text-input" required autocomplete="nickname" data-i18n-placeholder="authGate.nicknamePlaceholder" placeholder="同行会看到的名字，例如「小伟」">
+          <input type="text" id="authSignupNickname" class="text-input" required autocomplete="nickname" data-i18n-placeholder="authGate.nicknamePlaceholder" placeholder="成员会看到的名字，例如「小伟」">
         </div>
         <div class="form-field">
           <label for="authSignupEmail" data-i18n="authGate.emailLabel">邮箱</label>
@@ -676,12 +676,10 @@
 
       <div class="panel" id="settlementPanel">
         <div class="panel-header">
-          <div>
-            <h2 data-i18n="summary.settlementPanel">最优结算</h2>
-            <p class="panel-hint" style="margin-top: 2px;" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
-          </div>
+          <h2 data-i18n="summary.settlementPanel">最优结算</h2>
           <button class="link-btn" id="settleAllBtn" type="button" data-i18n="settlement.markAsPaid">一键结清</button>
         </div>
+        <p class="panel-hint" style="margin-bottom: var(--space-3);" data-i18n="settlement.bannerHint">最少转账频次，化繁为简的归还路径。</p>
         <div class="panel-body" id="settlementList">
           <div class="empty-state">
             <div class="empty-illustration" aria-hidden="true">
@@ -772,7 +770,7 @@
           </div>
           <div class="form-field is-hidden" id="accountDisplayNameForm">
             <label for="accountDisplayNameInput" data-i18n="account.displayNameLabel">显示名称</label>
-            <input type="text" id="accountDisplayNameInput" class="text-input" autocomplete="name" data-i18n-placeholder="account.displayNamePlaceholder" placeholder="同行会看到的名字">
+            <input type="text" id="accountDisplayNameInput" class="text-input" autocomplete="name" data-i18n-placeholder="account.displayNamePlaceholder" placeholder="成员会看到的名字">
             <p class="form-hint" data-i18n="account.displayNameHint">只会套用到之后新加入或新建立的旅程，不会更改你在既有旅程里已经使用的名字。</p>
             <div class="settings-actions">
               <button class="btn btn-primary btn-sm" id="saveDisplayNameBtn" type="button" data-i18n="account.saveBtn">储存</button>
@@ -1228,7 +1226,7 @@
           <button type="button" class="segmented-item" data-expense-source="personal" data-i18n="expense.sourcePersonal">个人消费</button>
           <button type="button" class="segmented-item" data-expense-source="deduct" data-i18n="expense.sourceDeduct">金库支出</button>
         </div>
-        <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟同行的人依分账方式结算。</p>
+        <p class="form-hint" id="expenseSourceHint" data-i18n="expense.sourceNormalHint">照一般方式记账，跟成员依分账方式结算。</p>
       </div>
 
       <div class="form-field form-field-full">
@@ -1246,7 +1244,7 @@
       <div class="form-field">
         <label for="expenseAmount" data-i18n="expense.amountLabel">金额</label>
         <div class="input-with-suffix">
-          <input type="number" id="expenseAmount" class="text-input" placeholder="0.00" min="0" step="0.01" required>
+          <input type="number" id="expenseAmount" class="text-input" placeholder="0.00" step="0.01">
           <select class="suffix-select" id="expenseCurrency" aria-label="币别" data-i18n-aria-label="expense.currencyAriaLabel">
           </select>
         </div>
@@ -1335,7 +1333,7 @@
 <!-- 新增成员 Modal -->
 <div class="modal modal-sm" id="addMemberModal" role="dialog" aria-modal="true" aria-labelledby="addMemberTitle">
   <div class="modal-header">
-    <h2 id="addMemberTitle" data-i18n="memberModal.title">邀请同行伙伴加入账本</h2>
+    <h2 id="addMemberTitle" data-i18n="memberModal.title">邀请成员加入账本</h2>
     <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
       <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
     </button>
@@ -1557,7 +1555,7 @@
     <div class="form-field">
       <label for="joinTripInviteCode" data-i18n="joinTrip.inviteCodeLabel">邀请码</label>
       <input type="text" id="joinTripInviteCode" class="text-input" required autocomplete="off" data-i18n-placeholder="joinTrip.inviteCodePlaceholder" placeholder="输入朋友分享给你的邀请码">
-      <p class="form-hint" data-i18n="joinTrip.hint">邀请码可以向已经在这趟旅程里的同行索取。</p>
+      <p class="form-hint" data-i18n="joinTrip.hint">邀请码可以向已经在这趟旅程里的成员索取。</p>
     </div>
     <div class="form-field is-hidden" id="joinTripClaimMemberField">
       <label for="joinTripClaimMemberSelect" data-i18n="authGate.claimMemberLabel">这趟旅程里，你是哪一位？</label>
@@ -1745,7 +1743,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260807a"></script>
+<script src="app.js?v=20260808b"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker
