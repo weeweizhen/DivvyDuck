@@ -1985,23 +1985,43 @@ function unlockBodyScroll() {
 
 /**
  * 手机浏览器聚焦输入框弹出键盘时，是靠位移「视觉视口」(visualViewport)
- * 把欄位推到键盘上方，不是真的改变版面尺寸——.modal-backdrop／
- * .drawer-backdrop 这类 position:fixed 遮罩理论上该一直贴著版面视口，
- * 但 body 被 lockBodyScroll() 冻结成 position:fixed 时，这段视觉视口位移
- * 键盘收起後不保证会自动归零，这里主动归零来消掉残留位移（遮罩本身
- * 贴不贴得住是另一个坑，见 .modal-backdrop 加 translateZ(0) 那段说明）。
+ * 把欄位推到键盘上方，不是真的改变版面尺寸。body 被 lockBodyScroll()
+ * 冻结成 position:fixed 时，这段视觉视口位移键盘收起後不保证会自动归零，
+ * 这里主动归零来消掉残留位移。
+ * 另外用红色诊断過（改法定案前的排查过程）确认過：键盘收起後，WebKit
+ * 有時不会重新排版/重繪整份已经画出来的文件，画面看起来比实际可视区域
+ * 矮一截，底下露出的是 WKWebView 本身的原生底色——不是任何一层 CSS
+ * 背景没盖到，是整份文件的渲染範围本身卡在「键盘还开著」那一刻的矮
+ * 快照，不只是遮罩这一层的问题，所以只加 translateZ(0) 那类合成层提示
+ * 没用。这裡直接把 html 的高度钉死在 visualViewport 量到的即时真实高度，
+ * 逼浏览器用这个数字重新排版一次，下一帧再拿掉，把 CSS 的 min-height:
+ * 100dvh 交还回来——不是永久改用 JS 算的高度，只是借这一次强制重排的
+ * 动作，把 WebKit 那份卡住的矮快照冲掉。
  * 只在 Modal／抽屉打开期间（body-scroll-locked）处理，避免手机版地址列
- * 收合展开也会触发的同一组事件，在其他情况下误把一般页面拉回顶端
+ * 收合展开也会触发的同一组事件，在其他情况下误动到一般页面
  */
 function initViewportKeyboardFix() {
   if (!window.visualViewport) return;
-  const resetResidualOffset = () => {
+  const vv = window.visualViewport;
+  const htmlEl = document.documentElement;
+
+  const forceRelayoutToRealHeight = () => {
+    if (!document.body.classList.contains('body-scroll-locked')) return;
+    htmlEl.style.height = `${vv.height}px`;
+    requestAnimationFrame(() => {
+      htmlEl.style.height = '';
+    });
+  };
+
+  const handleViewportChange = () => {
     if (document.body.classList.contains('body-scroll-locked')) {
       window.scrollTo(0, 0);
     }
+    forceRelayoutToRealHeight();
   };
-  window.visualViewport.addEventListener('resize', resetResidualOffset);
-  window.visualViewport.addEventListener('scroll', resetResidualOffset);
+
+  vv.addEventListener('resize', handleViewportChange);
+  vv.addEventListener('scroll', handleViewportChange);
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
