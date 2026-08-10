@@ -3521,6 +3521,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   border-top: 1px solid var(--border);
   z-index: var(--z-tabbar);
   transition: opacity 0.25s var(--ease-out);
+  /* 独立成一个合成层：iOS Safari 在内容很短、甚至没有可捲动範围时，
+     touchmove 手势仍会让没有自己合成层的 fixed 元素跟着手指短暂贴著
+     位移，等手势结束才归位——内容多、持续滚动時这瞬间被后续重绘盖过去
+     不明显，内容少（例如只有 1 笔资料）時这个瞬间的错位就是画面上
+     唯一的变化，特别显眼。加 translateZ(0) 强迫浏览器把这个导览列
+     放进自己的合成层，跟主文档分开处理，就不会再被手势拖着一起动 */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Modal／抽屉打开时（两者都会给 body 加 .body-scroll-locked，见该 class
@@ -4769,7 +4777,7 @@ body {
 }
 
 .member-card-status.is-settled {
-  color: var(--success);
+  color: var(--text-tertiary);
 }
 
 /* 待清算按方向分色，跟结算页 .balance-amount.is-positive／is-negative

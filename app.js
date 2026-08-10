@@ -1983,6 +1983,28 @@ function unlockBodyScroll() {
   window.scrollTo(0, bodyScrollLockY);
 }
 
+/**
+ * 手机浏览器聚焦输入框弹出键盘时，只会位移「视觉视口」(visualViewport)
+ * 来把输入框推到键盘上方，不是真的改变文件高度；键盘收起後这段位移
+ * 不保证会被浏览器自动归零，Modal 打开、body 被 lockBodyScroll() 冻结成
+ * position:fixed 时最明显——残留的视觉视口位移会在画面底部露出一截空白
+ * （新增消费表单打完字、键盘收起後看到的那截空白就是这个）。
+ * 只在 Modal 打开期间（body-scroll-locked）监听 visualViewport 的
+ * resize／scroll，键盘收起时主动把捲动位置归零来消掉这段残留位移；
+ * 没有 Modal 时刻意不处理——手机版地址列收合/展开也会触发同一组事件，
+ * 若不加这个限制条件，一般页面捲动到一半也会被强制拉回顶端
+ */
+function initViewportKeyboardFix() {
+  if (!window.visualViewport) return;
+  const resetResidualOffset = () => {
+    if (document.body.classList.contains('body-scroll-locked')) {
+      window.scrollTo(0, 0);
+    }
+  };
+  window.visualViewport.addEventListener('resize', resetResidualOffset);
+  window.visualViewport.addEventListener('scroll', resetResidualOffset);
+}
+
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
 let editingExpenseId = null;
 
@@ -2040,6 +2062,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOfflineHandling();
     initDashCardSlider();
     initDashCardHeightObserver();
+    initViewportKeyboardFix();
   } catch (error) {
     console.error('App 初始化流程发生错误：', error);
   }
