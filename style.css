@@ -800,6 +800,11 @@ html {
   -webkit-backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
+  /* 跟 .modal-backdrop 同一个理由：独立成合成层，避免键盘收起時视觉视口
+     位移歸零那一刻，没有自己合成层的 fixed 遮罩没有立即跟著重新定位，
+     底下露出 body::before 品牌渐层的一角 */
+  transform: translateZ(0);
+  will-change: opacity, transform;
   transition: opacity 0.35s var(--ease-spring);
   z-index: var(--z-drawer-backdrop);
 }
@@ -3230,7 +3235,16 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   -webkit-backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
-  will-change: opacity;
+  /* 跟 .mobile-tabbar 同一个理由：iOS Safari 聚焦欄位弹出键盘時是靠位移
+     「视觉视口」把欄位推到键盘上方，不是真的改变版面尺寸，position:fixed
+     元素理论上该一直贴著版面视口不动——但没有独立合成层的 fixed 元素，
+     WebKit 常常没有在键盘收起、视觉视口位移歸零的那一刻立即重绘/归位，
+     导致这层遮罩看起来比实际画面矮一截，底下露出 body::before 那层
+     品牌渐层的一角（新增消费表单打完字、键盘收起後看到的那截色块不对的
+     空白就是这个）。加 translateZ(0) 强迫独立成一个合成层，让它不再
+     跟着键盘的视觉视口位移打转，能立即贴著真正的版面视口重新定位 */
+  transform: translateZ(0);
+  will-change: opacity, transform;
   transition: opacity 0.35s var(--ease-spring);
   z-index: var(--z-modal-backdrop);
 }
