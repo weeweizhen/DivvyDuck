@@ -1984,45 +1984,38 @@ function unlockBodyScroll() {
 }
 
 /**
- * 用红色诊断確認過（拿 .modal-backdrop 整块填成纯红做对照）：完全不碰
- * 键盘时红色盖满到画面最底部，聚焦过欄位、键盘收起後，底部固定留了一截
- * 没盖到的黑边——WKWebView 原生底色，不是哪层 CSS 背景没盖到，是键盘
- * 收起後整份文件的渲染範围卡在「键盘还开著」那一刻的矮快照，没有跟著
- * 放大回去。
- * 前三轮修法都绑在 window.visualViewport 的 resize／scroll 事件上，结果
- * 一致性地全部没用——最合理的解释不是修正逻辑本身错，是这个事件在
- * 「加到主屏幕」的 standalone 模式下可能根本没被觸發過（visualViewport
- * 是相对新的 API，各 iOS 版本在 standalone 模式下的支援度不算稳定），
- * 触发点没發生，後面接的修正代码自然是死代码。
- * 这次换掉触发方式：直接监听欄位「失去焦点」(focusout)——这是键盘收起
- * 最直接的时间点，不需要依賴浏览器有没有另外发出视口事件；同时保留
- * window.resize（比 visualViewport 更老、支援度更久的 API）跟原本的
- * visualViewport 監聽当備援，三种觸發方式一起绑，增加至少一种真的
- * 会被觸發的机率。
- * 修正動作本身：不依赖 dvh（規格上本來就不該被键盘影響，但這裡的
- * WebKit 实际表现並不遵守）也不依赖 visualViewport.height（可能读不到
- * 準值），改用 window.innerHeight——支援最久、最不容易有 standalone
- * 模式坑的量法，把 html 的高度钉死在这个即時值，逼浏览器重新排版一次，
- * 下一帧再拿掉、把 CSS 的 min-height:100dvh 交還回去。
- * 只在 Modal／抽屉打开期间（body-scroll-locked）处理，避免误动到一般
- * 页面（例如手机版地址列收合展开、或页面上其他欄位失焦的情況）
+ * 用 Safari 遠端调试直接在装置上量過（键盘收起、底部空白还在畫面上的
+ * 当下）：window.innerHeight／window.visualViewport.height／
+ * document.documentElement 高度／document.body 高度，四个数字完全一致，
+ * 都是正确的「現在真正看得到的高度」。也就是说排版数字从头到尾都是對的，
+ * 之前三轮「重新算高度」的修法（改 visualViewport 監聽、逼 html 重新
+ * 排版）全部是在修一個根本不存在的「尺寸算错」問題，当然没用。
+ * 真正卡住的是繪製这一步：WebKit 排版算對了「应該长怎样」，但没有真的
+ * 把画面重新畫出来，殘留的是键盘還開著、畫面比較矮的那一帧舊快照——
+ * 越晚发现的原因是，把遮罩透過 transform:translateZ(0) 強迫升级成獨立
+ * 合成层（较早一輪加的，見 .modal-backdrop 的说明），反而更容易讓這張
+ * 舊快照卡住不更新，那一版已經退掉。
+ * 這裡改成直接強迫重繪：把遮罩短暫設成 display:none 再立刻还原，中間
+ * 讀一次 offsetHeight 逼浏览器同步跑完整套重排+重繪，不是只改一個反正
+ * 沒變過的高度數字。觸發時機維持 focusout／window.resize／
+ * visualViewport 三路備援一起绑，尽量提高至少一種真的会被觸發的機率
  */
 function initViewportKeyboardFix() {
-  const htmlEl = document.documentElement;
-
-  const forceRelayoutToRealHeight = () => {
+  const forceRepaint = () => {
     if (!document.body.classList.contains('body-scroll-locked')) return;
     window.scrollTo(0, 0);
-    htmlEl.style.height = `${window.innerHeight}px`;
-    requestAnimationFrame(() => {
-      htmlEl.style.height = '';
+    document.querySelectorAll('.modal-backdrop.is-visible, .drawer-backdrop.is-visible').forEach((el) => {
+      const previousDisplay = el.style.display;
+      el.style.display = 'none';
+      void el.offsetHeight;
+      el.style.display = previousDisplay;
     });
   };
 
-  window.addEventListener('resize', forceRelayoutToRealHeight);
+  window.addEventListener('resize', forceRepaint);
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', forceRelayoutToRealHeight);
-    window.visualViewport.addEventListener('scroll', forceRelayoutToRealHeight);
+    window.visualViewport.addEventListener('resize', forceRepaint);
+    window.visualViewport.addEventListener('scroll', forceRepaint);
   }
 
   // focusout 会冒泡，用事件委派统一在 document 上抓，不用逐一给每个
@@ -2030,7 +2023,7 @@ function initViewportKeyboardFix() {
   // 延迟一小段時間再修正，避免抓到還没定案的中間值
   document.addEventListener('focusout', (event) => {
     if (!event.target || !event.target.matches || !event.target.matches('input, select, textarea')) return;
-    setTimeout(forceRelayoutToRealHeight, 120);
+    setTimeout(forceRepaint, 120);
   });
 }
 
