@@ -1984,44 +1984,54 @@ function unlockBodyScroll() {
 }
 
 /**
- * 手机浏览器聚焦输入框弹出键盘时，是靠位移「视觉视口」(visualViewport)
- * 把欄位推到键盘上方，不是真的改变版面尺寸。body 被 lockBodyScroll()
- * 冻结成 position:fixed 时，这段视觉视口位移键盘收起後不保证会自动归零，
- * 这里主动归零来消掉残留位移。
- * 另外用红色诊断過（改法定案前的排查过程）确认過：键盘收起後，WebKit
- * 有時不会重新排版/重繪整份已经画出来的文件，画面看起来比实际可视区域
- * 矮一截，底下露出的是 WKWebView 本身的原生底色——不是任何一层 CSS
- * 背景没盖到，是整份文件的渲染範围本身卡在「键盘还开著」那一刻的矮
- * 快照，不只是遮罩这一层的问题，所以只加 translateZ(0) 那类合成层提示
- * 没用。这裡直接把 html 的高度钉死在 visualViewport 量到的即时真实高度，
- * 逼浏览器用这个数字重新排版一次，下一帧再拿掉，把 CSS 的 min-height:
- * 100dvh 交还回来——不是永久改用 JS 算的高度，只是借这一次强制重排的
- * 动作，把 WebKit 那份卡住的矮快照冲掉。
- * 只在 Modal／抽屉打开期间（body-scroll-locked）处理，避免手机版地址列
- * 收合展开也会触发的同一组事件，在其他情况下误动到一般页面
+ * 用红色诊断確認過（拿 .modal-backdrop 整块填成纯红做对照）：完全不碰
+ * 键盘时红色盖满到画面最底部，聚焦过欄位、键盘收起後，底部固定留了一截
+ * 没盖到的黑边——WKWebView 原生底色，不是哪层 CSS 背景没盖到，是键盘
+ * 收起後整份文件的渲染範围卡在「键盘还开著」那一刻的矮快照，没有跟著
+ * 放大回去。
+ * 前三轮修法都绑在 window.visualViewport 的 resize／scroll 事件上，结果
+ * 一致性地全部没用——最合理的解释不是修正逻辑本身错，是这个事件在
+ * 「加到主屏幕」的 standalone 模式下可能根本没被觸發過（visualViewport
+ * 是相对新的 API，各 iOS 版本在 standalone 模式下的支援度不算稳定），
+ * 触发点没發生，後面接的修正代码自然是死代码。
+ * 这次换掉触发方式：直接监听欄位「失去焦点」(focusout)——这是键盘收起
+ * 最直接的时间点，不需要依賴浏览器有没有另外发出视口事件；同时保留
+ * window.resize（比 visualViewport 更老、支援度更久的 API）跟原本的
+ * visualViewport 監聽当備援，三种觸發方式一起绑，增加至少一种真的
+ * 会被觸發的机率。
+ * 修正動作本身：不依赖 dvh（規格上本來就不該被键盘影響，但這裡的
+ * WebKit 实际表现並不遵守）也不依赖 visualViewport.height（可能读不到
+ * 準值），改用 window.innerHeight——支援最久、最不容易有 standalone
+ * 模式坑的量法，把 html 的高度钉死在这个即時值，逼浏览器重新排版一次，
+ * 下一帧再拿掉、把 CSS 的 min-height:100dvh 交還回去。
+ * 只在 Modal／抽屉打开期间（body-scroll-locked）处理，避免误动到一般
+ * 页面（例如手机版地址列收合展开、或页面上其他欄位失焦的情況）
  */
 function initViewportKeyboardFix() {
-  if (!window.visualViewport) return;
-  const vv = window.visualViewport;
   const htmlEl = document.documentElement;
 
   const forceRelayoutToRealHeight = () => {
     if (!document.body.classList.contains('body-scroll-locked')) return;
-    htmlEl.style.height = `${vv.height}px`;
+    window.scrollTo(0, 0);
+    htmlEl.style.height = `${window.innerHeight}px`;
     requestAnimationFrame(() => {
       htmlEl.style.height = '';
     });
   };
 
-  const handleViewportChange = () => {
-    if (document.body.classList.contains('body-scroll-locked')) {
-      window.scrollTo(0, 0);
-    }
-    forceRelayoutToRealHeight();
-  };
+  window.addEventListener('resize', forceRelayoutToRealHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', forceRelayoutToRealHeight);
+    window.visualViewport.addEventListener('scroll', forceRelayoutToRealHeight);
+  }
 
-  vv.addEventListener('resize', handleViewportChange);
-  vv.addEventListener('scroll', handleViewportChange);
+  // focusout 会冒泡，用事件委派统一在 document 上抓，不用逐一给每个
+  // 欄位加监听；键盘收起有動畫，欄位失焦当下画面可能还没真的縮回去，
+  // 延迟一小段時間再修正，避免抓到還没定案的中間值
+  document.addEventListener('focusout', (event) => {
+    if (!event.target || !event.target.matches || !event.target.matches('input, select, textarea')) return;
+    setTimeout(forceRelayoutToRealHeight, 120);
+  });
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用

@@ -6763,12 +6763,3 @@ body {
   color: var(--text-primary);
   white-space: nowrap;
 }
-
-/* ============================================================
-   临时诊断用（第二輪，这次要测完全不碰键盘的情况），确认完就会拿掉
-   ============================================================ */
-.modal-backdrop.is-visible {
-  background: red !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
