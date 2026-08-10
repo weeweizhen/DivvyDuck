@@ -1985,37 +1985,40 @@ function unlockBodyScroll() {
 
 /**
  * 用 Safari 遠端调试直接在装置上量過（键盘收起、底部空白还在畫面上的
- * 当下）：window.innerHeight／window.visualViewport.height／
- * document.documentElement 高度／document.body 高度，四个数字完全一致，
- * 都是正确的「現在真正看得到的高度」。也就是说排版数字从头到尾都是對的，
- * 之前三轮「重新算高度」的修法（改 visualViewport 監聽、逼 html 重新
- * 排版）全部是在修一個根本不存在的「尺寸算错」問題，当然没用。
- * 真正卡住的是繪製这一步：WebKit 排版算對了「应該长怎样」，但没有真的
- * 把画面重新畫出来，殘留的是键盘還開著、畫面比較矮的那一帧舊快照——
- * 越晚发现的原因是，把遮罩透過 transform:translateZ(0) 強迫升级成獨立
- * 合成层（较早一輪加的，見 .modal-backdrop 的说明），反而更容易讓這張
- * 舊快照卡住不更新，那一版已經退掉。
- * 這裡改成直接強迫重繪：把遮罩短暫設成 display:none 再立刻还原，中間
- * 讀一次 offsetHeight 逼浏览器同步跑完整套重排+重繪，不是只改一個反正
- * 沒變過的高度數字。觸發時機維持 focusout／window.resize／
- * visualViewport 三路備援一起绑，尽量提高至少一種真的会被觸發的機率
+ * 当下）：window.innerHeight／visualViewport.height／document.documentElement
+ * 高度／document.body 高度，四个数字完全一致，都是正确的「現在真正看得到
+ * 的高度」——排版数字從頭到尾都是對的。用 Elements 面板的「选取元素」
+ * 工具直接點畫面上那块空白，完全點不到任何東西，連 body／html 自己
+ * 都没有延伸過去，不是某个子元素（例如遮罩）矮了一截那么簡單，是整份
+ * 文件的渲染範圍卡住了。之前針對 .modal-backdrop 這個子元素做的重繪
+ * （display:none 再還原）没用，大概就是因为問題出在更上層的 body 自己
+ * 身上，動子元素撬不動。
+ * body 会被冻结成這樣，是 lockBodyScroll() 給它加上 .body-scroll-locked
+ * （position:fixed）造成的——這裡直接針對這個機制下手：鍵盤收起後，把
+ * body 短暫地「解鎖再重新鎖上」，讓它從 position:fixed 退回正常状態、
+ * 逼浏览器同步跑完一次排版、再重新鎖回去，形同重新建立一個全新的固定
+ * 定位圖層，不會延續舊的（很可能是键盘還開著時那一帧）快照。全程同步
+ * 執行、中間沒有 await／setTimeout，理论上只佔一帧，不應該看得到背景
+ * 內容閃現。
+ * 觸發時機維持 focusout／window.resize／visualViewport 三路備援一起绑，
+ * 尽量提高至少一種真的会被觸發的機率
  */
 function initViewportKeyboardFix() {
-  const forceRepaint = () => {
+  const relockBody = () => {
     if (!document.body.classList.contains('body-scroll-locked')) return;
+    const savedTop = document.body.style.top;
+    document.body.classList.remove('body-scroll-locked');
+    document.body.style.top = '';
+    void document.body.offsetHeight;
+    document.body.classList.add('body-scroll-locked');
+    document.body.style.top = savedTop;
     window.scrollTo(0, 0);
-    document.querySelectorAll('.modal-backdrop.is-visible, .drawer-backdrop.is-visible').forEach((el) => {
-      const previousDisplay = el.style.display;
-      el.style.display = 'none';
-      void el.offsetHeight;
-      el.style.display = previousDisplay;
-    });
   };
 
-  window.addEventListener('resize', forceRepaint);
+  window.addEventListener('resize', relockBody);
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', forceRepaint);
-    window.visualViewport.addEventListener('scroll', forceRepaint);
+    window.visualViewport.addEventListener('resize', relockBody);
+    window.visualViewport.addEventListener('scroll', relockBody);
   }
 
   // focusout 会冒泡，用事件委派统一在 document 上抓，不用逐一给每个
@@ -2023,7 +2026,7 @@ function initViewportKeyboardFix() {
   // 延迟一小段時間再修正，避免抓到還没定案的中間值
   document.addEventListener('focusout', (event) => {
     if (!event.target || !event.target.matches || !event.target.matches('input, select, textarea')) return;
-    setTimeout(forceRepaint, 120);
+    setTimeout(relockBody, 120);
   });
 }
 
