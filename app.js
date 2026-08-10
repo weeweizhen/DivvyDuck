@@ -1984,25 +1984,42 @@ function unlockBodyScroll() {
 }
 
 /**
- * 手机浏览器聚焦输入框弹出键盘时，只会位移「视觉视口」(visualViewport)
- * 来把输入框推到键盘上方，不是真的改变文件高度；键盘收起後这段位移
- * 不保证会被浏览器自动归零，Modal 打开、body 被 lockBodyScroll() 冻结成
- * position:fixed 时最明显——残留的视觉视口位移会在画面底部露出一截空白
- * （新增消费表单打完字、键盘收起後看到的那截空白就是这个）。
- * 只在 Modal 打开期间（body-scroll-locked）监听 visualViewport 的
- * resize／scroll，键盘收起时主动把捲动位置归零来消掉这段残留位移；
- * 没有 Modal 时刻意不处理——手机版地址列收合/展开也会触发同一组事件，
- * 若不加这个限制条件，一般页面捲动到一半也会被强制拉回顶端
+ * 手机浏览器聚焦输入框弹出键盘时，只会位移「视觉视口」(visualViewport)，
+ * 不是真的改变文件高度。这带来两个连动的坑：
+ * 1. .modal-backdrop／.drawer-backdrop 的高度是用 100dvh 算的，键盘收起後
+ *    WebKit 不保证会立刻重新算这个已经画出来的固定定位元素，遮罩停留在
+ *    「键盘还开着」那一刻算出的高度，比收起後实际画面矮一截，底下就露出
+ *    还没铺到遮罩色的空白——不是 Modal 本身变矮，是遮罩矮了，Modal 卡片
+ *    下面透出了 body 底色（新增消费表单打完字、键盘收起後看到的那截
+ *    空白就是这个）。
+ * 2. body 被 lockBodyScroll() 冻结成 position:fixed 时，浏览器为了让聚焦的
+ *    欄位露出键盘上方所做的画面位移，键盘收起後不保证会自动归零。
+ * 两者都直接问浏览器「现在实际看得到的画面高度是多少」(visualViewport.height)
+ * 来修正，不依赖 dvh 这种可能算得比较慢的动态单位；只在 Modal／抽屉打开
+ * 期间处理，避免手机版地址列收合展开也会触发的同一组事件，在其他情况下
+ * 误把一般页面拉回顶端或动到不相关的元素
  */
 function initViewportKeyboardFix() {
   if (!window.visualViewport) return;
-  const resetResidualOffset = () => {
+  const vv = window.visualViewport;
+
+  const syncOverlayHeight = () => {
+    if (!document.body.classList.contains('body-scroll-locked')) return;
+    const px = `${vv.height}px`;
+    document.querySelectorAll('.modal-backdrop.is-visible, .drawer-backdrop.is-visible').forEach((el) => {
+      el.style.height = px;
+    });
+  };
+
+  const handleViewportChange = () => {
     if (document.body.classList.contains('body-scroll-locked')) {
       window.scrollTo(0, 0);
     }
+    syncOverlayHeight();
   };
-  window.visualViewport.addEventListener('resize', resetResidualOffset);
-  window.visualViewport.addEventListener('scroll', resetResidualOffset);
+
+  vv.addEventListener('resize', handleViewportChange);
+  vv.addEventListener('scroll', handleViewportChange);
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
