@@ -1956,78 +1956,45 @@ let bodyScrollLockY = 0;
 
 /**
  * 锁住背景页面不能捲动（Modal／侧边抽屉打开时用）。
- * 不能只单纯设 document.body.style.overflow = 'hidden'——很多浏览器在把
- * overflow 设成 hidden 的那一刻，会顺手把这个元素的捲动位置重置成 0，
- * 背景页面会像是「自己跳回顶端」。这里改成：先记住目前实际捲动到哪，
- * 再用 position:fixed + 负值的 top 把 body 精准冻结在原本看到的画面，
- * 不会有任何视觉跳动。函式自己侦测背景是不是已经锁住了（例如 Modal 堆叠中
- * 又开了第二层、或者抽屉打开时又跳出了一个 Modal），已经锁住的话就不重复
- * 抓一次捲动位置，不然会把「目前已经是 0（因为已经被冻结住了）」误存成
- * 使用者原本的位置
+ * ⚠️ 2026-08 改版：不再用 position:fixed 冻结 body。原本的版本先记住
+ * 捲动位置，再用 position:fixed + 负值 top 把 body 精准冻结在原本看到
+ * 的画面——这个手法在 iOS「加到主屏幕」的 standalone 模式下，键盘弹出/
+ * 收起互动時有一个排查六轮（Safari 遠端调试直接量過 window.innerHeight／
+ * visualViewport.height／documentElement／body 的实际尺寸，全部正确；
+ * 用 Elements 面板的选取元素工具点画面上的空白区域，完全选不到任何
+ * DOM 節點）才確認、目前看起來無法从網頁端修正的原生渲染 bug：键盘
+ * 收起後 WKWebView 没把渲染范围收回去，底部露出一截連 DOM 都够不著的
+ * 空白。换成單純的 overflow:hidden，同時套在 html／body 两层（标准模式
+ * 下真正「捲动的那个元素」是 html，只給 body 加不夠），完全不再用
+ * position:fixed，从根源避開這整類固定定位＋動態視口的 iOS 怪癖。
+ * overflow:hidden 也有個副作用：不少浏览器在切成 hidden 的那一刻会顺手
+ * 把捲动位置歸零——如果放著不管，遮罩淡入的 0.35s 動畫期間（這時遮罩
+ * 还没完全不透明）使用者會看到背景内容先跳回顶端一下才被蓋住。這裡
+ * 記住鎖定前的捲动位置，加上 class 後同一個 tick 內立刻用 scrollTo
+ * 補回去——overflow:hidden 只擋使用者手勢/滑鼠捲动，程式呼叫 scrollTo
+ * 仍然有效，同步補回不会有任何一帧是歪的。
+ * 函式自己侦测背景是不是已经锁住了（例如 Modal 堆叠中又开了第二层、
+ * 或者抽屉打开时又跳出了一个 Modal），已经锁住的话就不重复抓一次捲动
+ * 位置，不然会把「目前已经是 0（因为已经被鎖住了）」误存成使用者原本
+ * 的位置
  */
 function lockBodyScroll() {
   if (document.body.classList.contains('body-scroll-locked')) {
     return;
   }
   bodyScrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.documentElement.classList.add('body-scroll-locked');
   document.body.classList.add('body-scroll-locked');
-  document.body.style.top = `-${bodyScrollLockY}px`;
+  window.scrollTo(0, bodyScrollLockY);
 }
 
 /**
  * 解除背景捲动锁定，并把捲动位置还原回锁定之前的地方
  */
 function unlockBodyScroll() {
+  document.documentElement.classList.remove('body-scroll-locked');
   document.body.classList.remove('body-scroll-locked');
-  document.body.style.top = '';
   window.scrollTo(0, bodyScrollLockY);
-}
-
-/**
- * 用 Safari 遠端调试直接在装置上量過（键盘收起、底部空白还在畫面上的
- * 当下）：window.innerHeight／visualViewport.height／document.documentElement
- * 高度／document.body 高度，四个数字完全一致，都是正确的「現在真正看得到
- * 的高度」——排版数字從頭到尾都是對的。用 Elements 面板的「选取元素」
- * 工具直接點畫面上那块空白，完全點不到任何東西，連 body／html 自己
- * 都没有延伸過去，不是某个子元素（例如遮罩）矮了一截那么簡單，是整份
- * 文件的渲染範圍卡住了。之前針對 .modal-backdrop 這個子元素做的重繪
- * （display:none 再還原）没用，大概就是因为問題出在更上層的 body 自己
- * 身上，動子元素撬不動。
- * body 会被冻结成這樣，是 lockBodyScroll() 給它加上 .body-scroll-locked
- * （position:fixed）造成的——這裡直接針對這個機制下手：鍵盤收起後，把
- * body 短暫地「解鎖再重新鎖上」，讓它從 position:fixed 退回正常状態、
- * 逼浏览器同步跑完一次排版、再重新鎖回去，形同重新建立一個全新的固定
- * 定位圖層，不會延續舊的（很可能是键盘還開著時那一帧）快照。全程同步
- * 執行、中間沒有 await／setTimeout，理论上只佔一帧，不應該看得到背景
- * 內容閃現。
- * 觸發時機維持 focusout／window.resize／visualViewport 三路備援一起绑，
- * 尽量提高至少一種真的会被觸發的機率
- */
-function initViewportKeyboardFix() {
-  const relockBody = () => {
-    if (!document.body.classList.contains('body-scroll-locked')) return;
-    const savedTop = document.body.style.top;
-    document.body.classList.remove('body-scroll-locked');
-    document.body.style.top = '';
-    void document.body.offsetHeight;
-    document.body.classList.add('body-scroll-locked');
-    document.body.style.top = savedTop;
-    window.scrollTo(0, 0);
-  };
-
-  window.addEventListener('resize', relockBody);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', relockBody);
-    window.visualViewport.addEventListener('scroll', relockBody);
-  }
-
-  // focusout 会冒泡，用事件委派统一在 document 上抓，不用逐一给每个
-  // 欄位加监听；键盘收起有動畫，欄位失焦当下画面可能还没真的縮回去，
-  // 延迟一小段時間再修正，避免抓到還没定案的中間值
-  document.addEventListener('focusout', (event) => {
-    if (!event.target || !event.target.matches || !event.target.matches('input, select, textarea')) return;
-    setTimeout(relockBody, 120);
-  });
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
@@ -2087,7 +2054,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOfflineHandling();
     initDashCardSlider();
     initDashCardHeightObserver();
-    initViewportKeyboardFix();
   } catch (error) {
     console.error('App 初始化流程发生错误：', error);
   }

@@ -301,24 +301,23 @@ body::before {
     var(--bg-subtle);
 }
 
-/* Modal／侧边抽屉打开时，用这个 class 冻结背景页面（见 app.js 的 lockBodyScroll()）。
-   用 position:fixed 而不是单纯 overflow:hidden——只设 overflow:hidden 的话，很多
-   浏览器会在那一刻顺手把捲动位置重置成 0，背景页面会像是「自己跳回顶端」。
-   position:fixed 配合 JS 算好、写在 inline style 上的负值 top，能把 body 精准
-   冻结在使用者原本看到的那个画面，关闭 Modal 後再解锁、把捲动位置还原回去，
-   全程不会有任何视觉跳动。
-   height:100% 是後补的——position:fixed 只给了 left/right/width，没给高度，
-   body 的高度会退回内容高度（fixed 元素不参与正常文档流的高度撑开），
-   html 的可捲动区域也跟着塌陷。目前因为 Modal／抽屉的遮罩本来就是满屏的，
-   这个塌陷被遮罩盖住看不出来，但 unlockBodyScroll() 解锁時要用 JS 记下来的
-   bodyScrollLockY 把捲动位置还原回去，如果这段期间文档高度已经塌陷过，
-   还原可能失准 */
+/* Modal／侧边抽屉打开时，用这个 class 冻结背景页面（见 app.js 的
+   lockBodyScroll()）。
+   ⚠️ 2026-08 从 position:fixed 冻结改成單純的 overflow:hidden——
+   position:fixed 那一版在 iOS「加到主屏幕」的 standalone 模式下，键盘
+   弹出/收起互动時有一个排查六轮、直接用 Safari 遠端调试量過画面尺寸／
+   用 Elements 面板选取元素工具确认過「那块空白连 DOM 都选不到」才確定
+   的原生渲染 bug：键盘收起後 WKWebView 没把渲染范围收回去，底部露出
+   一截連 DOM 都够不著的空白。换成 overflow:hidden，同時套在 html／body
+   两层（class 由 JS 同時加在 documentElement 跟 body 上——标准模式下
+   真正「捲动的那个元素」是 html，只給 body 加不夠），完全不再用
+   position:fixed，从根源避開這整類固定定位＋動態視口的 iOS 怪癖。
+   overflow:hidden 有個副作用：不少浏览器切成 hidden 的那一刻会顺手把
+   捲动位置歸零，這裡不在 CSS 层处理——lockBodyScroll() 加上這個 class
+   後，同一個 tick 內會立刻用 scrollTo 把捲动位置補回去（overflow:hidden
+   只擋使用者手勢/滑鼠捲动，程式呼叫 scrollTo 依然有效），使用者不会
+   看到任何一帧是歪的 */
 .body-scroll-locked {
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
 }
 
