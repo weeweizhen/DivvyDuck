@@ -3442,7 +3442,7 @@ async function handleRenameTripFormSubmit(targetTripId) {
       // 这里先在本地也同步一次，改名字之後不用整个重新整理，排序就能立刻反映最新异动
     }
 
-    closeSecondaryPage_();
+    closeActiveModal();
     renderTripSelect(); // 内部会连带刷新 renderTripPillSwitcher() / renderTripPickerList()
 
     // 只有改的刚好是「目前正在看的这趟」才需要刷新 Dashboard 标题；改的是清单里
@@ -3503,7 +3503,7 @@ async function handleTripFormSubmit() {
     if (poolToggle) poolToggle.checked = false;
     if (poolAmountInput) poolAmountInput.value = '';
     onPoolToggleChange({ checked: false });
-    closeSecondaryPage_();
+    closeActiveModal();
 
     // Modal 关了之後才做的这几步（重新拉旅程清单、切换到新旅程、整批载入资料）
     // 没有别的进度指示，用骨架屏顶著；这段失败的话单独处理，不要连累前面「新增旅程」
@@ -3643,7 +3643,7 @@ async function handleJoinTripFormSubmit() {
     codeInput.value = '';
     if (claimSelect) claimSelect.innerHTML = '';
     if (claimField) claimField.classList.add('is-hidden');
-    closeSecondaryPage_();
+    closeActiveModal();
 
     renderDashboardSkeleton();
     try {
@@ -5626,7 +5626,7 @@ function initModals() {
           showToast('error', t('toast.pleaseSelectTrip'), '');
           return;
         }
-        document.getElementById('page-rename-trip').dataset.targetTripId = targetTripId;
+        document.getElementById('renameTripModal').dataset.targetTripId = targetTripId;
         document.getElementById('renameTripNameInput').value = getTripName(targetTripId);
       }
 
@@ -5688,7 +5688,7 @@ function initModals() {
     event.preventDefault();
     // 目标旅程 id 是开 Modal 当下存进 dataset 的（见上面 [data-open-modal] 的
     // 'renameTripModal' 特判），送出时读出来，不能直接假设改的是 currentTripId
-    handleRenameTripFormSubmit(document.getElementById('page-rename-trip').dataset.targetTripId);
+    handleRenameTripFormSubmit(document.getElementById('renameTripModal').dataset.targetTripId);
   });
 }
 
@@ -5952,34 +5952,7 @@ function getFocusableElements_(container) {
  * 开启一个 Modal，推入堆叠最上层
  * @param {string} modalId Modal 的 DOM id
  */
-/**
- * 7 个含文字输入欄位、会叫出键盘的表单型 Modal，2026-08 改成二级页面——
- * 手机 iOS「加到主屏幕」standalone 模式下，Modal 遮罩＋锁背景捲动跟键盘
- * 收起互动時有个排查七轮才確定、无法从网页端修正的 WKWebView 原生渲染
- * bug（键盘收起後渲染范围没收回去，底部露出连 DOM 都选不到的空白）。
- * 二级页面走「整页替换主内容区」，没有遮罩、没有 position:fixed／
- * overflow:hidden 锁背景，天生不会踩到这个坑。
- * 集中在 openModal() 這裡做转址，而不是逐一改调用端——全站十几处
- * openModal('addExpenseModal') 之类的呼叫、以及 HTML 上 data-open-modal
- * 属性（含 getPageAction() 动态设的），全部原样保留不用动，转址表以外的
- * 其余 7 个 Modal（纯清单/确认框/图片检视器，不会叫出键盘）不受影响
- */
-const MODAL_TO_SECONDARY_PAGE = {
-  addExpenseModal: 'add-expense',
-  addMemberModal: 'add-member',
-  renameTripModal: 'rename-trip',
-  addCategoryModal: 'add-category',
-  addTripModal: 'add-trip',
-  addRepaymentModal: 'add-repayment',
-  editRepaymentModal: 'edit-repayment',
-};
-
 function openModal(modalId) {
-  if (MODAL_TO_SECONDARY_PAGE[modalId]) {
-    showSecondaryPage_(MODAL_TO_SECONDARY_PAGE[modalId]);
-    return;
-  }
-
   const modal = document.getElementById(modalId);
   if (!modal) {
     return;
@@ -6839,7 +6812,7 @@ async function handleExpenseFormSubmitInner_() {
 
         rememberLastSplitForPayer(payer, currentSplitType, participants);
         clearExpenseDraft();
-        closeSecondaryPage_();
+        closeActiveModal();
         await refreshAfterExpenseSave(savedExpense, false);
       } else {
         try {
@@ -6854,7 +6827,7 @@ async function handleExpenseFormSubmitInner_() {
 
           rememberLastSplitForPayer(payer, currentSplitType, participants);
           clearExpenseDraft();
-          closeSecondaryPage_();
+          closeActiveModal();
           await refreshAfterExpenseSave(savedExpense, true);
         } catch (addError) {
           if (!isNetworkError(addError)) {
@@ -6873,7 +6846,7 @@ async function handleExpenseFormSubmitInner_() {
 
           rememberLastSplitForPayer(payer, currentSplitType, participants);
           clearExpenseDraft();
-          closeSecondaryPage_();
+          closeActiveModal();
 
           renderDashboard();
           renderExpensesTable();
@@ -6969,7 +6942,7 @@ async function handlePoolFundedExpenseSubmit_() {
     appState.pool = await fetchPoolStatus_();
 
     clearExpenseDraft();
-    closeSecondaryPage_();
+    closeActiveModal();
 
     // 这笔钱同时也写进了 expenses 表（split_type='pool'，见 pool_deduct 数据库函数），
     // 「账目」页跟结算总览都要跟着刷新，不能只重画金库卡片
@@ -7035,7 +7008,7 @@ async function handlePoolFundedExpenseEditSubmit_() {
     appState.pool = await fetchPoolStatus_();
 
     clearExpenseDraft();
-    closeSecondaryPage_();
+    closeActiveModal();
     await refreshExpensesAndSummary();
   } catch (error) {
     showToast('error', t('pool.expense.editFailed'), error.message);
@@ -7472,7 +7445,7 @@ async function handleMemberFormSubmit() {
     if (error) throw error;
 
     nameInput.value = '';
-    closeSecondaryPage_();
+    closeActiveModal();
     await refreshMembers();
   } catch (error) {
     showToast('error', t('toast.createFailed'), error.message);
@@ -7566,7 +7539,7 @@ async function isCategoryInUse_(categoryName) {
 async function handleCategoryFormSubmit_() {
   const nameInput = document.getElementById('categoryNameInput');
   const name = nameInput.value.trim();
-  const modalEl = document.getElementById('page-add-category');
+  const modalEl = document.getElementById('addCategoryModal');
   const targetCategoryId = modalEl.dataset.targetCategoryId || null;
   const selectedIcon = modalEl.querySelector('.category-icon-option.is-active');
   const iconValue = selectedIcon ? selectedIcon.getAttribute('data-icon-key') : null;
@@ -7608,7 +7581,7 @@ async function handleCategoryFormSubmit_() {
       showToast('success', t('toast.categoryAdded'), '');
     }
 
-    closeSecondaryPage_();
+    closeActiveModal();
     await refreshCategories_();
   } catch (error) {
     showToast('error', t('toast.actionFailed'), error.message);
@@ -7960,7 +7933,7 @@ async function handleRepaymentFormSubmit() {
     document.getElementById('repaymentForm').reset();
     setDefaultRepaymentDate();
     renderRepaymentFromList();
-    closeSecondaryPage_();
+    closeActiveModal();
     await refreshRepayments();
   } catch (error) {
     showToast('error', t('toast.saveFailed'), error.message);
@@ -10183,7 +10156,7 @@ async function handleEditRepaymentFormSubmit() {
     const row = translateRepaymentPayloadForWrite_({ fromMember, toMember, amount, date, remark, isNew: false });
     const { error } = await supabaseClient.from('repayments').update(row).eq('id', repaymentId);
     if (error) throw error;
-    closeSecondaryPage_();
+    closeActiveModal();
     await refreshRepayments();
   } catch (error) {
     showToast('error', t('toast.saveFailed'), error.message);
@@ -11029,7 +11002,7 @@ function openCategoryManagePage_() {
  * @param {Object} [category]
  */
 function openCategoryFormModal_(category) {
-  const modalEl = document.getElementById('page-add-category');
+  const modalEl = document.getElementById('addCategoryModal');
   const nameInput = document.getElementById('categoryNameInput');
   const titleEl = document.getElementById('addCategoryModalTitle');
 
