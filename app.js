@@ -5797,9 +5797,23 @@ function handleAppPopState_(event) {
  * 这类「不该 push 新状态」的情境呼叫，混在一起会 push 出重複/错位的分录
  * （见 closeSecondaryPage_() 的说明）。真正代表「使用者主动切去某个分页」
  * 的入口只有底部导览/侧边导览的点击，统一走这支
- * @param {string} pageId
+ *
+ * ⚠️ 二级页面（跟 Modal 不同）没有遮罩挡住底部导览列，使用者开著「新增
+ * 消费」这类二级页面時，仍然点得到导览列切去别的主分頁——但那不算「正常
+ * 返回」，secondaryPageStack 裡那笔记录不会被清掉，会一路留著。這裡不清
+ * 的話，下次不管在哪个情境開了任何新的二级頁面，都会疊在这笔早就不相干
+ * 的舊记录上面，使用者按返回時会先看到那个舊二级頁面浮出来、要多按一次
+ * 才能真的退回主分頁（Modal 不會踩到这个坑，因为遮罩本來就會擋住导览列，
+ * 開著 Modal 時根本點不到別的分頁按鈕）。
+ * 这里只清 JS 端的堆疊、不额外呼叫 popAppHistoryState_() 去倒轉瀏覽器
+ * 那份历史記錄——history.go()/back() 是非同步的，跟緊接著要 push 的这笔
+ * 新分頁状态放在同一輪同步执行裡呼叫，会有時序对不上的風險。堆叠清空後
+ * 从这一刻起開新二级頁面都會是乾淨的第一層，這是真正會被使用者踩到的
+ * 情境；瀏覽器歷史裡那几筆殘留分錄頂多在很少見的「連續按很多次返回鍵」
+ * 時被跳過一次，不會造成錯誤畫面
  */
 function goToPage_(pageId) {
+  secondaryPageStack.length = 0;
   navigateToPage(pageId);
   pushAppHistoryState_({ appNavType: 'page', pageId });
 }
