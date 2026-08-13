@@ -2822,6 +2822,15 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   margin-top: var(--space-3);
 }
 
+/* 「更改密码」展开後的两个欄位（目前密码／新密码）：这个容器本身没有任何
+   排版规则，两个 .form-field 只是普通区块元素直接相邻，中间没有间距，
+   贴在一起——补上跟 .auth-gate-form 同一套「直向堆叠 + 固定间距」处理 */
+#accountPasswordForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 /* 语言选择 Modal 里的选项清单——见 index.html #languagePickerList / app.js renderLanguagePickerList() */
 .language-option-list {
   display: flex;
@@ -5925,6 +5934,11 @@ body {
   gap: var(--space-2);
   padding: 0 var(--space-5);
   margin-top: var(--space-3);
+  /* 原本活在 .modal-body 裡，靠 .modal-body 的 padding 帮它跟下面的表单
+     撑开距离；改成二级页面後 .modal-body 不见了（表单欄位直接是
+     .secondary-page 的子层），这裡得自己补一段 margin-bottom，不然分頁列
+     的底线会直接贴住下面第一个欄位 */
+  margin-bottom: var(--space-5);
   border-bottom: 1px solid var(--border);
 }
 

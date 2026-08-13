@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260811m">
+<link rel="stylesheet" href="style.css?v=20260811n">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -190,7 +190,7 @@
     <!-- 忘记密码：申请重设连结 -->
     <div class="auth-gate-step is-hidden" id="authGateForgotStep">
       <p class="auth-gate-step-desc" data-i18n="authGate.forgotStepDesc">输入你注册时用的邮箱，我们会寄一封重设密码的连结给你。</p>
-      <form id="authForgotForm">
+      <form class="auth-gate-form" id="authForgotForm">
         <div class="form-field">
           <label for="authForgotEmail" data-i18n="authGate.emailLabel">邮箱</label>
           <input type="email" id="authForgotEmail" class="text-input" required autocomplete="email" data-i18n-placeholder="authGate.emailPlaceholder" placeholder="name@example.com">
@@ -208,7 +208,7 @@
     <!-- 忘记密码：透过 Email 连结设定新密码 -->
     <div class="auth-gate-step is-hidden" id="authGateResetStep">
       <p class="auth-gate-step-desc" data-i18n="authGate.resetStepDesc">请设定一个新密码。</p>
-      <form id="authResetForm">
+      <form class="auth-gate-form" id="authResetForm">
         <div class="form-field">
           <label for="authResetNewPassword" data-i18n="authGate.newPasswordLabel">新密码</label>
           <input type="password" id="authResetNewPassword" class="text-input" required autocomplete="new-password" data-i18n-placeholder="authGate.signupPasswordPlaceholder" placeholder="至少 6 个字元，建议混合英数">
