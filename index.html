@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260811j">
+<link rel="stylesheet" href="style.css?v=20260811k">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -1166,7 +1166,7 @@
   <div class="secondary-page-body" id="poolSettingsPanel"></div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-add-expense" data-page-section="add-expense">
+<section class="page secondary-page is-hidden" id="page-add-expense" data-page-section="add-expense">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1294,7 +1294,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-add-member" data-page-section="add-member">
+<section class="page secondary-page is-hidden" id="page-add-member" data-page-section="add-member">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1312,9 +1312,11 @@
       </div>
       <button class="btn btn-secondary btn-sm" type="button" id="reviewDuplicateMembersBtn" data-i18n="members.duplicateBanner.reviewBtn">查看</button>
     </div>
-    <div class="form-field">
-      <label for="memberName" data-i18n="memberModal.nameLabel">成员姓名</label>
-      <input type="text" id="memberName" class="text-input" placeholder="例如：Wei" required autocomplete="off" data-i18n-placeholder="memberModal.namePlaceholder">
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label for="memberName" data-i18n="memberModal.nameLabel">成员姓名</label>
+        <input type="text" id="memberName" class="text-input" placeholder="例如：Wei" required autocomplete="off" data-i18n-placeholder="memberModal.namePlaceholder">
+      </div>
     </div>
   </form>
   <div class="secondary-page-footer">
@@ -1325,7 +1327,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-rename-trip" data-page-section="rename-trip">
+<section class="page secondary-page is-hidden" id="page-rename-trip" data-page-section="rename-trip">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1335,9 +1337,11 @@
     </div>
   </div>
   <form id="renameTripForm">
-    <div class="form-field">
-      <label for="renameTripNameInput" data-i18n="renameTripModal.nameLabel">旅程名称</label>
-      <input type="text" id="renameTripNameInput" class="text-input" required autocomplete="off">
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label for="renameTripNameInput" data-i18n="renameTripModal.nameLabel">旅程名称</label>
+        <input type="text" id="renameTripNameInput" class="text-input" required autocomplete="off">
+      </div>
     </div>
   </form>
   <div class="secondary-page-footer">
@@ -1348,7 +1352,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-add-category" data-page-section="add-category">
+<section class="page secondary-page is-hidden" id="page-add-category" data-page-section="add-category">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1358,15 +1362,17 @@
     </div>
   </div>
   <form id="categoryForm">
-    <div class="form-field">
-      <label for="categoryNameInput" data-i18n="addCategoryModal.nameLabel">分类名称</label>
-      <input type="text" id="categoryNameInput" class="text-input" required autocomplete="off">
-      <p class="form-hint" data-i18n="addCategoryModal.nameHint">两种语言下都会直接显示你输入的名称，不会另外翻译。</p>
-    </div>
-    <div class="form-field">
-      <label data-i18n="addCategoryModal.iconLabel">图示（可选）</label>
-      <div class="category-icon-picker" id="categoryIconPicker">
-        <!-- 图示选择格由 renderCategoryIconPicker_() 动态产生 -->
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label for="categoryNameInput" data-i18n="addCategoryModal.nameLabel">分类名称</label>
+        <input type="text" id="categoryNameInput" class="text-input" required autocomplete="off">
+        <p class="form-hint" data-i18n="addCategoryModal.nameHint">两种语言下都会直接显示你输入的名称，不会另外翻译。</p>
+      </div>
+      <div class="form-field form-field-full">
+        <label data-i18n="addCategoryModal.iconLabel">图示（可选）</label>
+        <div class="category-icon-picker" id="categoryIconPicker">
+          <!-- 图示选择格由 renderCategoryIconPicker_() 动态产生 -->
+        </div>
       </div>
     </div>
   </form>
@@ -1378,7 +1384,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-add-trip" data-page-section="add-trip">
+<section class="page secondary-page is-hidden" id="page-add-trip" data-page-section="add-trip">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1394,51 +1400,55 @@
   </div>
 
   <form id="tripForm">
-    <div class="form-field">
-      <label for="tripName" data-i18n="tripModal.nameLabel">旅程名称</label>
-      <input type="text" id="tripName" class="text-input" placeholder="例如：日本雪季之旅" required autocomplete="off" data-i18n-placeholder="tripModal.namePlaceholder">
-    </div>
-    <div class="form-field" style="margin-top: var(--space-4);">
-      <label for="tripBaseCurrency" data-i18n="tripModal.currencyLabel">基准货币</label>
-      <select class="select-control" id="tripBaseCurrency">
-      </select>
-      <p class="form-hint" data-i18n="tripModal.currencyHint">这趟旅程的结算金额都会以此为准，之后可以到设置页调整</p>
-    </div>
-    <p class="form-hint" style="margin-top: var(--space-3);" data-i18n="tripModal.hint">每个旅程都有各自独立的成员与消费纪录，互不影响。</p>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="tripName" data-i18n="tripModal.nameLabel">旅程名称</label>
+        <input type="text" id="tripName" class="text-input" placeholder="例如：日本雪季之旅" required autocomplete="off" data-i18n-placeholder="tripModal.namePlaceholder">
+      </div>
+      <div class="form-field">
+        <label for="tripBaseCurrency" data-i18n="tripModal.currencyLabel">基准货币</label>
+        <select class="select-control" id="tripBaseCurrency">
+        </select>
+        <p class="form-hint" data-i18n="tripModal.currencyHint">这趟旅程的结算金额都会以此为准，之后可以到设置页调整</p>
+      </div>
+      <p class="form-hint form-field-full" data-i18n="tripModal.hint">每个旅程都有各自独立的成员与消费纪录，互不影响。</p>
 
-    <!-- 搭伙金库 (Divvy Pool) 开关：建立旅程时可选择性开启 -->
-    <div class="form-field pool-toggle-group" style="margin-top: var(--space-4);">
-      <div class="settings-row">
-        <div class="settings-row-text">
-          <p class="settings-row-title" data-i18n="pool.form.enableLabel">开启搭伙鸭金库</p>
-          <p class="settings-row-desc" data-i18n="pool.form.enableHint">开启后，大家先把钱交给鸭鸭金库统一保管，行程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！</p>
+      <!-- 搭伙金库 (Divvy Pool) 开关：建立旅程时可选择性开启 -->
+      <div class="form-field form-field-full pool-toggle-group">
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <p class="settings-row-title" data-i18n="pool.form.enableLabel">开启搭伙鸭金库</p>
+            <p class="settings-row-desc" data-i18n="pool.form.enableHint">开启后，大家先把钱交给鸭鸭金库统一保管，行程中花费直接扣，不用一笔笔转账、不用互相记账，轻松很多！</p>
+          </div>
+          <label class="switch" for="poolEnableToggle">
+            <input type="checkbox" id="poolEnableToggle" onchange="onPoolToggleChange(this)">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
         </div>
-        <label class="switch" for="poolEnableToggle">
-          <input type="checkbox" id="poolEnableToggle" onchange="onPoolToggleChange(this)">
-          <span class="switch-track"><span class="switch-thumb"></span></span>
-        </label>
       </div>
-    </div>
-    <div class="form-field pool-amount-group is-hidden" id="poolAmountGroup">
-      <label for="poolPerPersonAmount" data-i18n="pool.form.perPersonLabel">人均预付款</label>
-      <div class="input-with-suffix">
-        <input type="number" id="poolPerPersonAmount" class="text-input" min="0" step="0.01" placeholder="0.00">
-        <select class="suffix-select" id="poolCurrencySelect" aria-label="金库货币" data-i18n-aria-label="pool.currencyAriaLabel"></select>
+      <div class="form-field form-field-full pool-amount-group is-hidden" id="poolAmountGroup">
+        <label for="poolPerPersonAmount" data-i18n="pool.form.perPersonLabel">人均预付款</label>
+        <div class="input-with-suffix">
+          <input type="number" id="poolPerPersonAmount" class="text-input" min="0" step="0.01" placeholder="0.00">
+          <select class="suffix-select" id="poolCurrencySelect" aria-label="金库货币" data-i18n-aria-label="pool.currencyAriaLabel"></select>
+        </div>
+        <p class="form-hint" data-i18n="pool.form.currencyHint">之後还可以用别种货币再登记打款，例如在机场先收马币、到当地再收人民币。</p>
       </div>
-      <p class="form-hint" data-i18n="pool.form.currencyHint">之後还可以用别种货币再登记打款，例如在机场先收马币、到当地再收人民币。</p>
     </div>
   </form>
 
   <form class="is-hidden" id="joinTripForm">
-    <div class="form-field">
-      <label for="joinTripInviteCode" data-i18n="joinTrip.inviteCodeLabel">邀请码</label>
-      <input type="text" id="joinTripInviteCode" class="text-input" required autocomplete="off" data-i18n-placeholder="joinTrip.inviteCodePlaceholder" placeholder="输入朋友分享给你的邀请码">
-      <p class="form-hint" data-i18n="joinTrip.hint">邀请码可以向已经在这趟旅程里的成员索取。</p>
-    </div>
-    <div class="form-field is-hidden" id="joinTripClaimMemberField">
-      <label for="joinTripClaimMemberSelect" data-i18n="authGate.claimMemberLabel">这趟旅程里，你是哪一位？</label>
-      <select id="joinTripClaimMemberSelect" class="text-input"></select>
-      <p class="form-hint claim-member-already-notice is-hidden" data-i18n="authGate.alreadyMemberNotice">你已经加入过这个旅程了。</p>
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label for="joinTripInviteCode" data-i18n="joinTrip.inviteCodeLabel">邀请码</label>
+        <input type="text" id="joinTripInviteCode" class="text-input" required autocomplete="off" data-i18n-placeholder="joinTrip.inviteCodePlaceholder" placeholder="输入朋友分享给你的邀请码">
+        <p class="form-hint" data-i18n="joinTrip.hint">邀请码可以向已经在这趟旅程里的成员索取。</p>
+      </div>
+      <div class="form-field form-field-full is-hidden" id="joinTripClaimMemberField">
+        <label for="joinTripClaimMemberSelect" data-i18n="authGate.claimMemberLabel">这趟旅程里，你是哪一位？</label>
+        <select id="joinTripClaimMemberSelect" class="text-input"></select>
+        <p class="form-hint claim-member-already-notice is-hidden" data-i18n="authGate.alreadyMemberNotice">你已经加入过这个旅程了。</p>
+      </div>
     </div>
   </form>
 
@@ -1456,7 +1466,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-add-repayment" data-page-section="add-repayment">
+<section class="page secondary-page is-hidden" id="page-add-repayment" data-page-section="add-repayment">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1512,7 +1522,7 @@
   </div>
 </section>
 
-<section class="page secondary-page secondary-page-form is-hidden" id="page-edit-repayment" data-page-section="edit-repayment">
+<section class="page secondary-page is-hidden" id="page-edit-repayment" data-page-section="edit-repayment">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
