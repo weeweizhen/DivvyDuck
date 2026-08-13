@@ -1411,13 +1411,6 @@ html {
   justify-content: flex-end;
 }
 
-/* 表单型二级页面（原本是 Modal，改成二级页面的 7 个新增/编辑表单）——
-   2026-08 改成跟其余 10 个清单型二级页面一样撑满 .app-main 的宽度
-   （不再另外限制窄版置中），栏位不会因此被拉得太开是因为表单内容一律
-   包在 .form-grid 里，桌面版（≥720px，见 .form-grid 那条响应式规则）
-   本来就会自动排成两栏，单一栏位撑到的宽度跟原本 420-560px 的 Modal
-   接近，只是现在两栏并排、不是整个表单窄版置中 */
-
 /* 设置页拿掉卡片框之後，几个区块（账户资料／偏好设置／财务设置／旅程设置／
    搭伙鸭金库）之间没有任何视觉分隔，会全部黏在一起分不出段落——用上边框
    当分隔线，只加在「不是第一个」的 .panel 之间，不会在最上面多一条多余的线 */
@@ -3542,9 +3535,13 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
      位移，等手势结束才归位——内容多、持续滚动時这瞬间被后续重绘盖过去
      不明显，内容少（例如只有 1 笔资料）時这个瞬间的错位就是画面上
      唯一的变化，特别显眼。加 translateZ(0) 强迫浏览器把这个导览列
-     放进自己的合成层，跟主文档分开处理，就不会再被手势拖着一起动 */
+     放进自己的合成层，跟主文档分开处理，就不会再被手势拖着一起动
+     （这是标准手法，但这个特定坑还没有实机复验过，之後确认没效果的话
+     再回来重新排查）。translateZ(0) 這個「無變化的 transform」本身就
+     已经触发合成层升级，不需要再另外加 will-change: transform 常駐——
+     這个元素的 transform 值不会再变了，will-change 只会白白讓浏览器
+     一直保留一份用不到的合成资源 */
   transform: translateZ(0);
-  will-change: transform;
 }
 
 /* Modal／抽屉打开时（两者都会给 body 加 .body-scroll-locked，见该 class
@@ -3737,20 +3734,16 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
     overscroll-behavior: auto !important;
   }
 
-  /* 「成员消费明细」Modal 打开时会把 body 冻结成 position:fixed（见
-     .body-scroll-locked，防止背景被误滚动），汇出单人 PDF 的按钮就在这个
-     Modal 里——按下时 Modal 还开着，body 还是 fixed 状态。列印引擎在这个
+  /* 「成员消费明细」Modal 打开时会把 html／body 都冻结成 overflow:hidden
+     （见 .body-scroll-locked，防止背景被误滚动），汇出单人 PDF 的按钮就在
+     这个 Modal 里——按下时 Modal 还开着，两层都还锁着。列印引擎在这个
      状态下会把「可列印区域」锁死在目前萤幕看到的这一屏，超出这一屏的内容
      全部被裁掉，这正是「个人 PDF 只有一页、内容被硬生生截断」的真正原因。
      这里在列印情境下强制解除，不管当下有没有 Modal 开着，列印一律照完整
-     内容的实际高度分页，不会受目前画面滚动状态、有没有锁背景影响 */
+     内容的实际高度分页，不会受目前画面滚动状态、有没有锁背景影响。
+     html／body 两层都要解，只解 body 的话 html 还锁著，一样会裁到内容 */
+  html.body-scroll-locked,
   body.body-scroll-locked {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: auto !important;
-    height: auto !important;
     overflow: visible !important;
   }
 
