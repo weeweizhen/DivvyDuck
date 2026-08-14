@@ -421,7 +421,6 @@ const STRINGS = {
     'dashboard.recentExpenses': '近期账目',
     'dashboard.viewAll': '查看全部',
     'dashboard.categorySummary': '分类消费',
-    'dashboard.categoryClickHint': '点击分类查看明细',
 
     // Dashboard 欢迎词（用登入账号的显示名称打招呼）
     'dashboard.welcomeBack': '{greeting}，{name}',
@@ -545,6 +544,11 @@ const STRINGS = {
     'hero.mascot.payable.2': '找个时间还一还，心里舒坦',
     'hero.mascot.settled.1': '一毛不欠，一身轻松',
     'hero.mascot.settled.2': '账清了，继续玩吧',
+
+    // 近期账目相对时间显示（今天/昨天/前天）
+    'relativeTime.today': '今天',
+    'relativeTime.yesterday': '昨天',
+    'relativeTime.twoDaysAgo': '前天',
 
     // Quick Actions Dock
     'dashboard.qaSettle': '最优结算',
@@ -1161,7 +1165,6 @@ const STRINGS = {
     'dashboard.recentExpenses': 'Recent Activity',
     'dashboard.viewAll': 'View all',
     'dashboard.categorySummary': 'By Category',
-    'dashboard.categoryClickHint': 'Tap a category for details',
 
     'dashboard.welcomeBack': '{greeting}, {name}',
     'dashboard.greeting.morning': 'Good morning',
@@ -1275,6 +1278,10 @@ const STRINGS = {
     'hero.mascot.payable.2': 'Settle up when you get a chance \u2014 it feels good',
     'hero.mascot.settled.1': "Not a cent owed, feeling light",
     'hero.mascot.settled.2': "All clear \u2014 back to the fun part",
+
+    'relativeTime.today': 'Today',
+    'relativeTime.yesterday': 'Yesterday',
+    'relativeTime.twoDaysAgo': '2 days ago',
 
     'dashboard.qaSettle': 'Settle Up',
     'dashboard.qaStats': 'Bill Stats',
@@ -2054,6 +2061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOfflineHandling();
     initDashCardSlider();
     initDashCardHeightObserver();
+    initDashTripTitleClick_();
   } catch (error) {
     console.error('App 初始化流程发生错误：', error);
   }
@@ -8141,15 +8149,6 @@ function renderDashboardHeader() {
     revealTripHeaderText(metaEl, newMeta);
   }
 
-  // 标题旁边那颗铅笔按钮固定语义是「改这趟旅程的名字」（点了直接开 renameTripModal，
-  // 见 index.html 上的 data-open-modal），aria-label 要跟着语言切换更新——
-  // 做法比照下面 Hero Card 吉祥物按钮那颗动态 aria-label，不能只在 index.html
-  // 写死一份，不然换语言後文字就跟画面其他地方对不上
-  const switchTripBtn = document.getElementById('dashSwitchTripBtn');
-  if (switchTripBtn) {
-    switchTripBtn.setAttribute('aria-label', t('renameTripModal.title'));
-  }
-
   renderAvatarStack();
 }
 
@@ -8489,7 +8488,7 @@ function renderRecentActivity() {
         <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
         <div class="activity-info">
           <p class="activity-title">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-          <p class="activity-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))}</p>
+          <p class="activity-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatRelativeTime(expense.Date) }))}</p>
         </div>
         <p class="activity-amount mono">${formatExpenseAmountDisplay(expense)}</p>
       </div>
@@ -8532,6 +8531,15 @@ function renderCategorySummary() {
   if (!container) return;
 
   const data = appState.categorySummary || [];
+
+  // 页面副标题：这趟旅程总支出，按币种分开列（不做汇率换算），跟底下
+  // 按「分类＋币种」分开算的清单才会对得起来——理由跟 openAllExpensesModal()
+  // 的 allExpensesSubtitle 一样，两处共用同一句 i18n 文案
+  const subtitleEl = document.getElementById('categorySummarySubtitle');
+  if (subtitleEl) {
+    const totalBreakdown = groupAmountsByCurrency(appState.expenses, (item) => item.Amount, (item) => item.Currency);
+    subtitleEl.textContent = t('allExpenses.subtitle', { count: appState.expenses.length, total: formatCurrencyBreakdownText(totalBreakdown) });
+  }
 
   if (data.length === 0) {
     renderEmptyBlock('categorySummaryList', t('empty.noCategory.title'), t('empty.noCategory.desc'));
@@ -9551,6 +9559,25 @@ function initDashCardSlider() {
     updateDashCardDots_();
     syncDashCardHeights();
   }, 150));
+}
+
+/**
+ * 旅程标题本身就是「改名称」的入口（data-open-modal="renameTripModal" 已经在
+ * index.html 上，滑鼠/触控点击靠 initModals() 既有的通用委派监听器就会生效）。
+ * 这里只补键盘可及性：标题不是原生 <button>，role="button" 不会自动让 Enter/
+ * 空白键触发 click，要自己转发。#dashTripTitle 是静态元素、不会被重新产生，
+ * 只需要绑一次
+ */
+function initDashTripTitleClick_() {
+  const titleEl = document.getElementById('dashTripTitle');
+  if (!titleEl) return;
+
+  titleEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      titleEl.click();
+    }
+  });
 }
 
 /* ===== 10B-7. 建立旅程表单里的金库开关 ===== */
@@ -13312,6 +13339,48 @@ function formatDateDisplay(dateString) {
   }
 
   return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+/**
+ * 相对时间格式化（"今天"／"昨天"／"前天"），手机版「近期账目」原生列表用——
+ * 全站原本没有这个，只有 formatDateDisplay() 那种绝对日期。
+ * 喂进来的是 expense.Date，这欄位来自 <input type="date">，後端存的是纯
+ * date 栏位，不带时分秒，所以这裡刻意只比「日曆天数差」，不做「N 分钟前／
+ * N 小时前」那种细粒度——那种精度只有真正带时间戳的欄位（例如 CreatedAt）
+ * 才有意义，硬套在只精确到日期的欄位上，算出来的「小时数」其实只是「距离
+ * 该日期 UTC 零点过了几小时」，会随检视者的時區飄移、跟使用者体感的
+ * 「多久以前」对不上，反而更容易看错。
+ * dateString 是纯日期字串（"2026-08-14"），new Date() 会解析成 UTC 零点——
+ * 用 getUTCFullYear/Month/Date 把这三个数字原样取回来（不受检视者本地時區
+ * 影响），再用 local Date 建构式重新组一个「本地零点」，才能公平比较「今天」
+ * 在检视者自己時區算起是哪一天。超过前天的一律退回呼叫 formatDateDisplay()，
+ * 不无限往前堆「N 天前」（那样反而比绝对日期难读，"14 天前" 不如直接看
+ * "8月1日" 来得清楚）
+ * @param {string} dateString
+ * @return {string}
+ */
+function formatRelativeTime(dateString) {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return dateString || '';
+  }
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfThatDay = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const dayDiff = Math.round((startOfToday - startOfThatDay) / 86400000);
+
+  if (dayDiff <= 0) {
+    return t('relativeTime.today');
+  }
+  if (dayDiff === 1) {
+    return t('relativeTime.yesterday');
+  }
+  if (dayDiff === 2) {
+    return t('relativeTime.twoDaysAgo');
+  }
+
+  return formatDateDisplay(dateString);
 }
 
 function formatDateForInput(date) {

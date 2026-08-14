@@ -1093,6 +1093,13 @@ html {
   display: none;
 }
 
+/* 分类消费页的副标题是「共 X 笔 · 合计 Y」这个总支出数字，不是可有可无的
+   提示文字——跟其他二级页面的 .page-subtitle 不一样，手机断点下也要看得到，
+   用 id 选择器盖过上面 <720px 预设隐藏的规则 */
+#categorySummarySubtitle {
+  display: block;
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -5028,24 +5035,24 @@ body {
   gap: var(--space-2);
 }
 
-.dash-switch-trip-btn {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-}
-
-.dash-switch-trip-btn svg {
-  width: 15px;
-  height: 15px;
-}
-
 .dash-trip-title {
   margin: 0;
   font-size: 26px;
   font-weight: 700;
   letter-spacing: var(--tracking-title, -0.015em);
   color: var(--text-primary);
-  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out), color var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.dash-trip-title:hover {
+  color: var(--text-secondary);
+}
+
+.dash-trip-title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .dash-trip-meta {
@@ -6787,3 +6794,4 @@ body {
   color: var(--text-primary);
   white-space: nowrap;
 }
+

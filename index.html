@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260811n">
+<link rel="stylesheet" href="style.css?v=20260814g">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -454,10 +454,12 @@
       <div class="dash-header">
         <div class="dash-header-left">
           <div class="dash-trip-title-row">
-            <h1 class="dash-trip-title" id="dashTripTitle" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
-            <button class="icon-btn dash-switch-trip-btn" id="dashSwitchTripBtn" type="button" data-open-modal="renameTripModal" aria-label="更改旅程名称" data-i18n-aria-label="renameTripModal.title">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <!-- 点旅程标题本身直接开改名 Modal，不再另外放一颗铅笔按钮——
+                 data-open-modal 靠 initModals() 里既有的通用委派监听器，
+                 renameTripModal 的特判会自动 fallback 到 currentTripId
+                 （没有 data-rename-trip-id 的情况，跟原本铅笔按钮行为一致）。
+                 键盘可及性另外在 initDashTripTitleClick_() 补上 Enter/空白键 -->
+            <h1 class="dash-trip-title" id="dashTripTitle" role="button" tabindex="0" data-open-modal="renameTripModal" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
           </div>
           <p class="dash-trip-meta" id="dashTripMeta"></p>
         </div>
@@ -1024,7 +1026,7 @@
     </button>
     <div class="secondary-page-header-text">
       <h1 class="page-title" data-i18n="dashboard.categorySummary">分类消费</h1>
-      <p class="page-subtitle" data-i18n="dashboard.categoryClickHint">点击分类可查看明细</p>
+      <p class="page-subtitle" id="categorySummarySubtitle"></p>
     </div>
   </div>
   <div class="secondary-page-body" id="categorySummaryList">
@@ -1763,7 +1765,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260811k"></script>
+<script src="app.js?v=20260814f"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker
