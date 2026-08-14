@@ -916,7 +916,7 @@ html {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin-top: calc(var(--space-4) * -1);
 }
 
