@@ -901,7 +901,9 @@ const STRINGS = {
     'aria.deleteMember': '删除成员',
     'repayment.paidTo': '还款给 {name}',
     'repayment.recordSuffix': '还款纪录',
+    'repayment.createdBySuffix': '{creator} 登记',
     'expense.paidByDate': '{payer} 付款 · {date}',
+    'expense.paidByDateCreator': '{payer} 付款 · {date} · {creator} 登记',
     'expenseDetailModal.title': '消费明细',
     'expenseDetailModal.splitBreakdown': '分摊明细',
     'expenseDetailModal.payerTag': '付款人',
@@ -1617,7 +1619,9 @@ const STRINGS = {
     'aria.deleteMember': 'Delete member',
     'repayment.paidTo': 'Paid to {name}',
     'repayment.recordSuffix': 'Repayment',
+    'repayment.createdBySuffix': 'logged by {creator}',
     'expense.paidByDate': 'Paid by {payer} · {date}',
+    'expense.paidByDateCreator': 'Paid by {payer} · {date} · logged by {creator}',
     'expenseDetailModal.title': 'Expense Details',
     'expenseDetailModal.splitBreakdown': 'Split Breakdown',
     'expenseDetailModal.payerTag': 'Paid this',
@@ -4037,12 +4041,19 @@ async function syncMembersState_() {
   const displayNameOf = (row) => row.nickname || row.name;
   const session = getUserSession();
 
-  const memberIndex = { byName: {}, byId: {} };
+  const memberIndex = { byName: {}, byId: {}, byUserId: {} };
   const memberJoinedAt = {};
   rows.forEach((row) => {
     const displayName = displayNameOf(row);
     memberIndex.byName[displayName] = row.id;
     memberIndex.byId[row.id] = displayName;
+    // 没绑定帐号的占位成员 user_id 是 null，不需要处理；帐号後来解除关联的
+    // 成员这一列 user_id 也会是 null（见 handleLeaveTripClick），旧消费/还款
+    // 纪录上的 created_by 因此有机会查不到名字，这是预期内会发生、需要
+    // 呼叫端自己 fallback 成空字串的情况，不是这裡要处理的错误
+    if (row.user_id) {
+      memberIndex.byUserId[row.user_id] = displayName;
+    }
     memberJoinedAt[displayName] = row.created_at;
   });
 
@@ -4462,11 +4473,12 @@ function mapCustomSplitNamesToIds_(customSplit, nameToId) {
 
 /**
  * 把 Supabase expenses 表的一列资料，转换成前端一直在用的「消费物件」形状
- * （TripID/ID/Date/Payer(名字)/Participants(名字阵列)/CustomSplit(名字 key)/CanManage...），
- * 这样渲染／结算计算那些既有代码完全不用改
+ * （TripID/ID/Date/Payer(名字)/Participants(名字阵列)/CustomSplit(名字 key)/CanManage/
+ * CreatedByName(记录人名字)...），这样渲染／结算计算那些既有代码完全不用改
  */
 function expenseRowToOldShape_(row) {
   const idToName = (appState.memberIndex && appState.memberIndex.byId) || {};
+  const userIdToName = (appState.memberIndex && appState.memberIndex.byUserId) || {};
   const session = getUserSession();
 
   return {
@@ -4499,7 +4511,11 @@ function expenseRowToOldShape_(row) {
     // handlePoolFundedExpenseEditSubmit_() 呼叫的 pool_expense_delete／
     // pool_expense_update 这两个後端函式
     CanManage: !row.created_by || (session && row.created_by === session.userId) || appState.canDeleteTrip,
-    ExchangeRateSnapshot: Number(row.exchange_rate_snapshot) || 0
+    ExchangeRateSnapshot: Number(row.exchange_rate_snapshot) || 0,
+    // 记录人姓名——跟 CanManage 用同一个 created_by，只是这裡额外解析成
+    // 可显示的名字。帐号後来解除关联、或旧资料本来就没有 created_by 时
+    // 查不到，留空字串，呼叫端自然会跳过显示
+    CreatedByName: userIdToName[row.created_by] || ''
   };
 }
 
@@ -4511,7 +4527,7 @@ function translateExpensePayloadForWrite_(payload) {
   const nameToId = (appState.memberIndex && appState.memberIndex.byName) || {};
   const session = getUserSession();
 
-  return {
+  const row = {
     trip_id: currentTripId,
     date: payload.date,
     payer_member_id: nameToId[payload.payer] || null,
@@ -4525,10 +4541,17 @@ function translateExpensePayloadForWrite_(payload) {
     custom_split: mapCustomSplitNamesToIds_(payload.customSplit, nameToId),
     receipt_url: payload.receipt || '',
     remark: payload.remark || '',
-    scope: payload.scope || 'group', // 之後才会真的做出让使用者选 'personal' 的 UI，
+    scope: payload.scope || 'group' // 之後才会真的做出让使用者选 'personal' 的 UI，
     // 这里先接好，现有表单没带这个欄位时预设 'group'，行为跟改动前完全一样
-    created_by: session ? session.userId : null
   };
+  // 只有新增才写入 created_by——跟 translateRepaymentPayloadForWrite_() 同一个做法。
+  // 原本不管新增/编辑都无条件写这个欄位，代表任何人编辑一笔消费（哪怕只是
+  // 改个备注），created_by 就会被静默改成编辑者自己，原始记录人反而会因为
+  // CanManage 判断对不上而失去编辑/删除自己这笔消费的权限
+  if (payload.isNew) {
+    row.created_by = session ? session.userId : null;
+  }
+  return row;
 }
 
 /**
@@ -4580,6 +4603,7 @@ async function fetchExpenses_() {
  */
 function repaymentRowToOldShape_(row) {
   const idToName = (appState.memberIndex && appState.memberIndex.byId) || {};
+  const userIdToName = (appState.memberIndex && appState.memberIndex.byUserId) || {};
   const session = getUserSession();
   const toMemberName = idToName[row.to_member_id] || '';
   const viewerName = getViewerName();
@@ -4603,7 +4627,9 @@ function repaymentRowToOldShape_(row) {
     // renderSettlementList 等处「我是不是这笔的当事人」判断同一套逻辑），
     // 不是这里独创的新做法。後端 RLS 的 update 权限也要同步放宽，见对应 migration
     CanManage: !row.created_by || (session && row.created_by === session.userId) || appState.canDeleteTrip ||
-      (!!viewerName && toMemberName === viewerName)
+      (!!viewerName && toMemberName === viewerName),
+    // 记录人姓名，跟 expenseRowToOldShape_() 的 CreatedByName 同一套解析逻辑
+    CreatedByName: userIdToName[row.created_by] || ''
   };
 }
 
@@ -5524,13 +5550,25 @@ function initTouchGestures() {
   }, { passive: true });
 }
 
-function navigateToPage(pageId) {
+function navigateToPage(pageId, fromPageId) {
   if (!PAGE_IDS.includes(pageId)) {
     return;
   }
 
+  const direction = fromPageId ? getPageSlideDirection_(fromPageId, pageId) : '';
+
   document.querySelectorAll('.page').forEach((section) => {
-    section.classList.toggle('is-hidden', section.getAttribute('data-page-section') !== pageId);
+    const isTarget = section.getAttribute('data-page-section') === pageId;
+    section.classList.toggle('is-hidden', !isTarget);
+    if (isTarget) {
+      section.classList.remove('is-slide-from-left', 'is-slide-from-right');
+      if (direction) {
+        // 先拿掉、强制 reflow、再加回去，确保 animation 一定会重新播放——
+        // 跟 onHeroMascotTap()/onPoolMascotTap() 重启弹跳动画同一招
+        void section.offsetWidth;
+        section.classList.add(direction);
+      }
+    }
   });
 
   document.querySelectorAll('[data-page]').forEach((button) => {
@@ -5821,9 +5859,28 @@ function handleAppPopState_(event) {
  * 時被跳過一次，不會造成錯誤畫面
  */
 function goToPage_(pageId) {
+  const fromPageId = getCurrentMainPageId_();
   secondaryPageStack.length = 0;
-  navigateToPage(pageId);
+  navigateToPage(pageId, fromPageId);
   pushAppHistoryState_({ appNavType: 'page', pageId });
+}
+
+/**
+ * 依 PAGE_IDS 的顺序判断切分页时该往哪个方向滑入——只在使用者主动点导览
+ * （goToPage_() 会带 fromPageId）才需要方向，返回键恢复上一页、删除旅程後
+ * 扒回设置页顶端这类程式化呼叫 navigateToPage() 不带这个参数，维持原本
+ * 「不特别播动画」的手感，不是每次分页显示状态改变都要滑一下
+ * @param {string} fromPageId
+ * @param {string} toPageId
+ * @return {string} 'is-slide-from-right'／'is-slide-from-left'／''（不滑）
+ */
+function getPageSlideDirection_(fromPageId, toPageId) {
+  const fromIndex = PAGE_IDS.indexOf(fromPageId);
+  const toIndex = PAGE_IDS.indexOf(toPageId);
+  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+    return '';
+  }
+  return toIndex > fromIndex ? 'is-slide-from-right' : 'is-slide-from-left';
 }
 
 /**
@@ -6851,7 +6908,8 @@ async function handleExpenseFormSubmitInner_() {
       customSplit,
       receipt,
       remark,
-      scope: isPersonal ? 'personal' : 'group'
+      scope: isPersonal ? 'personal' : 'group',
+      isNew: !editingExpenseId
     };
 
     const submitBtn = document.getElementById('expenseSubmitBtn');
@@ -8488,7 +8546,7 @@ function renderRecentActivity() {
         <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
         <div class="activity-info">
           <p class="activity-title">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-          <p class="activity-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatRelativeTime(expense.Date) }))}</p>
+          <p class="activity-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatRelativeTime(expense.Date)))}</p>
         </div>
         <p class="activity-amount mono">${formatExpenseAmountDisplay(expense)}</p>
       </div>
@@ -8599,7 +8657,7 @@ function openCategoryExpensesModal(category) {
           <div class="avatar">${escapeHtml(getInitials(expense.Payer))}</div>
           <div class="balance-info">
             <p class="balance-name">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-            <p class="balance-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))}</p>
+            <p class="balance-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date)))}</p>
           </div>
           <p class="balance-amount mono">${formatExpenseAmountDisplay(expense)}</p>
         </div>
@@ -9747,7 +9805,7 @@ function buildExpenseRowHtml(expense) {
       <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
       <div class="expense-row-info">
         <p class="expense-row-title">${escapeHtml(expense.Description || translateCategory(expense.Category))}${isPending ? ` <span class="badge badge-warning">${escapeHtml(t('offline.pendingBadge'))}</span>` : ''}</p>
-        <p class="expense-row-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))}</p>
+        <p class="expense-row-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date)))}</p>
       </div>
       <p class="expense-row-amount mono">${formatExpenseAmountDisplay(expense)}</p>
       <svg class="expense-row-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -9849,7 +9907,7 @@ function openExpenseDetailModal(expenseId) {
   }
 
   document.getElementById('expenseDetailTitle').textContent = expense.Description || t('expense.noDescription');
-  document.getElementById('expenseDetailSubtitle').textContent = t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) });
+  document.getElementById('expenseDetailSubtitle').textContent = getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date));
   document.getElementById('expenseDetailAmount').innerHTML = formatExpenseAmountDisplay(expense);
 
   const splitBadge = getSplitTypeBadgeInfo(expense.SplitType);
@@ -10466,7 +10524,7 @@ function openAllExpensesModal() {
         <div class="avatar">${escapeHtml(getInitials(expense.Payer))}</div>
         <div class="balance-info">
           <p class="balance-name">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-          <p class="balance-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))} · ${escapeHtml(translateCategory(expense.Category))}</p>
+          <p class="balance-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date)))} · ${escapeHtml(translateCategory(expense.Category))}</p>
         </div>
         <p class="balance-amount mono">${formatExpenseAmountDisplay(expense)}</p>
       </div>
@@ -10769,7 +10827,7 @@ function renderMemberExpenseRow(expense, name, memberId) {
       <div class="avatar">${escapeHtml(getInitials(expense.Payer))}</div>
       <div class="balance-info">
         <p class="balance-name">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-        <p class="balance-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))} · ${escapeHtml(translateCategory(expense.Category))}</p>
+        <p class="balance-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date)))} · ${escapeHtml(translateCategory(expense.Category))}</p>
       </div>
       <div style="text-align:right;">
         <p class="balance-amount mono">${formatMoneyWithConversion(shareAmount, expense.Currency, expense.ExchangeRateSnapshot)}</p>
@@ -10792,7 +10850,7 @@ function renderMemberPoolExpenseRow(expense, shareAmount) {
       <div class="avatar">${escapeHtml(getInitials(expense.Payer))}</div>
       <div class="balance-info">
         <p class="balance-name">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
-        <p class="balance-sub">${escapeHtml(t('expense.paidByDate', { payer: getExpensePayerDisplay(expense.Payer), date: formatDateDisplay(expense.Date) }))} · ${escapeHtml(translateCategory(expense.Category))}</p>
+        <p class="balance-sub">${escapeHtml(getExpensePaidBySubtitle_(expense, formatDateDisplay(expense.Date)))} · ${escapeHtml(translateCategory(expense.Category))}</p>
       </div>
       <div style="text-align:right;">
         <p class="balance-amount mono">${escapeHtml(formatMoney(shareAmount, expense.Currency))}</p>
@@ -10810,13 +10868,21 @@ function renderMemberPoolExpenseRow(expense, shareAmount) {
 function renderMemberRepaymentRow(repayment, name) {
   const label = t('repayment.paidTo', { name: escapeHtml(repayment.ToMember) });
   const remarkNote = repayment.Remark ? ` · ${escapeHtml(repayment.Remark)}` : '';
+  // 这支函式只会渲染在「还款人自己」的时间轴上（呼叫端只挑 FromMemberId===
+  // memberId 的还款），所以只需要比对 FromMember；记录人是收款人（对方帮
+  // 还款人代登记，比如「一键结清」由第三方帮大家批次登记）才是这个提示
+  // 真正有价值的情境，特意不排除掉
+  const showCreator = !!repayment.CreatedByName && repayment.CreatedByName !== repayment.FromMember;
+  const creatorNote = showCreator
+    ? ` · ${t('repayment.createdBySuffix', { creator: escapeHtml(repayment.CreatedByName) })}`
+    : '';
 
   return `
     <div class="balance-row">
       <div class="avatar">${escapeHtml(getInitials(repayment.ToMember))}</div>
       <div class="balance-info">
         <p class="balance-name">${label}</p>
-        <p class="balance-sub">${escapeHtml(formatDateDisplay(repayment.Date))} · ${escapeHtml(t('repayment.recordSuffix'))}${remarkNote}</p>
+        <p class="balance-sub">${escapeHtml(formatDateDisplay(repayment.Date))} · ${escapeHtml(t('repayment.recordSuffix'))}${remarkNote}${creatorNote}</p>
       </div>
       <div style="text-align:right;">
         <p class="balance-amount mono">${formatMoney(repayment.Amount)}</p>
@@ -13423,6 +13489,26 @@ const POOL_EXPENSE_PAYER_SENTINEL = '__POOL__';
  */
 function getExpensePayerDisplay(payer) {
   return payer === POOL_EXPENSE_PAYER_SENTINEL ? t('pool.expense.payerDisplayName') : payer;
+}
+
+/**
+ * 组出「消费付款人 · 日期」这行副标题共用的文字，记录人（CreatedByName）
+ * 查得到、而且不是付款人自己时，多带上「· XXX 登记」——多数消费应该都是
+ * 付款人自己记的，只有在「有别人代记」这种有意义的差异时才多显示一截字，
+ * 不是每一行平白都多一截。全站找得到这句文案的地方（近期动态／账目列表／
+ * 消费明细页／同行页时间轴……）都共用这支函式，不要各自组一份，不然
+ * 改一次要记得改好几处
+ * @param {Object} expense expenseRowToOldShape_() 转换後的消费物件
+ * @param {string} formattedDate 呼叫端已经格式化好的日期文字（各处格式不同，
+ *   例如「近期动态」用 formatRelativeTime，其他大多用 formatDateDisplay）
+ * @return {string} 未跳脱的纯文字，注入 innerHTML 前呼叫端要自己 escapeHtml()
+ */
+function getExpensePaidBySubtitle_(expense, formattedDate) {
+  const payerDisplay = getExpensePayerDisplay(expense.Payer);
+  const showCreator = !!expense.CreatedByName && expense.CreatedByName !== expense.Payer;
+  return showCreator
+    ? t('expense.paidByDateCreator', { payer: payerDisplay, date: formattedDate, creator: expense.CreatedByName })
+    : t('expense.paidByDate', { payer: payerDisplay, date: formattedDate });
 }
 
 function debounce(fn, delayMs) {

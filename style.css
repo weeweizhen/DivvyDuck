@@ -1100,6 +1100,12 @@ html {
   display: block;
 }
 
+/* 消费明细页的副标题是「谁付款 · 哪天」（有记录人时还会带上记录人）——
+   本来就是这页该有的核心资讯，不是可有可无的提示文字，手机断点下也要看得到 */
+#expenseDetailSubtitle {
+  display: block;
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -4769,17 +4775,44 @@ body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* 手机／平板（<1024px，底部导览列取代侧边栏）切主分页時拿掉这个滑入
-   动画——原生 iOS/Android 的底部 Tab 之间本来就是瞬切，会滑动/回弹的
-   是「往下钻一层」（push）那种导航，不是平行的 Tab 切换，两者语意不同。
-   这裡的滑入动画原本是桌面／手机共用同一条规则，手机套用「往下钻」
-   那种滑动語感去演「平行切 Tab」这个动作，跟原生 App 的手感对不上；
-   同时这个动画期间，固定在最底部、带强模糊的 .mobile-tabbar 得持续
-   重新取样背後变动中的内容，是手机 GPU 上公认吃效能的操作，拿掉後
-   两个问题一併解決。只排除 .secondary-page（「钻进一层」用的二级页面）
-   本身已经是更轻量的 fadeInOnly，不受影响，也不该被这裡的 none 波及 */
+/* 手机／平板（<1024px，底部导览列取代侧边栏）切主分页時拿掉桌面那个
+   「往下钻一层」（push）語感的滑入动画——原生 iOS/Android 的底部 Tab
+   之间本来就不是那种带回弹的 push 手感。改用下面 .is-slide-from-* 这组
+   更轻、方向性的滑入——只在使用者主动点导览（goToPage_() 带得出方向）
+   才会加上，其余情境（返回键恢复上一页、删除旅程後扒回设置页顶端……）
+   navigateToPage() 不带方向参数，落回 animation:none，不是每次分页
+   显示状态改变都要滑一下。只排除 .secondary-page（「钻进一层」用的
+   二级页面）本身已经是更轻量的 fadeInOnly，不受影响，也不该被这裡波及。
+   ⚠️ 固定在最底部、带强模糊的 .mobile-tabbar 在动画期间得持续重新取样
+   背後变动中的内容，是手机 GPU 上吃效能的操作，所以位移量／时间都刻意
+   压得很小（28px／0.28s），不是原本那种大幅度滑入 */
 @media (max-width: 1023px) {
   .page:not(.secondary-page) {
+    animation: none;
+  }
+
+  .page:not(.secondary-page).is-slide-from-right {
+    animation: pageSlideFromRight 0.28s var(--ease-tool, ease);
+  }
+
+  .page:not(.secondary-page).is-slide-from-left {
+    animation: pageSlideFromLeft 0.28s var(--ease-tool, ease);
+  }
+}
+
+@keyframes pageSlideFromRight {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pageSlideFromLeft {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page.is-slide-from-right,
+  .page.is-slide-from-left {
     animation: none;
   }
 }
