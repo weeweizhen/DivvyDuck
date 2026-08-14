@@ -3270,53 +3270,19 @@ function renderTripSelect() {
 }
 
 /**
- * 设置页「目前旅程」切换器——目前旅程是一般文字，后面接最多 3 颗圆圈代表
- * 其他旅程（沿用既有的 avatar-stack 头像堆叠样式），每颗圆圈显示该旅程的
- * 首字母；如果其他旅程超过 3 趟，只列前 2 颗，最后一颗改显示「+N」
- * （N 是没列出来的剩余数量），不逐一撑爆整排。整个区块跟旁边的「更改」
- * 按钮点了都会开同一个 tripPickerModal，新增旅程的功能也收在那个 Modal 里，
- * 选单改变时（不管是从哪里触发的切换）都要连带更新一次
+ * 设置页「目前旅程」切换器——只显示目前旅程的名字，不再另外列出其他旅程的
+ * 圆圈提示（旁边已经有「更改」按钮可以切换，圆圈是多余的视觉噪音）。
+ * 点这颗按钮跟旁边的「更改」按钮点了都会开同一个 tripPickerModal，
+ * 新增旅程的功能也收在那个 Modal 里，选单改变时（不管是从哪里触发的切换）
+ * 都要连带更新一次
  */
-const TRIP_PILL_MAX_AVATARS = 3;
-const TRIP_AVATAR_COLOR_COUNT = 8;
-
-/**
- * 依旅程 id 算出固定的颜色 class（1~8 号色轮），同一趟旅程不管重渲染几次、
- * 不管现在排第几个，拿到的颜色都一样，不会因为切换旅程而跳色
- * @param {string} tripId
- * @return {string} 例如 'trip-avatar-color-3'
- */
-function getTripAvatarColorClass_(tripId) {
-  let hash = 0;
-  const id = String(tripId || '');
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  }
-  return `trip-avatar-color-${(hash % TRIP_AVATAR_COLOR_COUNT) + 1}`;
-}
-
 function renderTripPillSwitcher() {
   const nameEl = document.getElementById('tripPillCurrentName');
-  const avatarsEl = document.getElementById('tripOtherAvatars');
-  if (!nameEl || !avatarsEl) {
+  if (!nameEl) {
     return;
   }
 
   nameEl.textContent = currentTripId ? getTripName(currentTripId) : t('trip.noTripOption');
-
-  const otherTrips = appState.trips.filter((item) => item.id !== currentTripId);
-  const renderAvatar = (trip) =>
-    `<span class="avatar ${getTripAvatarColorClass_(trip.id)}" title="${escapeHtml(trip.name)}">${escapeHtml(getInitials(trip.name))}</span>`;
-
-  if (otherTrips.length === 0) {
-    avatarsEl.innerHTML = '';
-  } else if (otherTrips.length <= TRIP_PILL_MAX_AVATARS) {
-    avatarsEl.innerHTML = otherTrips.map(renderAvatar).join('');
-  } else {
-    const shown = otherTrips.slice(0, TRIP_PILL_MAX_AVATARS - 1);
-    const remaining = otherTrips.length - shown.length;
-    avatarsEl.innerHTML = shown.map(renderAvatar).join('') + `<span class="avatar-stack-more">+${remaining}</span>`;
-  }
 }
 
 /**
@@ -5830,7 +5796,12 @@ function handleAppPopState_(event) {
 
     const state = event.state;
     if (state && state.appNavType === 'page' && PAGE_IDS.includes(state.pageId)) {
-      navigateToPage(state.pageId);
+      // 返回键在两个主分页之间切换，跟 goToPage_() 一样带上出发页，滑动方向
+      // 一律照 PAGE_IDS 的相对位置算（不是「回溯历史」的反向滑动）——概览
+      // 点去同行是往右滑，不管是再点一次同行回来、还是按返回键回去，
+      // 只要终点是概览、起点是同行，就是同一个「往左滑回去」的方向，
+      // 手感统一、不用另外维护一套「这是不是在回溯」的状态
+      navigateToPage(state.pageId, getCurrentMainPageId_());
     }
   } finally {
     isPopStateInProgress = false;
@@ -6069,6 +6040,19 @@ function closeModal_(modalId) {
 
 function openModal(modalId) {
   if (MODAL_TO_SECONDARY_PAGE[modalId]) {
+    // 有可能是从另一颗已经开着的 Modal 里触发的（例如 tripPickerModal 清单
+    // 每一行的铅笔按钮，点了要开 renameTripModal，後者已经转址成整页的
+    // 二级页面）——这裡直接跳成二级页面，不能让原本那颗 Modal 还留在画面上
+    // 把二级页面挡住，使用者得手动打叉才看得到。先把还开着的 Modal 都收掉，
+    // 但只做画面清理（shouldPopHistory=false），不呼叫 popAppHistoryState_()
+    // 去倒转浏览器历史——history.go()/back() 是非同步的，跟下面
+    // showSecondaryPage_() 马上要 push 的新状态放在同一輪同步执行裡呼叫，
+    // 会有時序对不上的風險，跟 goToPage_() 不额外呼叫 popAppHistoryState_()
+    // 是同一个考量。浏览器历史裡因此可能留下这颗 Modal 那笔用不到的分录，
+    // 顶多在很少見的「連續按很多次返回鍵」時被跳過一次，不會造成錯誤畫面
+    while (modalStack.length > 0) {
+      closeTopModalLayer_(false);
+    }
     showSecondaryPage_(MODAL_TO_SECONDARY_PAGE[modalId]);
     return;
   }
@@ -8139,6 +8123,12 @@ function renderDashboard() {
   renderWelcomeBanner();
   renderDashboardHeader();
   renderHeroCard();
+  // renderDivvyPoolCard() 一定要在这裡无条件呼叫，不能只塞在
+  // checkPoolLowBalanceAlert() 里面——後者「没开金库就 return」的判断以前
+  // 会连带跳过渲染，导致切到一趟没开金库的旅程时，画面还留着上一趟旅程的
+  // 金库卡片（renderDivvyPoolCard() 自己会正确处理「没开金库」清空/隐藏卡片
+  // 的情况，只是原本根本没被呼叫到），要重新整理页面才会消失
+  renderDivvyPoolCard();
   checkPoolLowBalanceAlert();
 
   // 这趟旅程完全没有任何消费纪录的话，「谁欠谁」「近期账目」两个面板都不会
@@ -8758,8 +8748,6 @@ function checkPoolLowBalanceAlert() {
   } else if (!isLow) {
     poolLowBalanceAlerted = false;
   }
-
-  renderDivvyPoolCard();
 }
 
 /* ===== 10B-3. 吉祥物微交互 (Mascot Micro-interaction) ===== */

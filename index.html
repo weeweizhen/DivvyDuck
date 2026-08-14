@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260814i">
+<link rel="stylesheet" href="style.css?v=20260814s">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -842,10 +842,11 @@
       <!-- 「切换旅程」跟「邀请码」原本是两个各自独立的框，实际上都是围绕
            「目前这趟旅程」在讲的事（看的是哪趟、怎么邀朋友加入这趟），
            合并成一个 category，标题换成跟其他面板（账户资料／偏好设置／财务设置）
-           同一种命名习惯的「旅程设置」。「目前旅程」这行是 pill 式切换器：
-           左边一颗 badge 显示目前旅程名字，如果使用者不只一趟旅程，右边叠一颗
-           小圆圈提示还有其他旅程；点 pill 或右边的「更改」都会开 tripPickerModal
-           选旅程，「新增旅程」的功能也收进那个 Modal 里，不再是独立的「+」图示 -->
+           同一种命名习惯的「旅程设置」。「目前旅程」这行只显示目前旅程的
+           名字（原本後面还接最多 3 颗代表其他旅程的圆圈，拿掉了，「更改」
+           已经能切换，不需要圆圈这个额外提示）；点名字或右边的「更改」都会
+           开 tripPickerModal 选旅程，「新增旅程」的功能也收进那个 Modal 里，
+           不再是独立的「+」图示 -->
       <div class="panel" id="settingsTripSwitcherPanel">
         <div class="panel-header">
           <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
@@ -857,7 +858,6 @@
               <p class="settings-row-desc" data-i18n="settings.currentTripHint">以下设定都专属于这趟旅程</p>
               <button class="trip-pill-switcher" type="button" id="tripPillSwitcher" aria-label="切换旅程" data-i18n-aria-label="fab.switchTrip">
                 <span class="trip-current-name" id="tripPillCurrentName">—</span>
-                <span class="avatar-stack trip-other-avatars" id="tripOtherAvatars"><!-- 最多 3 颗圆圈，由 app.js 动态产生 --></span>
               </button>
             </div>
             <button class="btn btn-ghost btn-sm" type="button" id="openTripPickerBtn" data-i18n="account.changeBtn">更改</button>
@@ -1765,7 +1765,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260814h"></script>
+<script src="app.js?v=20260814l"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

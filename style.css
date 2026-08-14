@@ -82,16 +82,20 @@
     的高度」来避开它，原本各自写死一个 44px，跟 .icon-btn 实际尺寸没有绑在一起，
     以後如果调整按钮大小很容易漏改、两边对不上 */
 
-  /* Hero Card 手机版收合高度：.hero-breakdown 那三项消费明细在手机版会被隐藏
-     （见 style.css 26. 节的媒体查询），卡片没必要再撑到桌面版的 300px，
-     这两个数字本来就是一组「同一张卡片、两种内容量」对应的最小高度，配成
-     一对变量比各自散落两处、只靠注释串起关联更清楚 */
+  /* Hero Card／搭伙金库卡片可滑动那组的共用最小高度——两张卡不管手机/桌面、
+     不管单卡或成对滑动，一律撑到这个高度，两张卡才会对齐。手机单卡情境
+     曾经把这个高度另外调低过（.hero-breakdown 那三项消费明细隐藏/收紧），
+     但实测英文字（比中文长很多）在收紧後的高度里会放不下、跑位，索性
+     不再区分「单卡/成对」两种高度，统一用这一个数字，不用猜一个「刚好
+     够用」的矮高度冒风险 */
   --hero-card-min-height: 300px;
-  --hero-card-min-height-compact: 180px;
 
   /* 手机抽屉导览：单一按钮高度，以及为了不被 320px 窄机型的 overflow:hidden
-     裁掉而设的宽度上限（见 .side-drawer .drawer-nav .nav-item） */
-  --drawer-nav-item-height: 56px;
+     裁掉而设的宽度上限（见 .side-drawer .drawer-nav .nav-item）。高度原本是
+     56px，行距看起来偏松，调低到 48px——比桌面侧栏的 44px 略高，抽屉字级
+     （17px）也比桌面（14px）大一级，维持「主导览」该有的份量感，但不再
+     那么松散；48px 仍在舒适点击的范围内 */
+  --drawer-nav-item-height: 48px;
   --drawer-nav-item-max-width: 260px;
 
   /* z-index 尺度（统一制定）：原本 Modal／Toast／App 开机动画用
@@ -912,7 +916,7 @@ html {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin-top: calc(var(--space-4) * -1);
 }
 
@@ -935,6 +939,14 @@ html {
   font-weight: 600;
   color: var(--text-secondary);
   transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+/* 英文标签用同一个字级（17px）视觉上偏大——英文字母本身笔画/字宽跟中文
+   方块字不同比例，同样的 px 数字在英文单字（尤其 "Settle Up" 这种双词）上
+   会更显眼、更佔空间。<html lang="en"> 是 applyLanguage() 本来就会设的
+   标准属性（无障碍用途），直接拿来当选择器，不用额外加 class/状态 */
+html[lang="en"] .side-drawer .drawer-nav .nav-item {
+  font-size: 15px;
 }
 
 .side-drawer .drawer-nav .nav-item .nav-icon {
@@ -971,6 +983,42 @@ html {
 
 .side-drawer .drawer-nav .nav-item:active {
   transform: scale(0.98);
+}
+
+/* 抽屉打开时，5 个主导览项目不要一次性全部出现，改成依序错开淡入＋
+   微微上移，「一个接一个冒出来」这种细节是精致感最直接的来源。
+   #drawerNav 底下只有这 5 颗 .nav-item 按钮、没有其他兄弟节点（见
+   renderMainNav() 的 drawerNavEl 那段——跟桌面侧栏不同，抽屉这份没有
+   #navIndicator 那个额外的装饰节点），所以直接用 :nth-child(1)~(5)
+   对应就好，不用另外给每颗按钮加 data-index 之类的属性。
+   默认（没有 .is-open）就是 opacity:0——反正抽屉本身也是 translateX(100%)
+   移到画面外，不会露出这个中间状态；.is-open 出现才让 animation 生效，
+   每次开抽屉都是「没有动画」到「有动画」的真实切换，不是同一个 class
+   重複套用，能正常重新播放，不需要额外的强制 reflow */
+.side-drawer .drawer-nav .nav-item {
+  opacity: 0;
+}
+
+.side-drawer.is-open .drawer-nav .nav-item {
+  animation: drawerNavItemIn 0.32s var(--ease-tool, ease) forwards;
+}
+
+.side-drawer.is-open .drawer-nav .nav-item:nth-child(1) { animation-delay: 0.03s; }
+.side-drawer.is-open .drawer-nav .nav-item:nth-child(2) { animation-delay: 0.06s; }
+.side-drawer.is-open .drawer-nav .nav-item:nth-child(3) { animation-delay: 0.09s; }
+.side-drawer.is-open .drawer-nav .nav-item:nth-child(4) { animation-delay: 0.12s; }
+.side-drawer.is-open .drawer-nav .nav-item:nth-child(5) { animation-delay: 0.15s; }
+
+@keyframes drawerNavItemIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-drawer .drawer-nav .nav-item {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 /* 底部功能列（语言／深色模式／登出）也跟主导览一样改成置中，不是原本贴齐左边、
@@ -2714,9 +2762,9 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   border-color: var(--accent);
 }
 
-/* 设置页「目前旅程」切换器：目前旅程就是一般文字，不再套 pill 底色；
-   后面视需要接最多 3 颗圆圈（沿用既有的 avatar-stack 头像堆叠样式），
-   每颗圆圈显示一趟其他旅程的首字母，超过 3 趟的话最后一颗改显示 +N */
+/* 设置页「目前旅程」切换器：目前旅程就是一般文字，不再套 pill 底色，
+   後面原本还接最多 3 颗代表其他旅程的圆圈，拿掉了——旁边就有「更改」
+   按钮可以切换，圆圈只是多余的视觉噪音 */
 .trip-pill-switcher {
   display: flex;
   align-items: center;
@@ -2737,50 +2785,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* 圆圈缩小、透明度调低——它们只是「还有其他旅程」的次要提示，不该跟
-   目前旅程的名字抢视觉重量，越精致、越退到背景越好；hover 整颗切换器
-   时才浮现完整不透明度，算是个小小的互动回饋 */
-.trip-pill-switcher .avatar-stack.trip-other-avatars .avatar,
-.trip-pill-switcher .avatar-stack.trip-other-avatars .avatar-stack-more {
-  width: 18px;
-  height: 18px;
-  font-size: 7.5px;
-  margin-left: -5px;
-  border-width: 1.5px;
-  opacity: 0.55;
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.trip-pill-switcher:hover .trip-other-avatars .avatar,
-.trip-pill-switcher:hover .trip-other-avatars .avatar-stack-more {
-  opacity: 0.85;
-}
-
-/* 其他旅程的圆圈改成五彩缤纷、每趟旅程固定分到一个颜色（依 trip id 算出来，
-   同一趟旅程不管重渲染几次都拿到同一个颜色，不会闪烁跳色）；「+N」那颗
-   不代表特定旅程，维持中性的灰阶配色，不参与上色 */
-.trip-avatar-color-1 { background: rgba(244, 63, 94, 0.16); color: #e11d48; }
-.trip-avatar-color-2 { background: rgba(249, 115, 22, 0.17); color: #ea580c; }
-.trip-avatar-color-3 { background: rgba(234, 179, 8, 0.2); color: #b45309; }
-.trip-avatar-color-4 { background: rgba(34, 197, 94, 0.16); color: #15803d; }
-.trip-avatar-color-5 { background: rgba(14, 165, 233, 0.16); color: #0369a1; }
-.trip-avatar-color-6 { background: rgba(99, 102, 241, 0.17); color: #4338ca; }
-.trip-avatar-color-7 { background: rgba(168, 85, 247, 0.16); color: #7e22ce; }
-.trip-avatar-color-8 { background: rgba(236, 72, 153, 0.16); color: #be185d; }
-
-/* 深色模式：上面这组浅色模式调的文字色（对白底 AA 达标）在深色卡片底下
-   实测对比度只剩 2~3:1，远不到 AA 的 4.5:1，字几乎融进背景——沿用其他
-   语意色「深色模式换更亮更饱和版本」的同一套做法，背景色相不变，只是
-   稍微提高透明度让色块更有存在感 */
-[data-theme="dark"] .trip-avatar-color-1 { background: rgba(244, 63, 94, 0.22); color: #fb7185; }
-[data-theme="dark"] .trip-avatar-color-2 { background: rgba(249, 115, 22, 0.22); color: #fb923c; }
-[data-theme="dark"] .trip-avatar-color-3 { background: rgba(234, 179, 8, 0.24); color: #fbbf24; }
-[data-theme="dark"] .trip-avatar-color-4 { background: rgba(34, 197, 94, 0.22); color: #4ade80; }
-[data-theme="dark"] .trip-avatar-color-5 { background: rgba(14, 165, 233, 0.22); color: #38bdf8; }
-[data-theme="dark"] .trip-avatar-color-6 { background: rgba(99, 102, 241, 0.24); color: #818cf8; }
-[data-theme="dark"] .trip-avatar-color-7 { background: rgba(168, 85, 247, 0.22); color: #c084fc; }
-[data-theme="dark"] .trip-avatar-color-8 { background: rgba(236, 72, 153, 0.22); color: #f472b6; }
 
 /* tripPickerModal 里的旅程清单：每行左边头像+名字（点了切换），目前那趟
    多一颗铅笔小按钮可以改名字，用底色跟左侧色条标示出「目前选中」 */
@@ -5670,28 +5674,10 @@ body {
   }
 
   /* 已付金额／个人消费／已收金额这三项，结算页面「每人收支」现在也看得到
-     （见 .balance-row-breakdown），手机屏幕窄、Hero Card 又要显示吉祥物+净额，
-     三项明细放上去卡片会拉得太高，占掉太多第一屏空间，直接隐藏。
-     但只在「没有金库卡片可以滑」的单卡情境才收合——金库卡片一旦存在，
-     两张卡是配成一组滑动着看的，金库卡本来就有吉祥物/徽章/余额/按钮一大串
-     内容，Hero 卡如果还收成只有净额一行，滑过去会像「资讯量突然掉了一大截」，
-     跟桌面版（不分卡不分屏，三项明细本来就一直显示）的份量感也对不上，
-     所以这裡改成只有 :not(.has-pool) 才收合 */
-  .dash-card-slider:not(.has-pool) .hero-breakdown,
-  .dash-card-slider:not(.has-pool) .hero-breakdown-divider {
-    display: none;
-  }
-
-  /* 隐藏上面那三项之後，卡片本来该跟着变矮——但 .dash-card-slider .hero-card
-     那条 min-height: 300px 是为了「容纳三项明细＋跟金库卡片对齐高度」设的固定值，
-     手机版不显示那三项了，卡片没必要还撑到 300px 这么高，这里针对手机版单独调低。
-     只在同样「没有金库卡片」的情境下调低——有金库卡片时三项明细改回显示了
-     （见上），卡片需要跟桌面版一样的完整高度，才放得下这些内容，也才有
-     足够高度可以跟金库卡片对齐（金库卡片如果比这个矮，syncDashCardHeights()
-     还是会用 JS inline style 把两张卡动态对齐到同一高度） */
-  .dash-card-slider:not(.has-pool) .hero-card {
-    min-height: var(--hero-card-min-height-compact) !important;
-  }
+     （见 .balance-row-breakdown）。手机单卡情境（没有金库卡可滑）原本会
+     隐藏这三项、後来又试过改成「标签+数字同一行」的收紧排版，两者都拿掉
+     了——排版、高度、内距统统跟桌面版/有金库卡片时一样，不再另外维护
+     一份手机单卡专属的样式 */
 }
 
 /* 23.4 桌面版（>=1024px）：右上角「记一笔」／「新增成员」改成右下角悬浮圆形按钮，
