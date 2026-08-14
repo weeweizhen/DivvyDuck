@@ -33,7 +33,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260814u">
+<link rel="stylesheet" href="style.css?v=20260815k">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -454,12 +454,11 @@
       <div class="dash-header">
         <div class="dash-header-left">
           <div class="dash-trip-title-row">
-            <!-- 点旅程标题本身直接开改名 Modal，不再另外放一颗铅笔按钮——
-                 data-open-modal 靠 initModals() 里既有的通用委派监听器，
-                 renameTripModal 的特判会自动 fallback 到 currentTripId
-                 （没有 data-rename-trip-id 的情况，跟原本铅笔按钮行为一致）。
-                 键盘可及性另外在 initDashTripTitleClick_() 补上 Enter/空白键 -->
-            <h1 class="dash-trip-title" id="dashTripTitle" role="button" tabindex="0" data-open-modal="renameTripModal" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
+            <!-- 点旅程标题原地切换成输入框改名，不用跳二级页面——两个元素
+                 一直都在，靠 is-hidden 互相切换显示，不是动态生成/销毁，
+                 逻辑都在 initDashTripTitleClick_() -->
+            <h1 class="dash-trip-title" id="dashTripTitle" role="button" tabindex="0" data-i18n="trip.noTripSelected">尚未选择旅程</h1>
+            <input type="text" class="dash-trip-title-input is-hidden" id="dashTripTitleInput" maxlength="60" enterkeyhint="done" autocomplete="off" data-i18n-aria-label="renameTripModal.nameLabel">
           </div>
           <p class="dash-trip-meta" id="dashTripMeta"></p>
         </div>
@@ -1765,7 +1764,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260814m"></script>
+<script src="app.js?v=20260815g"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

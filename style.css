@@ -2439,51 +2439,82 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 .balance-amount.is-zero { color: var(--text-tertiary); }
 
 /* Dashboard 首页「谁欠谁」列表——只 scope 在 #balanceMatrixList 底下，
-   跟旁边「近期账目」(.activity-row) 对齐用：头像缩到跟 .activity-icon
-   一样大、金额字级对齐 .activity-amount。不动全局的 .avatar／
-   .balance-amount.mono——那两个 class 在其他十几个地方（成员明细、
-   分类清单…）已经调好了，不该被这裡的对齐需求牵动 */
-#balanceMatrixList .avatar {
-  width: 36px;
-  height: 36px;
-  font-size: 13px;
-}
-
+   跟旁边「近期账目」(.activity-amount) 对齐用金额字级。不动全局的
+   .balance-amount.mono——这个 class 在其他十几个地方（成员明细、分类
+   清单…）已经调好了，不该被这裡的对齐需求牵动 */
 #balanceMatrixList .balance-amount.mono {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-/* 「提醒」原本是金额右侧独立一栏的圆形图示按钮，不管这一行有没有提醒
-   对象都要占同样宽度，窄手机屏幕上会跟姓名栏抢空间，视觉上也比较突兀。
-   改成跟金额同一栏、垂直堆叠在金额下方的小文字连结——.balance-row-end
-   是这一栏的外层容器，金额跟「提醒」都靠右对齐、纵向排；不能提醒的行
-   （自己欠对方／金库相关）JS 那边就不会渲染这个连结，不需要占位撑对齐，
-   那几行会自然矮一截 */
-.balance-row-end {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+/* .balance-row 全局定义（Summary 页余额卡片／结算建议共用）自带左右
+   var(--space-2) 的内距，「近期账目」的 .activity-row 却是左右 0、完全
+   靠 .panel 自己的内距撑开——两个面板都是同一层 .panel，理论上内容该
+   对齐在同一条右边线，多出来的这圈内距会让「谁欠谁」的金额比「近期账目」
+   的金额往左缩进一截，两份名单并排看会像没对齐。这裡只在 Dashboard 这个
+   面板拿掉左右内距，不动 .balance-row 全局定义（Summary 页、成员明细
+   modal 等十几个地方还需要维持原本的内距，不该被这裡牵动） */
+#balanceMatrixList .balance-row {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 每行前面加个序号，沿用结算演算法本来的排列顺序（金额较大的债权/债务人
+   排前面）——纯数字，不加圆圈/底色。宽度刻意跟旁边「近期账目」的
+   .activity-icon 一样是 36px（两边 .balance-row／.activity-row 的
+   gap 本来就是同一个 var(--space-3)），姓名/标题文字才会从同一条
+   竖线开始，两份名单对得齐 */
+#balanceMatrixList .balance-matrix-index {
   flex-shrink: 0;
-}
-
-.balance-matrix-remind-link {
-  border: none;
-  background: none;
-  padding: 2px 0;
-  margin: -2px 0;
-  font-size: 12px;
+  width: 36px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
-  cursor: pointer;
-  transition: color var(--duration-fast, 140ms) var(--ease-out, ease);
+  font-variant-numeric: tabular-nums;
 }
 
-.balance-matrix-remind-link:hover {
-  color: var(--accent);
-  text-decoration: underline;
+/* .balance-name 原本是 .balance-info（flex:1）底下的区块子元素，靠父层
+   撑开左侧空间；这裡姓名/关係已经合成单行，.balance-info 那层包装拿掉了，
+   .balance-name 变成 .balance-row 的直接 flex 子元素，要自己补上 flex:1
+   才能撑满剩余宽度、把金额推去最右边——只 scope 在这裡，不改全局
+   .balance-name（其他地方还是 .balance-info 包着，不受影响） */
+#balanceMatrixList .balance-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* 全局 .balance-name 是 650 字重，旁边「近期账目」的 .activity-title
+     是 600——字级都是 14px，只有这个数字不同，两份名单并排会觉得「谁欠谁」
+     的字比较粗一点。这裡跟着「近期账目」调，不动全局 .balance-name
+     （其他十几个地方还是维持原本的 650） */
+  font-weight: 600;
+}
+
+/* 关係说明（"需要转给你"／"你需要转给对方"等）跟姓名放同一行，但字重/颜色
+   跟合并前一样维持次要文字样式（跟 .balance-sub 同一套 12px + tertiary
+   颜色），不会跟姓名混在一起分不出主次 */
+#balanceMatrixList .balance-matrix-relation {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+/* 姓名+关係合成单行文字（靠左）＋金额（靠右）——原本是姓名/关係说明
+   上下两行、金额跟「提醒」小连结又是右侧另外堆叠的两行，现在整排收成
+   一行。可以複製提醒文字的那几行（对方欠你、不是金库相关）整排都能点，
+   跟 .settlement-row.is-clickable 同一个手感，不用先精准点中一颗小连结；
+   不能複製的行（自己欠对方／金库相关）JS 那边不会加这个 class，维持
+   纯展示、不可点 */
+.balance-row.is-clickable {
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.balance-row.is-clickable:hover {
+  background: var(--bg-subtle);
 }
 
 .settlement-row {
@@ -5074,10 +5105,20 @@ body {
   margin-bottom: var(--space-5);
 }
 
+/* 原本没有明确宽度，靠内容自己撑开——够用，因为标题只有纯文字。改成
+   原地编辑後 .dash-trip-title-input 需要一个明确的可用宽度才能 width:100%
+   撑满，这裡补上 flex:1（跟右边固定宽度的头像堆叠 .dash-header-right 分掉
+   剩余空间），不影响原本纯展示状态的排版——文字一样是靠左、不会被拉伸 */
+.dash-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
 .dash-trip-title-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .dash-trip-title {
@@ -5098,6 +5139,32 @@ body {
 .dash-trip-title:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* 原地改名的输入框——跟 .dash-trip-title 用同一套字级/字重/颜色，看起来
+   像文字本身直接变成可编辑状态，不是跳出另一个样式的表单栏位。宽度撑满
+   .dash-trip-title-row（靠 .dash-header-left 的 flex:1 撑开可用空间），
+   底线用 accent 色标示目前正在编辑。-webkit-appearance/appearance 一定要
+   显式关掉，不然 iOS Safari 会露出原生文字栏位自己的圆角外观（一小截
+   椭圆形的边框），把下面手动画的 border-bottom 盖住/叠在一起，跟
+   .select-control 那裡关掉原生 <select> 外观是同一个原因 */
+.dash-trip-title-input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 2px 4px;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1.5px solid var(--accent);
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: var(--tracking-title, -0.015em);
+  color: var(--text-primary);
+  outline: none;
 }
 
 .dash-trip-meta {
@@ -5588,6 +5655,10 @@ body {
   }
 
   .dash-trip-title {
+    font-size: 21px;
+  }
+
+  .dash-trip-title-input {
     font-size: 21px;
   }
 }
@@ -6820,5 +6891,55 @@ body {
   font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
+}
+
+/* ============================================================
+   25. 清单行按下回馈
+   ============================================================ */
+
+/* 按钮/分页标签/抽屉项目按下去都有 scale 缩小的 :active 效果，但「整排
+   可点」这类清单行（谁欠谁、近期账目、账目列表、分类消费清单、结算建议/
+   还款纪录、成员卡片、金库明细、切换旅程清单）原本完全没有对应的按下
+   回馈——最上面 * 那条规则已经把手机版点击时原生的灰色高亮拿掉了（理由
+   见那条规则自己的注解：视觉回馈改靠各元素自己的 :active 状态），这些
+   行的 :active 状态因此是唯一「有点到」的视觉确认，不能漏掉。
+   缩放幅度比照 .qa-pill／.side-drawer 的 .nav-item（都是撑满宽度的列，
+   scale(0.98)），不是 .icon-btn／.link-btn 那种窄元素用的 scale(0.92)——
+   整排这麼宽的元素缩太多看起来会很奇怪。
+   .activity-row／.pool-detail-row／.trip-picker-row-main 原本连 hover
+   都没有，一併补上；其他几个本来就有 hover，这裡只加 active。
+   .expense-row 的「待同步」列（.is-pending-sync）游标本来就是
+   cursor:default，代表还不算真的能互动，排除在外。
+   分类消费清单那排、金库明细行原本各自用 style="cursor:pointer" 内嵌
+   样式（.pool-detail-row 见 app.js 的 HTML；分类消费清单那排改成
+   .is-clickable 标记，见 renderCategorySummary()），这次统一收进这裡的
+   cursor:pointer，改用跟其他清单行一致的写法；.activity-row 桌面版原本
+   连 cursor:pointer 都没设，滑鼠移过去看起来完全不像能点，这裡一併补上 */
+.balance-row.is-clickable,
+.settlement-row.is-clickable,
+.member-card-clickable,
+.expense-row:not(.is-pending-sync),
+.activity-row,
+.pool-detail-row,
+.trip-picker-row-main {
+  cursor: pointer;
+  transition: transform var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              background var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.activity-row:hover,
+.pool-detail-row:hover,
+.trip-picker-row-main:hover {
+  background: var(--bg-subtle);
+}
+
+.balance-row.is-clickable:active,
+.settlement-row.is-clickable:active,
+.member-card-clickable:active,
+.expense-row:not(.is-pending-sync):active,
+.activity-row:active,
+.pool-detail-row:active,
+.trip-picker-row-main:active {
+  transform: scale(0.98);
 }
 

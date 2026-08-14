@@ -560,7 +560,6 @@ const STRINGS = {
     'dashboard.matrix.owesYouSub': '需要转给你',
     'dashboard.matrix.youOweSub': '你需要转给对方',
     'dashboard.matrix.otherPairSub': '待结算',
-    'dashboard.matrix.remind': '提醒',
     'dashboard.matrix.collapse': '收起',
     'dashboard.matrix.reminderText': '嘎～{name}，鸭鸭掐指一算，你还欠 {amount} 没转喔，别让鸭鸭继续念叨啦 🦆\n点这里看明细、还能自己开个账号盯着：{link}',
     'empty.noExpenses.title': '还没有消费纪录',
@@ -1293,7 +1292,6 @@ const STRINGS = {
     'dashboard.matrix.owesYouSub': 'owes you',
     'dashboard.matrix.youOweSub': 'you owe them',
     'dashboard.matrix.otherPairSub': 'pending settlement',
-    'dashboard.matrix.remind': 'Remind',
     'dashboard.matrix.collapse': 'Collapse',
     'dashboard.matrix.reminderText': 'Hey {name}, DivvyDuck here \u{1F986} \u2014 you still have {amount} outstanding from our trip, whenever you get a chance!\nCheck the details (and set up your own account) here: {link}',
     'empty.noExpenses.title': 'No expenses yet',
@@ -2474,7 +2472,7 @@ function initAuthGate() {
     });
   });
 
-  // 提醒讯息里现在会附一个「?invite=邀请码」的连结（见 bindBalanceMatrixRemindButtons_()），
+  // 提醒讯息里现在会附一个「?invite=邀请码」的连结（见 bindBalanceMatrixRemindRows_()），
   // 收到讯息的人点进来，直接帮他切到注册分页、邀请码也预填好，不用自己再去问
   // 邀请码是什么、也不用手动切分页——降低「点了链接却不知道要做什么」的落差
   const urlInviteCode = new URLSearchParams(window.location.search).get('invite');
@@ -3318,7 +3316,6 @@ function renderTripPickerList() {
     return `
       <div class="trip-picker-row ${isActive ? 'is-active' : ''}">
         <button type="button" class="trip-picker-row-main" data-select-trip-id="${escapeHtml(trip.id)}">
-          <span class="avatar">${escapeHtml(getInitials(trip.name))}</span>
           <span class="trip-picker-row-name">${escapeHtml(trip.name)}</span>
         </button>
         <button type="button" class="icon-btn trip-picker-edit-btn" data-open-modal="renameTripModal" data-rename-trip-id="${escapeHtml(trip.id)}" aria-label="${escapeHtml(t('renameTripModal.title'))}">
@@ -3385,12 +3382,45 @@ function getTripName(tripId) {
 }
 
 /**
- * 「更改旅程名称」表单送出处理——跟货币设置的 saveExchangeRates_ 走同一套模式：
- * 直接 update trips 那一列（关联都是靠 trip.id，改名字不会动到任何其他资料），
- * 成功後同步更新 appState 缓存的那份名字，再重新渲染选单/标题等所有显示旅程
- * 名称的地方，不然会看到画面上还是旧名字，要等下次重新整理才会更新
+ * 「更改旅程名称」的实际存档动作——直接 update trips 那一列（关联都是靠
+ * trip.id，改名字不会动到任何其他资料），成功後同步更新 appState 缓存的
+ * 那份名字，再重新渲染选单等所有显示旅程名称的地方，不然会看到画面上
+ * 还是旧名字，要等下次重新整理才会更新，最後跳成功 toast。renameTripModal
+ * 的表单送出（handleRenameTripFormSubmit）跟 Dashboard 标题原地改名
+ * （initDashTripTitleClick_）共用这支——呼叫端各自处理自己的 loading 状态跟
+ * 失败时的錯誤 toast（catch 住这裡 throw 出去的 error），成功 toast 统一在
+ * 这裡处理，两边文案才不会不小心长歪
+ * @param {string} tripId 要改名的旅程 id
+ * @param {string} newName 新名字（呼叫端自己 trim/验证非空）
+ */
+async function saveTripRename_(tripId, newName) {
+  const { error } = await supabaseClient.from('trips').update({ name: newName }).eq('id', tripId);
+  if (error) throw error;
+
+  const tripInList = appState.trips.find((item) => item.id === tripId);
+  if (tripInList) {
+    tripInList.name = newName;
+    tripInList.updatedAt = new Date().toISOString(); // 後端有 updated_at 触发器的话本来就会更新，
+    // 这里先在本地也同步一次，改名字之後不用整个重新整理，排序就能立刻反映最新异动
+  }
+
+  renderTripSelect(); // 内部会连带刷新 renderTripPillSwitcher() / renderTripPickerList()
+
+  // 只有改的刚好是「目前正在看的这趟」才需要刷新 Dashboard 标题；改的是清单里
+  // 别的旅程的话，画面上根本没在显示它的名字，不用碰 Dashboard，
+  // 更不会触发 loadTripData() 或任何资料重载
+  if (tripId === currentTripId) {
+    renderDashboardHeader();
+  }
+
+  showToast('success', t('toast.tripRenamed'), t('toast.tripRenamedMsg', { name: newName }));
+}
+
+/**
+ * 「更改旅程名称」表单送出处理（renameTripModal，现为 rename-trip 二级页面）——
+ * 只处理这个表单自己的 loading/驗證/錯誤显示，实际存档交给 saveTripRename_()
  * @param {string} [targetTripId] 要改名的旅程 id；不传的话回退成 currentTripId
- *   （沿用旧行为，对应旅程标题旁边那颗改名按钮——没有指定特定目标，永远是改「目前这趟」）
+ *   （对应 tripPickerModal 清单里的铅笔按钮——没有指定特定目标，永远是改「目前这趟」）
  */
 async function handleRenameTripFormSubmit(targetTripId) {
   const tripId = targetTripId || currentTripId;
@@ -3410,27 +3440,8 @@ async function handleRenameTripFormSubmit(targetTripId) {
   setButtonLoading(submitBtn, true);
 
   try {
-    const { error } = await supabaseClient.from('trips').update({ name: newName }).eq('id', tripId);
-    if (error) throw error;
-
-    const tripInList = appState.trips.find((item) => item.id === tripId);
-    if (tripInList) {
-      tripInList.name = newName;
-      tripInList.updatedAt = new Date().toISOString(); // 後端有 updated_at 触发器的话本来就会更新，
-      // 这里先在本地也同步一次，改名字之後不用整个重新整理，排序就能立刻反映最新异动
-    }
-
+    await saveTripRename_(tripId, newName);
     closeModal_('renameTripModal');
-    renderTripSelect(); // 内部会连带刷新 renderTripPillSwitcher() / renderTripPickerList()
-
-    // 只有改的刚好是「目前正在看的这趟」才需要刷新 Dashboard 标题；改的是清单里
-    // 别的旅程的话，画面上根本没在显示它的名字，不用碰 Dashboard，
-    // 更不会触发 loadTripData() 或任何资料重载
-    if (tripId === currentTripId) {
-      renderDashboardHeader();
-    }
-
-    showToast('success', t('toast.tripRenamed'), t('toast.tripRenamedMsg', { name: newName }));
   } catch (error) {
     showToast('error', t('toast.actionFailed'), error.message);
   } finally {
@@ -8425,7 +8436,14 @@ function renderBalanceMatrix() {
   // 只显示跟登入账号有关的那几笔（自己该付给谁、该跟谁收），不是「所有人跟所有人」
   // 的还款建议——理由跟结算页面的「谁欠谁」清单一样，见 renderSummaryPage 的说明
   const viewerName = getViewerName();
-  const settlements = allSettlements.filter((item) => item.from === viewerName || item.to === viewerName);
+  // settlementAlgorithm_() 本身只是贪婪配对债权人/债务人佇列，产生的 settlements
+  // 顺序不等於金额由大到小（配对过程中金额可能忽大忽小）——这裡额外依金额
+  // 排序，前面新增的序号（1、2、3...）才会真的对应「金额最大排最前面」，
+  // 不是碰巧的顺序。全部金额已经在 computeSummary 换算成同一个 baseCurrency，
+  // 纯数字比大小不会有跨币别的问题
+  const settlements = allSettlements
+    .filter((item) => item.from === viewerName || item.to === viewerName)
+    .sort((a, b) => b.amount - a.amount);
 
   if (settlements.length === 0) {
     // 不管是「还没有消费」还是「都已经结清」，这个 section 本来就是拿来提示
@@ -8440,44 +8458,34 @@ function renderBalanceMatrix() {
   const isLong = settlements.length > MAX_COLLAPSED;
   const collapsedList = isLong ? settlements.slice(0, MAX_COLLAPSED) : settlements;
 
-  const renderRow = (item) => {
+  const renderRow = (item, index) => {
     const isYouOwe = viewerName && item.from === viewerName;
     const isOwesYou = viewerName && item.to === viewerName;
-    // 头像／名字都要显示「对方」，不是自己——youOwe 时 item.from 其实是自己
-    // （viewerName），旧版这裡一律显示 getInitials(item.from) 在这个情境下
-    // 会画出自己的头像，是个小 bug，这次一并修正
+    // 名字要显示「对方」，不是自己——youOwe 时 item.from 其实是自己（viewerName）
     const counterpartRaw = isOwesYou ? item.from : item.to;
     const counterpartDisplay = getExpensePayerDisplay(counterpartRaw);
-    const relationSub = isOwesYou
+    // 姓名跟关係说明合成一行——姓名维持原本字重/颜色，关係说明用较淡的
+    // 次要文字样式，两段文字放在同一行内（不再是上下两行），靠左对齐，
+    // 金额仍靠右
+    const relationText = isOwesYou
       ? t('dashboard.matrix.owesYouSub')
       : isYouOwe
         ? t('dashboard.matrix.youOweSub')
         : t('dashboard.matrix.otherPairSub');
 
-    // 跟「搭伙金库」有关的转账建议不是真人对真人，不提供「提醒」按钮
-    // （金库不会看 WhatsApp，提醒了也没有意义）
-    const showRemindBtn = !isYouOwe && !item.isPoolSettlement;
+    // 跟「搭伙金库」有关的转账建议不是真人对真人，不提供複製提醒文字的功能
+    // （金库不会看 WhatsApp，複製了也没有意义）
+    const isRemindable = !isYouOwe && !item.isPoolSettlement;
 
-    // 「提醒」原本是行尾独立一栏的圆形图示按钮，不管这一行能不能提醒都要
-    // 佔同样宽度（见 is-invisible 占位），在窄手机屏幕上会跟姓名栏抢空间。
-    // 改成金额栏底下的小文字连结，跟金额同一栏垂直堆叠、不再多佔一栏横向
-    // 空间；不能提醒的行（自己欠对方／金库相关）就直接不渲染这行连结，
-    // 不需要占位撑对齐，行会自然矮一截，也顺便区分出「这行能不能提醒」
+    // 原本是行尾一颗独立的「提醒」小文字连结，现在整排都能点（能複製的行才
+    // 加 is-clickable／data-remind-*，不能複製的行维持纯展示，不占位、
+    // 不用另外判断要不要显示一颗空按钮），点了直接分享/複製提醒文字，不用先
+    // 精准点中那颗小连结
     return `
-      <div class="balance-row">
-        <div class="avatar">${escapeHtml(getInitials(counterpartRaw))}</div>
-        <div class="balance-info">
-          <p class="balance-name">${escapeHtml(counterpartDisplay)}</p>
-          <p class="balance-sub">${escapeHtml(relationSub)}</p>
-        </div>
-        <div class="balance-row-end">
-          <p class="balance-amount mono">${formatMoney(item.amount)}</p>
-          ${showRemindBtn ? `
-          <button class="balance-matrix-remind-link" type="button"
-            data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}">
-            ${escapeHtml(t('dashboard.matrix.remind'))}
-          </button>` : ''}
-        </div>
+      <div class="balance-row${isRemindable ? ' is-clickable' : ''}"${isRemindable ? ` role="button" tabindex="0" data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}"` : ''}>
+        <span class="balance-matrix-index">${index + 1}</span>
+        <p class="balance-name">${escapeHtml(counterpartDisplay)} <span class="balance-matrix-relation">${escapeHtml(relationText)}</span></p>
+        <p class="balance-amount mono">${formatMoney(item.amount)}</p>
       </div>
     `;
   };
@@ -8485,7 +8493,7 @@ function renderBalanceMatrix() {
   let expanded = false;
   const paint = () => {
     container.innerHTML = (expanded ? settlements : collapsedList).map(renderRow).join('');
-    bindBalanceMatrixRemindButtons_();
+    bindBalanceMatrixRemindRows_();
   };
   paint();
 
@@ -8505,25 +8513,41 @@ function renderBalanceMatrix() {
 }
 
 /**
- * 「谁欠谁」每一行的「提醒」按钮：组好提醒文字，装置支援分享面板就用分享，
- * 不支援就复制到剪贴板，让使用者自己贴去 WhatsApp/Line 之类的地方发送。
- * 讯息里现在会带一个「?invite=邀请码」的连结——对方点进来，App 会自动帮他
- * 切到注册分页、邀请码也预填好，他就能自己开账号、看这趟旅程实际花在哪，
+ * 「谁欠谁」清单：点整排（只有「对方欠你」那几行才点得动，见 renderRow()
+ * 的 isRemindable 判断）弹出一句提醒文字——不再是先找到行尾一颗独立的「提醒」
+ * 小连结才能点。装置支援原生分享面板（navigator.share）就跳出来，让使用者
+ * 直接选 WhatsApp/Line 之类的地方发送；不支援的环境（多半是桌面浏览器）退回
+ * 複製到剪贴板。讯息里带一个「?invite=邀请码」的连结，对方点进来 App 会自动
+ * 帮他切到注册分页、邀请码也预填好，他就能自己开账号、看这趟旅程实际花在哪，
  * 不用只凭一句「你还欠多少钱」的文字乾等着被催
  */
-function bindBalanceMatrixRemindButtons_() {
-  document.querySelectorAll('.balance-matrix-remind-link').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const name = btn.getAttribute('data-remind-name');
-      const amount = Number(btn.getAttribute('data-remind-amount')) || 0;
+function bindBalanceMatrixRemindRows_() {
+  document.querySelectorAll('#balanceMatrixList .balance-row.is-clickable').forEach((row) => {
+    const shareOrCopyReminder = async () => {
+      const name = row.getAttribute('data-remind-name');
+      const amount = Number(row.getAttribute('data-remind-amount')) || 0;
       const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(appState.inviteCode || '')}`;
       const message = t('dashboard.matrix.reminderText', { name, amount: formatMoney(amount), link: inviteLink });
 
-      if (navigator.share) {
-        navigator.share({ text: message }).catch(() => {});
-      } else if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message);
-        showToast('success', t('invite.copiedTitle'), '');
+      try {
+        if (navigator.share) {
+          await navigator.share({ text: message });
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(message);
+          showToast('success', t('invite.copiedTitle'), '');
+        }
+      } catch (error) {
+        if (error && error.name === 'AbortError') return; // 使用者自己在分享面板按了取消，不是错误
+        showToast('error', t('invite.copiedTitle'), '');
+      }
+    };
+    row.addEventListener('click', shareOrCopyReminder);
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        shareOrCopyReminder();
       }
     });
   });
@@ -8613,7 +8637,7 @@ function renderCategorySummary() {
   container.innerHTML = data.map((item) => {
     const iconMeta = getCategoryIconMeta(item.category);
     return `
-      <div class="balance-row" data-category="${escapeHtml(item.category)}" role="button" tabindex="0" style="cursor:pointer;">
+      <div class="balance-row is-clickable" data-category="${escapeHtml(item.category)}" role="button" tabindex="0">
         <div class="activity-icon ${iconMeta.cls}" aria-hidden="true">${iconMeta.svg}</div>
         <div class="balance-info">
           <p class="balance-name">${escapeHtml(translateCategory(item.category))}</p>
@@ -9408,7 +9432,7 @@ function renderPoolTopupEditList() {
   }
 
   bodyEl.innerHTML = topups.map((item) => `
-    <div class="pool-detail-row" data-topup-id="${escapeHtml(item.id)}" role="button" tabindex="0" style="cursor: pointer;">
+    <div class="pool-detail-row" data-topup-id="${escapeHtml(item.id)}" role="button" tabindex="0">
       <div class="pool-detail-row-info">
         <p class="pool-detail-row-title">${escapeHtml(formatMoney(item.perPersonAmount, item.currency))} × ${item.memberCount}</p>
         <p class="pool-detail-row-sub">${escapeHtml(formatDateDisplay(item.createdAt))}</p>
@@ -9624,22 +9648,78 @@ function initDashCardSlider() {
 }
 
 /**
- * 旅程标题本身就是「改名称」的入口（data-open-modal="renameTripModal" 已经在
- * index.html 上，滑鼠/触控点击靠 initModals() 既有的通用委派监听器就会生效）。
- * 这里只补键盘可及性：标题不是原生 <button>，role="button" 不会自动让 Enter/
- * 空白键触发 click，要自己转发。#dashTripTitle 是静态元素、不会被重新产生，
+ * 旅程标题原地改名：点标题（或键盘 Enter/空白键）切换成一个盖在原本位置上的
+ * 输入框，打完字按 Enter 或点别处失焦就直接存档，不用跳到 rename-trip
+ * 二级页面。Esc 放弃变更，恢复原本的名字。永远改 currentTripId——
+ * tripPickerModal 清单里改「其他」旅程名字的铅笔按钮走的是原本
+ * renameTripModal → 二级页面那条路，跟这裡是两个独立入口，不受影响。
+ * 存档送出後不等後端回来才更新画面：直接把新名字乐观地写回标题，Supabase
+ * 那次 update 失败才改回原名并跳错误提示——存档本身就是靠 trip.id 更新
+ * 单一栏位，失败率低，没必要让使用者对着旧名字多等一次网路来回
+ * #dashTripTitle／#dashTripTitleInput 都是静态元素、不会被重新产生，
  * 只需要绑一次
  */
 function initDashTripTitleClick_() {
   const titleEl = document.getElementById('dashTripTitle');
-  if (!titleEl) return;
+  const inputEl = document.getElementById('dashTripTitleInput');
+  if (!titleEl || !inputEl) return;
 
+  const enterEditMode = () => {
+    if (!currentTripId) return; // 没有旅程可改，标题当下显示的是「尚未选择旅程」的占位文字
+    inputEl.value = titleEl.textContent;
+    titleEl.classList.add('is-hidden');
+    inputEl.classList.remove('is-hidden');
+    inputEl.focus();
+    inputEl.select();
+  };
+
+  const exitEditMode = () => {
+    inputEl.classList.add('is-hidden');
+    titleEl.classList.remove('is-hidden');
+  };
+
+  const commitEdit = async () => {
+    const newName = inputEl.value.trim();
+    const oldName = titleEl.textContent;
+    const tripId = currentTripId;
+    exitEditMode();
+
+    if (newName === oldName) return; // 没改，或是 Esc 放弃後恢复原状——两种情况都不用发请求
+
+    if (!newName) {
+      showToast('error', t('toast.pleaseEnterTripName'), '');
+      return; // titleEl 还没被改过，本来就还是 oldName，不用额外还原
+    }
+
+    titleEl.textContent = newName; // 乐观更新
+    try {
+      await saveTripRename_(tripId, newName);
+    } catch (error) {
+      titleEl.textContent = oldName; // 存档失败，改回原本的名字
+      showToast('error', t('toast.actionFailed'), error.message);
+    }
+  };
+
+  titleEl.addEventListener('click', enterEditMode);
   titleEl.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      titleEl.click();
+      enterEditMode();
     }
   });
+
+  inputEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      inputEl.blur(); // 交给 blur 监听器统一处理存档，Enter 不用另外重複一套逻辑
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      inputEl.value = titleEl.textContent; // 放弃变更，blur 後 commitEdit 会看到「没改」而跳过存档
+      inputEl.blur();
+    }
+  });
+
+  inputEl.addEventListener('blur', commitEdit);
 }
 
 /* ===== 10B-7. 建立旅程表单里的金库开关 ===== */
