@@ -3605,6 +3605,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   transition: transform 0.35s var(--ease-pop);
 }
 
+/* 点下去的当下就要有回饋，不是等分页真的切换完成——FAB（.tab-item-fab）
+   跟抽屉版本（.side-drawer .drawer-nav .nav-item）都已经有这个，底部导览
+   这四颗（概览/账目/结算/成员）之前漏掉了，是目前点最频繁、却完全没有
+   点击回饋的地方，用同一个 scale(0.92) 数值补上，跟 FAB 手感一致 */
+.tab-item:active {
+  transform: scale(0.92);
+}
+
 .tab-item.is-active {
   color: var(--accent);
 }

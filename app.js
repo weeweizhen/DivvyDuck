@@ -5264,9 +5264,24 @@ function renderMainNav() {
   }
 }
 
+/**
+ * 轻触觉回馈——Android 的 Chrome/WebView 支援 navigator.vibrate()，iOS Safari
+ * （不管是不是加到主画面变成 standalone PWA）从来没实作过这个 API，呼叫了
+ * 也不会报错，就是安静地什么都不会发生，纯网页在 iOS 没有替代方案能做到
+ * 真的震动。这里还是加上——Android 使用者能真的感受到，iOS 使用者不受影响，
+ * 不是每次呼叫都要各自判断 navigator.vibrate 存不存在
+ * @param {number} [durationMs=10] 震动时长，刻意很短，模拟「轻触」而不是长震动提醒
+ */
+function triggerHaptic_(durationMs) {
+  if (navigator.vibrate) {
+    navigator.vibrate(durationMs || 10);
+  }
+}
+
 function initNavigation() {
   document.querySelectorAll('[data-page]').forEach((button) => {
     button.addEventListener('click', () => {
+      triggerHaptic_();
       goToPage_(button.getAttribute('data-page'));
       closeDrawer();
     });
@@ -5274,6 +5289,7 @@ function initNavigation() {
 
   document.querySelectorAll('[data-navigate]').forEach((button) => {
     button.addEventListener('click', () => {
+      triggerHaptic_();
       goToPage_(button.getAttribute('data-navigate'));
     });
   });
