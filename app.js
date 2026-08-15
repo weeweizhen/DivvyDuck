@@ -558,7 +558,7 @@ const STRINGS = {
     'dashboard.matrixTitle': '谁欠谁',
     'dashboard.matrixHint': '一眼看懂资金流向',
     'dashboard.matrix.owesYouSub': '需要转给你',
-    'dashboard.matrix.youOweSub': '你需要转给对方',
+    'dashboard.matrix.youOweSub': '你需要转给',
     'dashboard.matrix.otherPairSub': '待结算',
     'dashboard.matrix.collapse': '收起',
     'dashboard.matrix.reminderText': '嘎～{name}，鸭鸭掐指一算，你还欠 {amount} 没转喔，别让鸭鸭继续念叨啦 🦆\n点这里看明细、还能自己开个账号盯着：{link}',
@@ -1290,7 +1290,7 @@ const STRINGS = {
     'dashboard.matrixTitle': 'Who Owes Who',
     'dashboard.matrixHint': 'The money flow, at a glance',
     'dashboard.matrix.owesYouSub': 'owes you',
-    'dashboard.matrix.youOweSub': 'you owe them',
+    'dashboard.matrix.youOweSub': 'you owe',
     'dashboard.matrix.otherPairSub': 'pending settlement',
     'dashboard.matrix.collapse': 'Collapse',
     'dashboard.matrix.reminderText': 'Hey {name}, DivvyDuck here \u{1F986} \u2014 you still have {amount} outstanding from our trip, whenever you get a chance!\nCheck the details (and set up your own account) here: {link}',
@@ -8466,12 +8466,15 @@ function renderBalanceMatrix() {
     const counterpartDisplay = getExpensePayerDisplay(counterpartRaw);
     // 姓名跟关係说明合成一行——姓名维持原本字重/颜色，关係说明用较淡的
     // 次要文字样式，两段文字放在同一行内（不再是上下两行），靠左对齐，
-    // 金额仍靠右
+    // 金额仍靠右。「对方欠你」「待结算」这两种说明本身是「[名字] + 谓语」
+    // 的句型，姓名放前面语意才通；「你欠对方」相反，是「你欠 + [名字]」，
+    // 姓名要放在关係说明後面（对方欠你/待结算）
     const relationText = isOwesYou
       ? t('dashboard.matrix.owesYouSub')
       : isYouOwe
         ? t('dashboard.matrix.youOweSub')
         : t('dashboard.matrix.otherPairSub');
+    const nameFirst = !isYouOwe;
 
     // 跟「搭伙金库」有关的转账建议不是真人对真人，不提供複製提醒文字的功能
     // （金库不会看 WhatsApp，複製了也没有意义）
@@ -8484,7 +8487,9 @@ function renderBalanceMatrix() {
     return `
       <div class="balance-row${isRemindable ? ' is-clickable' : ''}"${isRemindable ? ` role="button" tabindex="0" data-remind-name="${escapeHtml(item.from)}" data-remind-amount="${item.amount}"` : ''}>
         <span class="balance-matrix-index">${index + 1}</span>
-        <p class="balance-name">${escapeHtml(counterpartDisplay)} <span class="balance-matrix-relation">${escapeHtml(relationText)}</span></p>
+        <p class="balance-name">${nameFirst
+          ? `${escapeHtml(counterpartDisplay)} <span class="balance-matrix-relation">${escapeHtml(relationText)}</span>`
+          : `<span class="balance-matrix-relation">${escapeHtml(relationText)}</span> ${escapeHtml(counterpartDisplay)}`}</p>
         <p class="balance-amount mono">${formatMoney(item.amount)}</p>
       </div>
     `;
@@ -11761,10 +11766,12 @@ function handleDeleteTripClick() {
       showToast('success', t('toast.tripDeleted'), t('toast.tripDeletedMsg', { name: tripName }));
       localStorage.removeItem(STORAGE_KEY_CURRENT_TRIP);
       await bootstrapApp();
-      // bootstrapApp() 不会主动切页，画面还是留在设置页——但如果使用者删除前
-      // 页面已经往下捲到「危险区域」按钮那边，捲动位置不会跟着重置，会让人
-      // 誤以为删除没生效、忍不住又按一次。这里主动切回设置页顶端给个明确回饋
-      navigateToPage('settings');
+      // bootstrapApp() 不会主动切页，画面预设还是留在设置页——但删除的正是
+      // 目前这趟旅程，继续留在设置页只会看到危险区域那排按钮跟着换成
+      // 下一趟旅程的资料，不是「删除完成」该有的回饋，切回概览页更直觉。
+      // bootstrapApp() 已经处理好没有旅程时的空状态（renderNoTripState()），
+      // 这裡不用另外判断删的是不是最後一趟
+      navigateToPage('dashboard', 'settings');
     }
   );
 }
