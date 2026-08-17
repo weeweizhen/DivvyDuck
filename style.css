@@ -33,7 +33,7 @@
   --text-tertiary: #726c62;
   --text-on-accent: #ffffff;
 
-  /* 颜色：品牌与语意 —— 呼应搭伙金库卡片的青绿色调（跟 --pool-teal 同一色相），
+  /* 颜色：品牌与语意 —— 呼应搭伙金库卡片的青绿色调，
      浅色模式用较深的青绿（teal-700 级），确保按钮白字仍维持 WCAG AA 对比度；
      语意色统一降低到 AA 可读的明度，不用高饱和霓虹色 */
   --accent: #0f766e;
@@ -87,8 +87,14 @@
      曾经把这个高度另外调低过（.hero-breakdown 那三项消费明细隐藏/收紧），
      但实测英文字（比中文长很多）在收紧後的高度里会放不下、跑位，索性
      不再区分「单卡/成对」两种高度，统一用这一个数字，不用猜一个「刚好
-     够用」的矮高度冒风险 */
-  --hero-card-min-height: 300px;
+     够用」的矮高度冒风险。
+     「一句话总览」改版後两张卡收合状态的骨架幾乎一样了（内距 + 吉祥物列 +
+     一句话 + 一条摘要/收合行），照 CSS 数值推算大概 185px（中文一行）到
+     220px（句子长、跳两行）——金库卡片後来又把结算退余/货币列都挪进展开区，
+     收合状态更瘦了。之前设的 270px 比这个推算值还高一截，代表卡片下面会
+     空出一截不必要的留白，降到 220px，抓推算区间的上限（两行句子那种
+     比较吃高度的情况）当缓衝，不是「刚好塞得下」那种没有余裕的抓法 */
+  --hero-card-min-height: 220px;
 
   /* 手机抽屉导览：单一按钮高度，以及为了不被 320px 窄机型的 overflow:hidden
      裁掉而设的宽度上限（见 .side-drawer .drawer-nav .nav-item）。高度原本是
@@ -5265,7 +5271,10 @@ body {
 
   position: relative;
   overflow: hidden;
-  padding: var(--space-8) var(--space-6);
+  /* 跟 .divvy-pool-card 用同一个内距（原本上下是 --space-8/32px，比金库卡片
+     的 --space-6/24px 多 8px）——两张卡在同一个滑动容器裡，内距不一样会让
+     吉祥物的位置对不齐，滑过去一比就看得出来上下有落差 */
+  padding: var(--space-6, 24px);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-5);
   text-align: center;
@@ -5363,7 +5372,7 @@ body {
   position: relative;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-4, 16px);
   margin-bottom: var(--space-4, 16px);
 }
@@ -5397,89 +5406,95 @@ body {
   line-height: 1.4;
   color: var(--hero-fg-faint);
   max-width: 220px;
+  /* 换句（不管是点击还是自动跳换）都靠淡出/淡入这个 opacity transition，
+     不是瞬间跳字——见 app.js 的 cycleMascotCopyText_() */
+  transition: opacity var(--duration-tool, 0.25s) var(--ease-tool, ease);
 }
 
-.hero-main {
-  margin-bottom: var(--space-5);
-}
-
-.hero-net-value {
+/* 一句话总览——取代原本置中的大数字＋小标签，见 renderHeroCard() 裡的
+   buildSentenceWithBoldAmount_() 组句逻辑。靠左对齐（卡片整体不再是
+   text-align:center 的置中排版，见 .hero-card-verdict 覆写） */
+.hero-sentence {
   margin: 0;
-  font-size: 44px;
-  font-weight: 750;
-  letter-spacing: var(--tracking-display, -0.022em);
-  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
   color: var(--hero-fg);
 }
 
-.hero-net-value.is-owed { color: var(--hero-owed); }
-.hero-net-value.is-owing { color: var(--hero-owing); }
-
-.hero-net-label {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--hero-fg-faint);
-}
-
-.hero-breakdown {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-  margin-bottom: var(--space-6);
-}
-
-.hero-breakdown-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  /* flex:1 + min-width:0 让三栏能真的被压缩、换行，而不是撑开整个卡片。
-     没有 min-width:0 的话，flex item 预设的最小宽度是「内容本身」的宽度——
-     中文「已垫付／个人消费／已收款」两三个字最小宽度很窄，怎么挤都没事；
-     换成英文「Personal spend」这种词组，没有 min-width:0 就会被当成
-     「打死不能比这更窄」，三栏加起来比手机屏幕还宽，直接把整张卡片、
-     连带整个页面都撑出视窗，变成需要整页左右滑动才看得到右侧内容 */
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-
-.hero-breakdown-label,
-.hero-breakdown-value {
-  /* 宁可换行变两行，也不要让单一栏位硬撑出去；单字之间原本就能在空格处换行，
-     这里额外加 word-break 保险，避免极端情况下没有空格可断也不会溢出 */
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-.hero-breakdown-label {
-  font-size: 12px;
-  color: var(--hero-fg-faint);
-}
-
-.hero-breakdown-value {
-  font-size: 15px;
-  font-weight: 650;
-  color: var(--hero-fg-muted);
+.hero-sentence b {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.hero-breakdown-divider {
-  width: 0.5px;
-  height: 28px;
-  background: var(--hero-divider);
+/* 金库卡片的明细收合按钮——本身是一颗撑满卡片宽度的按钮，收合状态下的
+   摘要文字放在左边，箭头在右边点了会转向。Hero Card 没有这颗按钮（三项
+   明细本来就只有这三项、展开也不会多出别的资讯），但视觉排版借用同一套
+   「一条线 + 简短列出」的样式，见下面 .hero-breakdown-summary */
+.pool-expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  width: 100%;
+  margin-top: var(--space-4, 16px);
+  padding: var(--space-3, 12px) 0 0;
+  border: none;
+  border-top: 1px solid;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  transition: color var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.pool-expand-toggle span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pool-expand-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.pool-expand-toggle[aria-expanded="true"] .pool-expand-chevron {
+  transform: rotate(180deg);
+}
+
+/* 三项明细跟金库卡片的收合摘要同一种排版——一条分隔线後接一行简短列出，
+   纯展示用的 <p>，不是按钮：本来就只有这三项，不像金库卡片的多币别明细
+   那样藏着「headline 没提到的东西」，没有可以展开的必要 */
+.hero-breakdown-summary {
+  margin: var(--space-4, 16px) 0 0;
+  padding-top: var(--space-3, 12px);
+  border-top: 1px solid var(--hero-divider);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hero-fg-faint);
+  /* 一行放不下（长名字/大金额）就自然换到第二行，不省略截断——三项资讯
+     被裁掉看不到「已收金额」比卡片多一行高更不好 */
 }
 
 /* Hero Card 骨架屏：跟着当下主题走，浅色用极淡的黑影，深色用极淡的白光，
    确保骨架屏在两种卡面质感上都看得清楚，不会因为跟卡片背景太接近而几乎隐形 */
-[data-theme="light"] .hero-content.is-skeleton .hero-net-value,
-[data-theme="light"] .hero-content.is-skeleton .hero-breakdown-value {
+[data-theme="light"] .hero-content.is-skeleton .hero-sentence,
+[data-theme="light"] .hero-content.is-skeleton .hero-breakdown-summary {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 25%, rgba(0, 0, 0, 0.09) 50%, rgba(0, 0, 0, 0.05) 75%);
   background-size: 200% 100%;
 }
 
-[data-theme="dark"] .hero-content.is-skeleton .hero-net-value,
-[data-theme="dark"] .hero-content.is-skeleton .hero-breakdown-value {
+[data-theme="dark"] .hero-content.is-skeleton .hero-sentence,
+[data-theme="dark"] .hero-content.is-skeleton .hero-breakdown-summary {
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.06) 25%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.06) 75%);
   background-size: 200% 100%;
 }
@@ -5641,10 +5656,6 @@ body {
 }
 
 @media (max-width: 640px) {
-  .hero-net-value {
-    font-size: 34px;
-  }
-
   .qa-dock {
     gap: var(--space-2);
   }
@@ -6082,9 +6093,9 @@ body {
   100% { background-position: 220% 0; }
 }
 
-/* Hero Card（个人净额）骨架：数字＋三个明细栏位都先用占位块顶著 */
-.hero-content.is-skeleton .hero-net-value,
-.hero-content.is-skeleton .hero-breakdown-value {
+/* Hero Card（个人净额）骨架：一句话总览＋明细摘要都先用占位块顶著 */
+.hero-content.is-skeleton .hero-sentence,
+.hero-content.is-skeleton .hero-breakdown-summary {
   color: transparent;
   border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-elevated) 50%, var(--bg-subtle) 75%);
@@ -6092,9 +6103,13 @@ body {
   animation: skeletonShimmer 1.4s ease-in-out infinite;
 }
 
+.hero-content.is-skeleton .hero-sentence b {
+  color: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero-content.is-skeleton .hero-net-value,
-  .hero-content.is-skeleton .hero-breakdown-value {
+  .hero-content.is-skeleton .hero-sentence,
+  .hero-content.is-skeleton .hero-breakdown-summary {
     animation: none;
   }
 }
@@ -6236,17 +6251,23 @@ body {
    ============================================================ */
 
 .divvy-pool-card {
-  --pool-slate-900: #0f172a;
-  --pool-slate-800: #1e293b;
-  --pool-slate-700: #334155;
-  --pool-slate-400: #94a3b8;
-  --pool-slate-200: #e2e8f0;
-  --pool-teal: #2dd4bf;
-  --pool-teal-soft: rgba(45, 212, 191, 0.14);
-  --pool-teal-light: #5eead4;
-  --pool-amber: #fbbf24;
-  --pool-amber-soft: rgba(251, 191, 36, 0.16);
-  --pool-amber-light: #fcd34d;
+  /* 变数名称还留着「slate」是沿用旧的命名，值这次从橄榄绿改成深紫——
+     跟 Hero Card 的深青同属珠宝色调，色相隔得够开（蓝绿 vs 紫），
+     改名称要牵动这个档案裡十几处引用，风险大於好处，先不做 */
+  --pool-slate-900: #1e0d21;
+  --pool-slate-800: #3d1a42;
+  --pool-slate-700: #5c2c63;
+  --pool-slate-400: #c2a8c7;
+  --pool-slate-200: #f0e2f2;
+  /* 变数名称还留着「teal」，值换回暖金色——暖白跟卡片本身浅色的文字太
+     接近，看不太出来有特别标色，改回金色才够跳；「紫配金」也是经典搭法 */
+  --pool-teal: #f0b429;
+  --pool-teal-soft: rgba(240, 180, 41, 0.14);
+  --pool-teal-light: #f8cc5c;
+  /* 「余额告急」警示色维持清楚的红色不用再换——红色跟深紫色相隔得够开 */
+  --pool-amber: #ef4444;
+  --pool-amber-soft: rgba(239, 68, 68, 0.16);
+  --pool-amber-light: #f87171;
 
   position: relative;
   overflow: hidden;
@@ -6254,7 +6275,7 @@ body {
   padding: var(--space-6, 24px);
   background: linear-gradient(165deg, var(--pool-slate-900) 0%, var(--pool-slate-800) 100%);
   color: var(--pool-slate-200);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 12px 32px rgba(15, 6, 17, 0.28);
   /* Safari 对「overflow:hidden + border-radius」裁切带 filter（.pool-card-glow
      的 filter: blur()）的子元素有已知问题，圆角旁边会露出方形色块。加这个
      mask 会强制 Safari 走另一条正确处理圆角裁切的合成路径——渐层本身用纯白，
@@ -6268,40 +6289,44 @@ body {
   display: none;
 }
 
-/* 卡片右上角一抹低饱和微光，依状态换色，营造「呼吸感」而非死板色块。
-   沿用原本「实心圆 + filter: blur(40px)」的做法（整体柔光观感是好的，
-   问题不在这里）——Safari 对「overflow:hidden + border-radius」裁切带
-   filter 的子元素有已知的渲染问题，圆角旁边会露出一块方形色块，但那个
-   bug 已经改成在父层（.divvy-pool-card / .hero-card.hero-card-slate）
-   用 -webkit-mask-image 修掉了，不需要为了绕过它牺牲这里原本的柔光效果 */
+/* 柔光不再是缩在右上角的一颗小圆点，改成大一圈、模糊更多的范围，融进
+   整张卡片的背景裡（像背景本身带点颜色渲染，不是贴了一颗发光贴纸）——
+   跟 Hero Card 同一轮调整一起放大，理由也一样：background 那种多层渐层
+   写法没办法靠 CSS transition 平滑变色，所以维持「实心圆 + filter: blur()」
+   这个技巧不换，只是尺寸/模糊半径都加大。颜色固定用暖白 #f2e8db——跟
+   Hero Card 柔光同一个颜色，不用 --pool-teal（金色）是因为两张卡的眩光都
+   统一改走中性色，不再各自跟着卡片本身的色相走，也不再随金库状态换色——
+   「余额告急」「已结清」这些状态色改成只留给货币列的文字/进度条（见
+   .pool-theme-low/.pool-theme-settled 底下其他规则），柔光本身维持统一。
+   Safari 对「overflow:hidden + border-radius」裁切带 filter 的子元素有
+   已知的渲染问题，圆角旁边会露出一块方形色块，但那个 bug 已经改成在父层
+   （.divvy-pool-card / .hero-card.hero-card-verdict）用 -webkit-mask-image
+   修掉了 */
 .pool-card-glow {
   position: absolute;
-  top: -60px;
-  right: -60px;
-  width: 220px;
-  height: 220px;
+  top: -140px;
+  right: -120px;
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.5;
+  filter: blur(80px);
+  opacity: 0.08;
   pointer-events: none;
-  background: var(--pool-teal);
-  transition: background var(--duration-slow, 360ms) var(--ease-out, ease);
+  background: #f2e8db;
+  transition: background var(--duration-slow, 360ms) var(--ease-out, ease),
+              opacity var(--duration-slow, 360ms) var(--ease-out, ease);
 }
 
-.pool-theme-sufficient .pool-card-glow { background: var(--pool-teal); opacity: 0.55; }
-.pool-theme-collecting .pool-card-glow { background: var(--pool-teal); opacity: 0.32; }
-.pool-theme-low .pool-card-glow { background: var(--pool-amber); opacity: 0.5; }
-.pool-theme-settled .pool-card-glow { background: var(--pool-slate-400); opacity: 0.28; }
-
-/* -------------------- 顶部：吉祥物 + 状态徽章 -------------------- */
+/* -------------------- 顶部：吉祥物（状态徽章拿掉了，状态现在讲在
+   一句话总览裡，两处重複没有必要） -------------------- */
 
 .pool-card-top {
   position: relative;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-4, 16px);
-  margin-bottom: var(--space-5, 20px);
+  margin-bottom: var(--space-4, 16px);
 }
 
 .pool-mascot-wrap {
@@ -6346,59 +6371,67 @@ body {
   line-height: 1.4;
   color: var(--pool-slate-400);
   max-width: 220px;
+  /* 换句（不管是点击还是自动跳换）都靠淡出/淡入这个 opacity transition，
+     不是瞬间跳字——见 app.js 的 cycleMascotCopyText_() */
+  transition: opacity var(--duration-tool, 0.25s) var(--ease-tool, ease);
 }
 
-.pool-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: var(--radius-full, 999px);
-  font-size: 12px;
+/* 一句话总览——取代原本的状态徽章＋余额区块，见 renderDivvyPoolCard() 裡
+   pickPoolHeadlineCurrency_() + buildSentenceWithBoldAmount_() 的组句逻辑 */
+.pool-sentence {
+  margin: 0;
+  font-size: 19px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  background: var(--pool-teal-soft);
-  color: var(--pool-teal);
-  white-space: nowrap;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--pool-slate-200);
 }
 
-.pool-theme-low .pool-status-badge { background: var(--pool-amber-soft); color: var(--pool-amber); }
-.pool-theme-settled .pool-status-badge { background: rgba(148, 163, 184, 0.14); color: var(--pool-slate-400); }
+.pool-sentence b {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
-.pool-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 6px currentColor;
+.pool-theme-sufficient .pool-sentence b,
+.pool-theme-collecting .pool-sentence b { color: var(--pool-teal-light); }
+.pool-theme-low .pool-sentence b { color: var(--pool-amber-light); }
+
+.pool-expand-toggle {
+  color: var(--pool-slate-400);
+  border-top-color: rgba(194, 168, 199, 0.22);
+}
+
+.pool-expand-toggle:hover {
+  color: var(--pool-slate-200);
+}
+
+/* 收合状态下明细区（各货币余额＋进度条）完全不佔高度。这裡的 420px 只是
+   「重新渲染時直接还原成展开状态」（initPoolExpandToggle_() 的
+   restoreExpanded 分支，没有动画、纯粹瞬间还原画面）用的保底值——真的点击
+   触发收合/展开时，initPoolExpandToggle_() 会在 classList.toggle 之前
+   用 scrollHeight 量出真实内容高度、设成 inline max-height 盖掉这裡的
+   420px。不能整段动画都只靠这裡这个固定的保险值：實際内容通常比 420px
+   矮很多，max-height 从 0 长到 420 的动画裡，一大段時間其实内容早就
+   完整显示了、画面根本没在动（max-height 还没追上内容高度），等於动画
+   前面卡住不动、後面才突然对齐，感觉像卡顿——这才是收合/展开觉得不顺的
+   真正原因，不是单纯「有没有对齐」的问题 */
+.pool-breakdown {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              opacity var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              margin-top var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.pool-breakdown.is-expanded {
+  max-height: 420px;
+  opacity: 1;
+  margin-top: var(--space-4, 16px);
 }
 
 /* -------------------- 主体：余额 + 进度条 + 成员 -------------------- */
-
-.pool-balance-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: var(--space-4, 16px);
-}
-
-.pool-balance-label {
-  font-size: 12px;
-  color: var(--pool-slate-400);
-}
-
-.pool-balance-value {
-  font-size: 30px;
-  font-weight: 700;
-  font-family: var(--font-mono, monospace);
-  color: #f8fafc;
-  letter-spacing: -0.01em;
-}
-
-.pool-balance-total {
-  font-size: 12px;
-  color: var(--pool-slate-400);
-}
 
 .pool-currency-list-label {
   font-size: 12px;
@@ -6422,7 +6455,29 @@ body {
 
 .pool-currency-row.is-low {
   background: var(--pool-amber-soft);
-  border-color: rgba(251, 191, 36, 0.3);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* 「查看明细」按钮拿掉了，改成点货币列本身进去——沿用这个 App 裡「整排
+   可点」列的手感（跟 .expense-row／.member-card-clickable 那批同一套
+   scale(0.98) 按下回馈），只是这裡本身已经有自己的卡片背景/边框，
+   hover/active 用比底色再深一点的同色调，不是套通用的 var(--bg-subtle) */
+.pool-currency-row.is-clickable {
+  cursor: pointer;
+  transition: background var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              transform var(--duration-tool, 0.25s) var(--ease-tool, ease);
+}
+
+.pool-currency-row.is-clickable:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.pool-currency-row.is-clickable.is-low:hover {
+  background: rgba(239, 68, 68, 0.24);
+}
+
+.pool-currency-row.is-clickable:active {
+  transform: scale(0.98);
 }
 
 .pool-currency-row-top {
@@ -6458,12 +6513,6 @@ body {
   color: var(--pool-slate-400);
 }
 
-.pool-topup-count {
-  margin: 0;
-  font-size: 12px;
-  color: var(--pool-slate-400);
-}
-
 .pool-progress-track {
   position: relative;
   height: 6px;
@@ -6496,20 +6545,9 @@ body {
   border-radius: var(--radius-sm, 10px);
 }
 
-.pool-card-actions .btn-ghost {
-  background: transparent;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  color: var(--pool-slate-200);
-}
-.pool-card-actions .btn-ghost:hover { background: rgba(148, 163, 184, 0.1); }
-
-.pool-card-actions .btn-secondary {
-  background: rgba(148, 163, 184, 0.12);
-  color: var(--pool-slate-200);
-  border: 1px solid transparent;
-}
-.pool-card-actions .btn-secondary:hover { background: rgba(148, 163, 184, 0.2); }
-
+/* 「查看明细」按钮拿掉了（改成点货币列本身，见 .pool-currency-row.is-clickable），
+   这个操作列现在只剩结算退余一颗主要按钮，.btn-ghost／.btn-secondary
+   两组样式没有元素在用，一併清掉 */
 .pool-card-actions .btn-primary {
   background: var(--pool-teal);
   color: var(--pool-slate-900);
@@ -6533,8 +6571,12 @@ body {
 
 @media (max-width: 480px) {
   .divvy-pool-card { padding: var(--space-5, 20px); }
-  .pool-balance-value { font-size: 26px; }
-  .pool-mascot-copy { max-width: 140px; }
+  .pool-sentence { font-size: 16px; }
+  /* .hero-sentence 原本放在别处、用的是 640px 断点，跟这裡的 480px 不一样——
+     两张卡在 480~640px 这段宽度裡一个缩了一个没缩，会看起来大小不一致。
+     搬来跟 .pool-sentence 用同一个断点，两句「一句话总览」缩小的时机才会
+     完全同步 */
+  .hero-sentence { font-size: 16px; }
   .pool-card-actions { justify-content: stretch; }
   .pool-card-actions .btn { flex: 1; }
 }
@@ -6636,16 +6678,25 @@ body {
                    拉到跟最高的兄弟一样高，这里让卡片本体（真正看得见背景/圆角/阴影的那层）
                    跟着撑满父层，两张卡的可见高度才会真的对齐 */
   box-sizing: border-box;
+  /* syncDashCardHeights() 用 JS 直接改 min-height（量完瞬间赋值，没有
+     transition 的话是瞬间跳一下）——金库卡片展开/收合有 0.25s 的动画，
+     JS 那边量到的新高度如果没跟着平滑过渡，卡片高度就会在动画途中
+     「跳一下」，跟 .pool-breakdown 本身平滑的 max-height 动画放在一起
+     看起来会不同步、卡顿。这裡也给同样的过渡时间，两个动画节奏才会对上 */
+  transition: min-height var(--duration-tool, 0.25s) var(--ease-tool, ease);
 }
 
-/* Hero Card 内容本来是从上往下排的区块，卡片被撑高（min-height／align-items:stretch
-   拉到跟金库卡片一样高）之後，内容会全部挤在卡片上半部、下面留一大块空白，很不平衡。
-   改成 flex 直排 + 垂直置中，不管卡片实际有多高，内容永远置中显示，跟金库卡片
-   「内容本来就撑满卡片」的视觉重量感一致 */
+/* 原本这裡是 justify-content: center——卡片被撑高（min-height／
+   align-items:stretch 拉到跟金库卡片一样高）之後，置中能避免内容全部挤在
+   卡片上半部、下面留一大块空白。但「一句话总览」改版後两张卡的吉祥物都在
+   最顶端，一旦 Hero 的内容被垂直置中、金库的没有，两张卡放进同一个滑动
+   容器裡切换，吉祥物的位置就会对不上（金库贴顶、Hero 却往下移了一截）。
+   两害相权，吉祥物没对齐比卡片下面空一截更明显、更容易被注意到，改回
+   flex-start——跟金库卡片一样从顶端开始排 */
 .dash-card-slider .hero-card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .dash-card-slider .hero-card .hero-empty-state,
@@ -6698,85 +6749,76 @@ body {
 }
 
 /* ============================================================
-   Hero Card 融合进搭伙金库的 Cool Slate 视觉（配合可滑动卡片组）
-   放在文件最尾端：跟 [data-theme="light"/"dark"] .hero-card 是同样的选择器权重，
-   靠「写在後面」赢过主题规则，让 Hero Card 不管目前是浅色/深色模式，
-   在滑动卡片组里都固定呈现跟搭伙金库同一套深色基底，滑过去不会有割裂感
+   Hero Card「一句话总览」视觉——第六轮重新设计，固定配色（不跟着
+   App 本身浅色/深色模式切换），放在文件最尾端：跟
+   [data-theme="light"/"dark"] .hero-card 是同样的选择器权重，靠
+   「写在後面」赢过主题规则。深青，跟 .divvy-pool-card 的深紫同属珠宝色调
+   但色相隔得够开——两个都是冷色系，滑动切换时靠色相本身（蓝绿 vs 紫）
+   就分得出是哪张卡，不用像绿色家族那两版要在深浅冷暖上斤斤计较
    ============================================================ */
-.hero-card.hero-card-slate {
-  --hero-fg: #e2e8f0;
-  --hero-fg-muted: #94a3b8;
-  --hero-fg-faint: rgba(148, 163, 184, 0.7);
-  --hero-owed: #2dd4bf;
-  --hero-owing: #fbbf24;
-  --hero-divider: rgba(148, 163, 184, 0.18);
+.hero-card.hero-card-verdict {
+  --hero-fg: #eaf6f5;
+  --hero-fg-muted: #9dc4bd;
+  --hero-fg-faint: rgba(157, 196, 189, 0.68);
+  /* 暖白改成珊瑚橘——跟文字颜色太像的暖白看不太出来是「有特别标色」，
+     珊瑚橘色相跟深青背景拉得够开，一眼就看得出来这个金额被强调了，
+     也比玫红更柔和内敛。「你欠别人」维持暖金黄不变 */
+  --hero-owed: #ff8a65;
+  --hero-owing: #ffd479;
+  --hero-divider: rgba(157, 196, 189, 0.16);
 
-  background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  background: linear-gradient(165deg, #0d3b3a 0%, #051e1d 100%);
+  border: 1px solid rgba(157, 196, 189, 0.14);
+  box-shadow: 0 12px 32px rgba(2, 13, 13, 0.32);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  text-align: left;
   /* 跟 .divvy-pool-card 同一个理由：修正 Safari 对圆角裁切 filter 内容
      （::before 的 filter: blur()）不干净、溢出成方形色块的已知问题 */
   -webkit-mask-image: -webkit-radial-gradient(white, black);
   mask-image: radial-gradient(white, black);
 }
 
-/* 跟搭伙金库卡片同一套「右上角微光」质感，两张卡放在一起才不会一个有材质感、
-   一个死板板的纯色块——微光颜色跟着「预计收回/需付/已结清」三种状态换色。
-   沿用原本「实心圆 + filter: blur(40px)」的做法，理由跟 .pool-card-glow
-   一致：柔光观感本身没问题，Safari 的裁切 bug 已经改到父层
-   （.hero-card.hero-card-slate）用 -webkit-mask-image 修掉了 */
-.hero-card.hero-card-slate::before {
+/* 柔光不再是缩在右上角的一颗小圆点，改成大一圈、模糊更多的范围，
+   融进整张卡片的背景裡（像背景本身带点颜色渲染，不是贴了一颗发光贴纸）。
+   还是用同一招「实心圆 + filter: blur()」，只是尺寸/模糊半径都加大很多。
+   颜色固定用暖白 #f2e8db，不再随「对方欠你／你欠对方」状态换色——状态色
+   改成只留给一句话裡加粗的金额（见下面 .is-owed/.is-owing 那两条规则），
+   柔光维持统一，视觉上比整张卡片的背景色跟着换更内敛。刻意不用
+   --hero-fg-muted（次要文字颜色）这个变数，是因为暖白只要给柔光用，不该
+   跟着改动会连带影响到次要文字的颜色 */
+.hero-card.hero-card-verdict::before {
   content: '';
   position: absolute;
-  top: -60px;
-  right: -60px;
-  width: 220px;
-  height: 220px;
+  top: -140px;
+  right: -120px;
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.32;
+  filter: blur(80px);
+  opacity: 0.08;
   pointer-events: none;
-  background: var(--hero-owed);
-  transition: background var(--duration-slow, 360ms) var(--ease-out, ease);
+  background: #f2e8db;
+  transition: background var(--duration-slow, 360ms) var(--ease-out, ease),
+              opacity var(--duration-slow, 360ms) var(--ease-out, ease);
   z-index: 0;
 }
 
-.hero-card.hero-card-slate:has(.hero-net-value.is-owed)::before {
-  background: var(--hero-owed);
-  opacity: 0.5;
-}
-
-.hero-card.hero-card-slate:has(.hero-net-value.is-owing)::before {
-  background: var(--hero-owing);
-  opacity: 0.45;
-}
-
-.hero-card.hero-card-slate .hero-empty-state,
-.hero-card.hero-card-slate .hero-content {
+.hero-card.hero-card-verdict .hero-empty-state,
+.hero-card.hero-card-verdict .hero-content {
   position: relative;
   z-index: 1;
 }
 
-.hero-card.hero-card-slate:hover {
+.hero-card.hero-card-verdict:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.32);
+  box-shadow: 0 16px 36px rgba(2, 13, 13, 0.36);
 }
 
-.hero-card.hero-card-slate .hero-net-value {
-  font-family: var(--font-mono, monospace);
-}
-
-.hero-card.hero-card-slate .hero-breakdown-divider {
-  background: rgba(148, 163, 184, 0.22);
-}
-
-.hero-card.hero-card-slate .hero-content.is-skeleton .hero-net-value,
-.hero-card.hero-card-slate .hero-content.is-skeleton .hero-breakdown-value {
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.12) 25%, rgba(148, 163, 184, 0.22) 50%, rgba(148, 163, 184, 0.12) 75%);
-  background-size: 200% 100%;
-}
+/* 一句话裡加粗的金额跟着「对方欠你／你欠对方」换色，两不相欠那句没有
+   金额可以标色（hero.verdict.settled 没有 {amount} 占位符），不用另外处理 */
+.hero-card.hero-card-verdict.is-owed .hero-sentence b { color: var(--hero-owed); }
+.hero-card.hero-card-verdict.is-owing .hero-sentence b { color: var(--hero-owing); }
 
 /* 通用的「checkbox + 文字」单行排版 */
 .checkbox-row {

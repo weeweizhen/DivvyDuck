@@ -545,6 +545,12 @@ const STRINGS = {
     'hero.mascot.settled.1': '一毛不欠，一身轻松',
     'hero.mascot.settled.2': '账清了，继续玩吧',
 
+    // Hero Card 一句话总览——取代原本「大数字 + 小标签」的组合，{amount}
+    // 会被包成 <b> 嵌进句子裡（见 buildSentenceWithBoldAmount_()）
+    'hero.verdict.owed': '这趟旅程，大家还欠你 {amount}。',
+    'hero.verdict.owing': '这趟旅程，你还需要付出 {amount}。',
+    'hero.verdict.settled': '这趟旅程的账，已经两不相欠了。',
+
     // 近期账目相对时间显示（今天/昨天/前天）
     'relativeTime.today': '今天',
     'relativeTime.yesterday': '昨天',
@@ -956,6 +962,9 @@ const STRINGS = {
     'pool.detail.title': '搭伙鸭金库明细',
     'pool.detail.emptyTitle': '还没有搭伙鸭金库',
     'pool.detail.emptyDesc': '这趟旅程还没有开始使用搭伙鸭金库。',
+    'pool.detail.expenseTitle': '消费记录',
+    'pool.detail.noExpenses': '这趟旅程的金库还没有支出过。',
+    'pool.detail.expenseCountSummary': '金库共支出 {count} 笔',
     'report.settlementDisclaimer': '以下为最少交易笔数的还款建议，独立于消费总额计算，请勿与消费金额相加。',
     'report.splitRatio': '分账比例',
     'report.settlementFlow': '还款流向',
@@ -1016,16 +1025,18 @@ const STRINGS = {
     /* ---------------------------------------------------------
        搭伙金库 (Divvy Pool)
        --------------------------------------------------------- */
-    'pool.status.collecting': '充值中',
-    'pool.status.sufficient': '资金充足',
-    'pool.status.low': '余额告警',
-    'pool.status.settled': '已结程退余',
-
     'pool.card.balanceLabel': '各货币余额',
     'pool.card.ofTotal': '／ 共 {total}',
     'pool.card.topupCountSummary': '已登记 {count} 笔打款',
-    'pool.card.detailBtn': '查看明细',
     'pool.card.settleBtn': '结程退余',
+
+    // 金库一句话总览——多币别时标题只挑「最需要关注」的那个币别（余额告警优先，
+    // 没有告警就挑余额最低的），{amount} 会被包成 <b>（见 buildSentenceWithBoldAmount_()）
+    'pool.verdict.collecting': '金库还有 {amount}，充值仍在进行中。',
+    'pool.verdict.sufficient': '金库资金充足，还有 {amount}。',
+    'pool.verdict.low': '金库只剩 {amount}，该找大家补一下了。',
+    'pool.expandDetail': '展开全部币别',
+    'pool.collapseDetail': '收起',
 
     'pool.form.enableLabel': '开启搭伙鸭金库',
     'pool.form.enableBtnShort': '开启',
@@ -1108,7 +1119,6 @@ const STRINGS = {
     'pool.expense.deleteSettledRefundTitle': '已按人数打散退款',
 
     'pool.form.currencyHint': '之后还可以用别种货币再充值，例如在机场先收马币、到当地再收人民币。',
-    'pool.settings.topupCountSummary': '已登记 {count} 笔打款',
     'pool.settings.topupBtn': '充值',
     'pool.settings.recordsTitle': '充值记录',
     'pool.settings.editTopupEmptyTitle': '还没有登记纪录',
@@ -1279,6 +1289,10 @@ const STRINGS = {
     'hero.mascot.payable.2': 'Settle up when you get a chance \u2014 it feels good',
     'hero.mascot.settled.1': "Not a cent owed, feeling light",
     'hero.mascot.settled.2': "All clear \u2014 back to the fun part",
+
+    'hero.verdict.owed': "You're still owed {amount} on this trip.",
+    'hero.verdict.owing': "You still owe {amount} on this trip.",
+    'hero.verdict.settled': "This trip's all settled \u2014 nobody owes anybody.",
 
     'relativeTime.today': 'Today',
     'relativeTime.yesterday': 'Yesterday',
@@ -1672,6 +1686,9 @@ const STRINGS = {
     'pool.detail.title': 'Divvy Duck Pool Details',
     'pool.detail.emptyTitle': 'No Divvy Duck Pool yet',
     'pool.detail.emptyDesc': "This trip hasn't started using the Divvy Duck Pool.",
+    'pool.detail.expenseTitle': 'Expenses',
+    'pool.detail.noExpenses': 'No expenses have been paid from the pool yet.',
+    'pool.detail.expenseCountSummary': '{count} expense(s) paid from the pool',
     'report.settlementDisclaimer': 'Optimized settlement plan — calculated independently of expense totals; don\'t add it to them.',
     'report.splitRatio': 'Split Ratios',
     'report.settlementFlow': 'Settlement Flow',
@@ -1730,16 +1747,16 @@ const STRINGS = {
     /* ---------------------------------------------------------
        Divvy Pool
        --------------------------------------------------------- */
-    'pool.status.collecting': 'Collecting',
-    'pool.status.sufficient': 'Well Funded',
-    'pool.status.low': 'Low Balance',
-    'pool.status.settled': 'Settled',
-
     'pool.card.balanceLabel': 'Balance by currency',
     'pool.card.ofTotal': 'of {total}',
     'pool.card.topupCountSummary': '{count} payment(s) logged',
-    'pool.card.detailBtn': 'View Details',
     'pool.card.settleBtn': 'Settle & Refund',
+
+    'pool.verdict.collecting': "There's {amount} in the pool — still collecting.",
+    'pool.verdict.sufficient': "The pool's well funded, with {amount} left.",
+    'pool.verdict.low': "Only {amount} left in the pool — time for a top-up.",
+    'pool.expandDetail': 'Show all currencies',
+    'pool.collapseDetail': 'Hide',
 
     'pool.form.enableLabel': 'Enable Divvy Duck Pool',
     'pool.form.enableBtnShort': 'Enable',
@@ -1822,7 +1839,6 @@ const STRINGS = {
     'pool.expense.deleteSettledRefundTitle': 'Refund split across members',
 
     'pool.form.currencyHint': 'You can log future payments in a different currency too — e.g. Ringgit at the airport, then Yuan once you land.',
-    'pool.settings.topupCountSummary': '{count} payment(s) logged',
     'pool.settings.topupBtn': 'Top up',
     'pool.settings.recordsTitle': 'Top-up Records',
     'pool.settings.editTopupEmptyTitle': 'No top-ups yet',
@@ -1852,6 +1868,26 @@ function t(key, params) {
   }
 
   return text;
+}
+
+/**
+ * 组一句「文字…{amount}…文字」的翻译，把 {amount} 这一段包成 <b> 让金额
+ * 在句子裡跟周围文字有粗细差异（Hero Card／搭伙金库的一句话总览用）。
+ * 不透过 t() 的 params 直接塞 HTML 进去——这个专案裡 t() 回传的字串
+ * 一律当纯文字处理（呼叫端自己 escapeHtml 再组进 innerHTML），这裡照同一个
+ * 原则：分别 escape「文字」跟「金额」两段，<b> 标籤本身是写死在这支函式
+ * 裡的字面 HTML，不是从翻译字串或使用者输入夹带进来的
+ * @param {string} key 翻译 key，内容必须含一个 {amount} 占位符
+ * @param {string} amountText 已经格式化好的金额文字（例如 formatMoney() 的结果）
+ * @return {string} 可以直接指定给 element.innerHTML 的字串
+ */
+function buildSentenceWithBoldAmount_(key, amountText) {
+  const template = t(key);
+  const splitIndex = template.indexOf('{amount}');
+  if (splitIndex === -1) return escapeHtml(template);
+  const before = template.slice(0, splitIndex);
+  const after = template.slice(splitIndex + '{amount}'.length);
+  return `${escapeHtml(before)}<b>${escapeHtml(amountText)}</b>${escapeHtml(after)}`;
 }
 
 /**
@@ -2064,6 +2100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initDashCardSlider();
     initDashCardHeightObserver();
     initDashTripTitleClick_();
+    initMascotCopyAutoCycle_();
   } catch (error) {
     console.error('App 初始化流程发生错误：', error);
   }
@@ -6374,7 +6411,10 @@ function setExpenseSourceControl(source) {
   if (currencySelect) {
     currencySelect.disabled = false;
     if (source === 'deduct' && appState.pool && appState.pool.currencies && appState.pool.currencies.length > 0) {
-      const poolCurrencies = appState.pool.currencies.map((c) => c.currency);
+      // 只能选「这一轮还有余额可以扣」的货币——上一轮用过、这一轮完全没
+      // 再充值的货币（见 getActivePoolCurrencies_() 的说明）根本没钱可扣，
+      // 选了送出去也只会被後端拒绝
+      const poolCurrencies = getActivePoolCurrencies_(appState.pool).map((c) => c.currency);
       currencySelect.innerHTML = poolCurrencies.map((code) => `<option value="${code}">${code}</option>`).join('');
     } else if (source !== 'deduct') {
       renderCurrencySelectOptions('expenseCurrency', appState.tripCurrency.baseCurrency);
@@ -8319,16 +8359,23 @@ function renderHeroCard() {
   const isOwed = item.balance > AMOUNT_TOLERANCE;
   const isOwing = item.balance < -AMOUNT_TOLERANCE;
 
-  const netValueEl = document.getElementById('heroNetValue');
-  if (netValueEl) {
-    netValueEl.textContent = formatMoney(Math.abs(item.balance));
-    netValueEl.classList.toggle('is-owed', isOwed);
-    netValueEl.classList.toggle('is-owing', isOwing);
+  // 一句话总览取代原本的大数字＋小标签——is-owed/is-owing 现在改标在卡片
+  // 本身（heroCard），不是某个数字元素上，CSS 靠这两个 class 决定卡片
+  // 底色/柔光要用哪一种状态色
+  const heroCardEl = document.getElementById('heroCard');
+  if (heroCardEl) {
+    heroCardEl.classList.toggle('is-owed', isOwed);
+    heroCardEl.classList.toggle('is-owing', isOwing);
   }
 
-  const netLabelEl = document.getElementById('heroNetLabel');
-  if (netLabelEl) {
-    netLabelEl.textContent = isOwed ? t('hero.receivableLabel') : (isOwing ? t('hero.payableLabel') : t('hero.settledLabel'));
+  const sentenceEl = document.getElementById('heroSentence');
+  if (sentenceEl) {
+    const netAmountText = formatMoney(Math.abs(item.balance));
+    sentenceEl.innerHTML = isOwed
+      ? buildSentenceWithBoldAmount_('hero.verdict.owed', netAmountText)
+      : isOwing
+        ? buildSentenceWithBoldAmount_('hero.verdict.owing', netAmountText)
+        : escapeHtml(t('hero.verdict.settled'));
   }
 
   // Hero Card 的吉祥物互动跟金库卡片同一套手感：状态决定要显示哪一组文案，
@@ -8357,19 +8404,21 @@ function renderHeroCard() {
   const frontedBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.paid + (item.repaid || 0), poolTopupBreakdown);
   const personalBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.shouldPay, poolConsumptionBreakdown);
 
-  const frontedEl = document.getElementById('heroFrontedValue');
-  if (frontedEl) frontedEl.textContent = formatCurrencyBreakdownText(frontedBreakdown);
+  const frontedText = formatCurrencyBreakdownText(frontedBreakdown);
+  const personalText = formatCurrencyBreakdownText(personalBreakdown);
 
-  const personalEl = document.getElementById('heroPersonalValue');
-  if (personalEl) personalEl.textContent = formatCurrencyBreakdownText(personalBreakdown);
-
-  // Hero Card 固定只显示三格：已付金额／个人消费／已收金额——不再依「你是该收钱还是该
-  // 还钱的人」切换第三格的标签／数值（旧版欠钱时会改显示「已还款」），统一固定呈现
+  // Hero Card 固定只显示三项：已付金额／个人消费／已收金额——不再依「你是该收钱还是该
+  // 还钱的人」切换第三项的标签／数值（旧版欠钱时会改显示「已还款」），统一固定呈现
   // 「已收金额」＝别人还给你的钱 + 金库结程退余的均摊份额
-  const receivedEl = document.getElementById('heroReceivedValue');
-  if (receivedEl) {
-    const receivedBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.received, poolRefundBreakdown);
-    receivedEl.textContent = formatCurrencyBreakdownText(receivedBreakdown);
+  const receivedBreakdown = buildMixedCurrencyBreakdown(baseCurrency, item.received, poolRefundBreakdown);
+  const receivedText = formatCurrencyBreakdownText(receivedBreakdown);
+
+  // 三项明细跟金库卡片的收合摘要同一种格式——一条分隔线後接一行简短列出，
+  // 纯展示用的 <p>，不是按钮，本来就只有这三项、没有藏着额外资讯需要
+  // 另外点开才看得到
+  const breakdownSummaryEl = document.getElementById('heroBreakdownSummary');
+  if (breakdownSummaryEl) {
+    breakdownSummaryEl.textContent = `${t('hero.frontedLabel')} ${frontedText} · ${t('hero.personalLabel')} ${personalText} · ${t('hero.receivedLabel')} ${receivedText}`;
   }
 
   syncDashCardHeights();
@@ -8732,6 +8781,46 @@ const POOL_STATUS = {
 };
 
 /**
+ * pool.currencies 裡「这一轮还有意义」的货币——currencyMap 这份资料是後端
+ * 从金库开通以来所有货币的历史累加，某个货币只在第一轮用过（充值过、也
+ * 结程退余退乾淨了），第二轮完全没有再充值，仍然会留着一笔
+ * balance:0、roundCollected:0 的紀录，不会自动消失。不过滤掉的话，这种
+ * 「纯历史尘埃」的货币会继续出现在卡片/明细上（比如第二轮只充值 MYR、
+ * 完全没碰 SGD，SGD 却还是显示在卡片裡），且因为 roundCollected 是 0，
+ * ratio 算法会 fallback 回用历史总额当分母，把这个早就不相干的货币誤判成
+ * 「余额告急」，拖累整个金库的状态判断。有这一轮新充值（roundCollected>0）
+ * 或现在还有余额（balance>0，正常情况下结算過的货币不会有余额，纯粹保险）
+ * 的才算「这一轮还相关」
+ * @param {Object} pool appState.pool
+ * @return {Array}
+ */
+function getActivePoolCurrencies_(pool) {
+  return (pool.currencies || []).filter((c) => c.roundCollected > AMOUNT_TOLERANCE || c.balance > AMOUNT_TOLERANCE);
+}
+
+/**
+ * 一句话总览标题只能讲一种货币的余额，多币别时挑「最需要关注」的那个：
+ * 有任何一种货币余额告警就优先讲那个；没有告警就挑比例最低（相对最快见底）
+ * 的那个——跟 getPoolStatus() 判断整体状态用的是同一套「最紧张的那个最优先」
+ * 逻辑，只是这裡要选出实际的货币物件，不是回传状态字串
+ * @param {Object} pool appState.pool
+ * @return {Object|null} pool.currencies 裡的其中一个货币物件
+ */
+function pickPoolHeadlineCurrency_(pool) {
+  const currencies = getActivePoolCurrencies_(pool);
+  if (currencies.length <= 1) return currencies[0] || null;
+
+  const lowOne = currencies.find((c) => c.isLowBalance);
+  if (lowOne) return lowOne;
+
+  const ratioOf = (c) => {
+    const total = c.roundCollected > 0 ? c.roundCollected : c.collected;
+    return total > 0 ? c.balance / total : 1;
+  };
+  return currencies.reduce((worst, c) => (ratioOf(c) < ratioOf(worst) ? c : worst));
+}
+
+/**
  * 依 appState.pool 目前状态判断该显示哪一种吉祥物/卡片状态
  * 有多种货币时，用「最紧张」的那个货币（比例最低者）决定整体状态——任何一种货币
  * 余额告急，都值得让使用者注意到，不会被其他货币还很充裕的假象盖过去
@@ -8749,8 +8838,13 @@ function getPoolStatus(pool) {
   // 用「这一轮」（roundCollected，後端 handleGetPool 算好的，上次结程退余之後
   // 重新累计）当分母，不能用 c.collected（金库开通以来的历史总额）——不然
   // 结程退余重新开一轮之後，比例会被旧一轮的历史总额稀释，明明这一轮才刚
-  // 充满却被判定成快见底，徽章显示「余额告警」
-  const ratios = (pool.currencies || [])
+  // 充满却被判定成快见底，徽章显示「余额告警」。getActivePoolCurrencies_()
+  // 先把「上一轮用过、这一轮完全没碰」的货币剔除——不然这种货币 balance/
+  // roundCollected 都是 0，下面 total fallback 回 c.collected（上一轮的
+  // 历史总额）算出来还是大於 0，不会被 total>0 这条过滤挡掉，ratio 变成
+  // 0/上一轮总额=0，会把整个金库誤判成「余额告急」，其实那个货币这一轮
+  // 根本没人在用
+  const ratios = getActivePoolCurrencies_(pool)
     .map((c) => ({ balance: c.balance, total: c.roundCollected > 0 ? c.roundCollected : c.collected }))
     .filter((item) => item.total > 0)
     .map((item) => item.balance / item.total);
@@ -8856,9 +8950,7 @@ function onPoolMascotTap(mascotEl) {
   const status = getPoolStatus(appState.pool);
 
   const copyEl = mascotEl.parentElement && mascotEl.parentElement.querySelector('.pool-mascot-copy');
-  if (copyEl) {
-    copyEl.textContent = getPoolMascotCopy(status, true);
-  }
+  cycleMascotCopyText_(copyEl, getPoolMascotCopy(status, true));
 
   mascotEl.classList.remove('pool-mascot-bounce');
   void mascotEl.offsetWidth;
@@ -8904,13 +8996,60 @@ function onHeroMascotTap(mascotEl) {
   const status = item.balance > AMOUNT_TOLERANCE ? 'receivable' : (item.balance < -AMOUNT_TOLERANCE ? 'payable' : 'settled');
 
   const copyEl = mascotEl.parentElement && mascotEl.parentElement.querySelector('.hero-mascot-copy');
-  if (copyEl) {
-    copyEl.textContent = getHeroMascotCopy(status, true);
-  }
+  cycleMascotCopyText_(copyEl, getHeroMascotCopy(status, true));
 
   mascotEl.classList.remove('pool-mascot-bounce');
   void mascotEl.offsetWidth;
   mascotEl.classList.add('pool-mascot-bounce');
+}
+
+/**
+ * 吉祥物旁边那句文案换字的共用动画：淡出→换字→淡入，点击（onHeroMascotTap／
+ * onPoolMascotTap）跟定时自动跳换（tickMascotAutoCycle_）共用同一份，
+ * 两种触发来源换字的手感才会一致，不会一个瞬间跳字一个淡入淡出
+ * @param {HTMLElement} el
+ * @param {string} nextText
+ */
+function cycleMascotCopyText_(el, nextText) {
+  if (!el || el.textContent === nextText) return;
+  const onFadeOut = (event) => {
+    if (event.target !== el || event.propertyName !== 'opacity') return;
+    el.removeEventListener('transitionend', onFadeOut);
+    el.textContent = nextText;
+    el.style.opacity = '1';
+  };
+  el.addEventListener('transitionend', onFadeOut);
+  el.style.opacity = '0';
+}
+
+/**
+ * 定时让 Hero／金库卡片吉祥物旁边的文案自动跳下一句，不用等使用者点击——
+ * 跟点击共用 getHeroMascotCopy()/getPoolMascotCopy() 的 forceNext 逻辑，
+ * 只是不触发弹跳动画（弹跳留给点击当下的即时回馈，一直自动弹会太抢戏）。
+ * 只有概览页看得见的时候才真的换字，切去别的页面时静静跳过，省得浪费
+ * 效能、也避免使用者切回来时一次看到字跳了好几句
+ */
+function tickMascotAutoCycle_() {
+  const dashPage = document.getElementById('page-dashboard');
+  if (!dashPage || dashPage.classList.contains('is-hidden')) return;
+
+  const viewerName = getViewerName();
+  const balances = (appState.summary && appState.summary.balances) || [];
+  const item = viewerName ? balances.find((b) => b.name === viewerName) : null;
+  const heroCopyEl = document.getElementById('heroMascotCopy');
+  if (item && heroCopyEl) {
+    const heroStatus = item.balance > AMOUNT_TOLERANCE ? 'receivable' : (item.balance < -AMOUNT_TOLERANCE ? 'payable' : 'settled');
+    cycleMascotCopyText_(heroCopyEl, getHeroMascotCopy(heroStatus, true));
+  }
+
+  const poolCopyEl = document.querySelector('#divvyPoolCard .pool-mascot-copy');
+  if (appState.pool && appState.pool.enabled && poolCopyEl) {
+    cycleMascotCopyText_(poolCopyEl, getPoolMascotCopy(getPoolStatus(appState.pool), true));
+  }
+}
+
+function initMascotCopyAutoCycle_() {
+  setInterval(tickMascotAutoCycle_, 3000);
 }
 
 /* ===== 10B-4. Cool Slate 卡片组件 (UI Card) ===== */
@@ -8931,6 +9070,12 @@ function renderDivvyPoolCard() {
 
   const pool = appState.pool;
 
+  // 整张卡片每次都整段重新渲染（跟 Hero Card 不一样，那边是静态骨架只
+  // 换文字），展开/收合按钮会跟着一起被拆掉重建，重渲染前先记住原本是
+  // 展开还是收合，渲染完再套回去，不然每次资料一更新（例如登记一笔打款）
+  // 使用者刚展开的明细就会莫名其妙自己收起来
+  const wasExpanded = document.getElementById('poolExpandToggle')?.getAttribute('aria-expanded') === 'true';
+
   // 金库还没开始用（一次都没登记过打款），或是已经结清/全数退还（isTripSettled，
   // 每种货币余额都归零）时，都不显示卡片——不残留「MYR 0.00 / 共 MYR 1000」这种
   // 已经结清的旧卡片。金库本身还是能继续用，只要在设置页面重新充值，isTripSettled
@@ -8946,9 +9091,30 @@ function renderDivvyPoolCard() {
 
   const status = getPoolStatus(pool);
   const themeClass = POOL_STATUS_THEME_CLASS[status] || POOL_STATUS_THEME_CLASS.collecting;
+  // 卡片上会显示出来的货币——过滤掉「上一轮用过、这一轮完全没碰」的
+  // 历史尘埃（见 getActivePoolCurrencies_() 的说明），下面这些地方都要用
+  // 这份过滤後的清单，不能直接用 pool.currencies
+  const activeCurrencies = getActivePoolCurrencies_(pool);
   // 结程退余按钮只在「目前有余额可以退，而且这个账号有管理权限（启动人或旅程建立者）」
   // 才出现——没有管理权限的参与者，卡片只能查看明细，不该看到一个点了会被後端拒绝的按钮
-  const hasBalanceToSettle = pool.currencies.some((c) => c.balance > AMOUNT_TOLERANCE) && !!pool.canManagePool;
+  const hasBalanceToSettle = activeCurrencies.some((c) => c.balance > AMOUNT_TOLERANCE) && !!pool.canManagePool;
+
+  // 一句话总览——多币别时标题只讲「最需要关注」的那个币别（见
+  // pickPoolHeadlineCurrency_ 的说明），其他币别收进下面可展开的明细区，
+  // 不是每个都塞进同一句话。金库不会走到 getPoolStatus() 回傳「settled」
+  // 的分支（isTripSettled 时整张卡片在函式最前面就 return、不会渲染到这裡），
+  // 所以这裡只需要 collecting/sufficient/low 三种 pool.verdict.* 文案
+  const headlineCurrency = pickPoolHeadlineCurrency_(pool);
+  const sentenceHtml = headlineCurrency
+    ? buildSentenceWithBoldAmount_(`pool.verdict.${status}`, formatMoney(headlineCurrency.balance, headlineCurrency.currency))
+    : '';
+
+  // 收合状态下按钮上的摘要——每种货币各自的余额都列出来（不只是标题那个），
+  // 一句话没提到的资讯才需要靠这行先给个提示
+  const expandSummaryText = activeCurrencies
+    .map((c) => formatMoney(c.balance, c.currency))
+    .concat(t('pool.card.topupCountSummary', { count: pool.topupCount }))
+    .join(' · ');
 
   container.className = `divvy-pool-card ${themeClass}`;
   container.innerHTML = `
@@ -8961,17 +9127,19 @@ function renderDivvyPoolCard() {
         </button>
         <p class="pool-mascot-copy">${escapeHtml(getPoolMascotCopy(status))}</p>
       </div>
-
-      <div class="pool-status-badge">
-        <span class="pool-status-dot"></span>
-        ${escapeHtml(t(`pool.status.${status}`))}
-      </div>
     </div>
 
-    <div class="pool-card-body">
+    <p class="pool-sentence">${sentenceHtml}</p>
+
+    <button type="button" class="pool-expand-toggle" id="poolExpandToggle" aria-expanded="false" aria-controls="poolBreakdown" aria-label="${escapeHtml(t('pool.expandDetail'))}">
+      <span>${escapeHtml(expandSummaryText)}</span>
+      <svg class="pool-expand-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="pool-breakdown" id="poolBreakdown">
       <p class="pool-currency-list-label">${escapeHtml(t('pool.card.balanceLabel'))}</p>
       <div class="pool-currency-list">
-        ${pool.currencies.map((c) => {
+        ${activeCurrencies.map((c) => {
           // 「共 X」跟进度条统一用「这一轮」（上次结程退余之後）累计收了多少
           // （後端 roundCollected，见 Code.gs handleGetPool）——不能用金库开通
           // 以来的历史总额 c.collected，不然结程退余重新开一轮小额充值时，
@@ -8981,7 +9149,7 @@ function renderDivvyPoolCard() {
           const roundTotal = c.roundCollected > 0 ? c.roundCollected : c.collected;
           const ratio = roundTotal > 0 ? Math.max(0, Math.min(1, c.balance / roundTotal)) : 0;
           return `
-          <div class="pool-currency-row${c.isLowBalance ? ' is-low' : ''}">
+          <div class="pool-currency-row is-clickable${c.isLowBalance ? ' is-low' : ''}" role="button" tabindex="0" data-currency="${escapeHtml(c.currency)}">
             <div class="pool-currency-row-top">
               <span class="pool-currency-code">${escapeHtml(c.currency)}</span>
               <span class="pool-currency-balance mono">${escapeHtml(formatMoney(c.balance, c.currency))}</span>
@@ -8993,23 +9161,125 @@ function renderDivvyPoolCard() {
           </div>`;
         }).join('')}
       </div>
-      <p class="pool-topup-count">${escapeHtml(t('pool.card.topupCountSummary', { count: pool.topupCount }))}</p>
-    </div>
-
-    <div class="pool-card-actions">
-      <button type="button" class="btn btn-secondary btn-sm pool-btn-detail" onclick="openPoolDetailModal()">
-        ${escapeHtml(t('pool.card.detailBtn'))}
-      </button>
       ${hasBalanceToSettle ? `
+      <div class="pool-card-actions">
         <button type="button" class="btn btn-primary btn-sm pool-btn-settle" onclick="handlePoolSettle()">
           <span class="btn-label">${escapeHtml(t('pool.card.settleBtn'))}</span>
           <span class="btn-spinner" aria-hidden="true"></span>
-        </button>` : ''}
+        </button>
+      </div>` : ''}
     </div>
   `;
 
+  // 「查看明细」原本是独立一颗按钮，现在改成点货币列本身——收合状态下
+  // 根本看不到这些列（藏在 poolBreakdown 裡），点得到就代表已经展开了，
+  // 不会跟展开/收合按钮抢点击。结算退余也一併挪进展开区，收合状态下
+  // 金库卡片才会跟 Hero Card 一样只剩「吉祥物 + 一句话 + 一条摘要行」，
+  // 两张卡高度才对得起来。点的是哪一种货币，就只看那个货币的明细——
+  // 不是每种货币都点进同一份混着看的清单，见 openPoolDetailModal(currency)
+  document.querySelectorAll('#divvyPoolCard .pool-currency-row').forEach((row) => {
+    row.addEventListener('click', () => openPoolDetailModal(row.dataset.currency));
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openPoolDetailModal(row.dataset.currency);
+      }
+    });
+  });
+
+  initPoolExpandToggle_(wasExpanded);
   renderPoolSettingsPanel();
   updateDashCardSliderState();
+}
+
+/**
+ * 金库卡片「展开明细」按钮——跟 Hero Card 的 initHeroExpandToggle_() 不同，
+ * 这裡整张卡片每次都靠 renderDivvyPoolCard() 重新组一次 HTML，按钮是新元素，
+ * 监听器要跟着每次重渲染重新绑一次（不能只在 App 启动时绑一次），所以这支
+ * 是从 renderDivvyPoolCard() 自己呼叫，不是放进 DOMContentLoaded 那批
+ * init 函式裡
+ * @param {boolean} [restoreExpanded] 重渲染前是不是已经展开，是的话直接
+ *   还原成展开状态，不用使用者自己重新点一次
+ */
+/**
+ * 展开／收合金库明细的实际动作——切换按钮点击跟「滑去 Hero 卡片自动收合」
+ * （见 initDashCardSlider() 的 onScroll）共用同一份逻辑，确保两个入口
+ * 算出来的目标高度、转场方式完全一致，不会各写一份、日後改一边忘了改另一边
+ */
+function setPoolBreakdownExpanded_(willExpand) {
+  const toggleBtn = document.getElementById('poolExpandToggle');
+  const breakdown = document.getElementById('poolBreakdown');
+  const poolEl = document.getElementById('divvyPoolCard');
+  const heroEl = document.getElementById('heroCard');
+  if (!toggleBtn || !breakdown || !poolEl || !heroEl) return;
+
+  const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+  if (isExpanded === willExpand) return; // 已经是目标状态，不用重複触发一次转场
+
+  toggleBtn.setAttribute('aria-expanded', String(willExpand));
+  toggleBtn.setAttribute('aria-label', willExpand ? t('pool.collapseDetail') : t('pool.expandDetail'));
+
+  // 卡片高度要跟明细「同一時间」一起开始动画，不能等明细自己的 0.25s
+  // max-height 动画跑完才去追（之前的版本是这样做的）——那样会变成
+  // 「明细先自己收合完，卡片才慢半拍跟着缩」，肉眼看起来是分开的两段
+  // 动作，不是一个流畅的整体。
+  // breakdown.scrollHeight 量到的是「假设内容完全展开」的真实高度，不受
+  // 目前 max-height 裁切影响，可以在切换 class 之前先反推出目标高度，
+  // 让卡片的 min-height 变化跟明细的 max-height 变化在同一个 tick
+  // 一起触发——两个各自的 CSS transition 就会同时开始、同时结束
+  const contentHeight = breakdown.scrollHeight;
+  const breakdownDelta = contentHeight + 16; // 16 = --space-4，对应 .pool-breakdown.is-expanded 的 margin-top
+  const floor = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hero-card-min-height')) || 0;
+  const poolBaseHeight = poolEl.offsetHeight - (isExpanded ? breakdownDelta : 0);
+  const targetHeight = Math.max(poolBaseHeight + (willExpand ? breakdownDelta : 0), heroEl.offsetHeight, floor);
+
+  // .pool-breakdown.is-expanded 那條 CSS 规则的 max-height:420px 只是给
+  // 「重渲染直接还原展开状态」（没有动画）用的保底值，420px 通常比真实
+  // 内容高很多——如果整个转场都靠这个固定值，max-height 从 0 长到 420
+  // 的过程裡，一大段時間其实内容早就完整显示了、画面根本没在动（要等
+  // max-height 追过内容高度才会看得出差异），会覺得动画卡了一下才突然
+  // 对齐。这裡改用量到的真实内容高度当 inline max-height，盖掉 CSS
+  // 那个 420px，转场全程每一刻都对应真实看得到的变化，不会有「空转」
+  // 的那一段
+  if (willExpand) {
+    breakdown.style.maxHeight = `${contentHeight}px`;
+  }
+  breakdown.classList.toggle('is-expanded', willExpand);
+  if (!willExpand) {
+    // 收合时要把上面设过的 inline max-height 清掉，不然它的优先度比
+    // is-expanded 拿掉後生效的「基础 max-height:0」规则高，卡片会卡在
+    // 展开時那个数字上，完全不会动
+    breakdown.style.maxHeight = '';
+  }
+  heroEl.style.minHeight = `${targetHeight}px`;
+  poolEl.style.minHeight = `${targetHeight}px`;
+}
+
+function initPoolExpandToggle_(restoreExpanded) {
+  const toggleBtn = document.getElementById('poolExpandToggle');
+  const breakdown = document.getElementById('poolBreakdown');
+  if (!toggleBtn || !breakdown) return;
+
+  if (restoreExpanded) {
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.setAttribute('aria-label', t('pool.collapseDetail'));
+    breakdown.classList.add('is-expanded');
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+    setPoolBreakdownExpanded_(!isExpanded);
+  });
+
+  // 上面是「预测」出来的目标高度，理论上准，但保险起见，动画真的跑完
+  // （transitionend）後还是补量一次真实高度校正——syncDashCardHeights()
+  // 走的是「关闭 transition、清空、量、打开 transition、赋值」那条更严谨
+  // 的路径，修掉预测可能有的任何微小誤差
+  breakdown.addEventListener('transitionend', (event) => {
+    if (event.propertyName === 'max-height') {
+      syncDashCardHeights();
+    }
+  });
 }
 
 /**
@@ -9144,7 +9414,16 @@ function openPoolRefundPoster(posterData) {
  * 金库支出／结程退余那些流水已经分别看得到在「账目」页与结程时跳出的退款
  * 明细弹窗，这里只留使用者最常想确认的「我到底充值了几次、每次多少」
  */
-function openPoolDetailModal() {
+/**
+ * 金库「查看明细」——从展开後的某一个货币列点进来，整个页面只针对那一种
+ * 货币（不是把所有货币混着列出来）：点 MYR 那排，看到的就只有 MYR 的
+ * 余额/累计收款跟 MYR 的消费记录，跟 THB 的完全分开，不用自己在一份
+ * 混着列的清单裡找哪几笔是哪个货币的
+ * @param {string} [currency] 要看的货币代号，来自 .pool-currency-row 的
+ *   data-currency——理论上一定会传（唯一的呼叫点是货币列本身），没传时
+ *   保底退回显示金库裡的第一种货币，不会整页空白
+ */
+function openPoolDetailModal(currency) {
   const pool = appState.pool;
   const bodyEl = document.getElementById('poolDetailBody');
   if (!bodyEl) return;
@@ -9155,36 +9434,70 @@ function openPoolDetailModal() {
     return;
   }
 
+  const targetCurrency = currency || (getActivePoolCurrencies_(pool)[0] && getActivePoolCurrencies_(pool)[0].currency);
+  const currencyInfo = pool.currencies.find((c) => c.currency === targetCurrency);
+
+  // 这个货币「上一次结程退余」的时间点——结算过之後又重新充值开新一轮的话，
+  // 这裡只该显示新一轮的消费，不能把已经退乾淨的上一轮消费也混进来看，
+  // 跟 fetchPoolStatus_() 内部算 roundCollected 用的 isInCurrentRound()
+  // 是同一套判断（哪笔在退余之後才发生），只是这裡换套用在消费记录上，
+  // 而不是充值总额。用同一种「後面出现的覆盖前面」写法找最後一笔退余，
+  // 假设 pool.transactions 本来就照时间顺序排（跟 fetchPoolStatus_() 那边
+  // 的假设一致，不是这裡另外发明一套判断标準）
+  let lastRefundAt = null;
+  (pool.transactions || []).forEach((tx) => {
+    if (tx.type === 'refund' && tx.currency === targetCurrency) lastRefundAt = tx.createdAt;
+  });
+
+  // 金库垫付的消费，标记方式沿用 computeMemberPoolShares_() 已经在用的同一套
+  // 判断（SplitType==='pool' 且 Payer 是後端 pool_deduct 写入时固定塞的
+  // 特殊代号），只留下这个货币、这一轮的，由新到旧排序。用 CreatedAt（真实
+  // 建立时间）比对退余时间点，不是用 Date（使用者可以自己改的消费日期）——
+  // 判断「这笔算不算上一轮」看的是记录当下实际发生的时间序，不是使用者
+  // 填的日期，道理跟 isInCurrentRound() 一样
+  const poolExpenses = appState.expenses
+    .filter((expense) => expense.SplitType === 'pool' && expense.Payer === POOL_EXPENSE_PAYER_SENTINEL && expense.Currency === targetCurrency)
+    .filter((expense) => !lastRefundAt || new Date(expense.CreatedAt) >= new Date(lastRefundAt))
+    .sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
   const subtitleEl = document.getElementById('poolDetailSubtitle');
   if (subtitleEl) {
-    subtitleEl.textContent = t('pool.settings.topupCountSummary', { count: pool.topupCount });
+    subtitleEl.textContent = `${targetCurrency} · ${t('pool.detail.expenseCountSummary', { count: poolExpenses.length })}`;
   }
 
-  const currencySummaryHtml = `
-    <div class="pool-settings-currency-list">
-      ${pool.currencies.map((c) => `
-        <div class="pool-settings-currency-row">
-          <span>${escapeHtml(c.currency)}</span>
-          <span class="mono">${escapeHtml(formatMoney(c.balance, c.currency))} / ${escapeHtml(formatMoney(c.collected, c.currency))}</span>
-        </div>`).join('')}
-    </div>
-  `;
+  // 「共收款」这裡要用 roundCollected（这一轮收了多少），不是 collected
+  // （从金库开通以来的历史总额）——不然结程退余重新开一轮之後，这个数字
+  // 会被已经退乾淨的上一轮总额虚灌，明明这一轮才刚开始却显示一个偏高的
+  // 数字，跟 renderDivvyPoolCard() 进度条那裡用的是同一个 fallback 写法
+  const roundCollected = currencyInfo ? (currencyInfo.roundCollected > 0 ? currencyInfo.roundCollected : currencyInfo.collected) : 0;
 
-  const topupHtml = pool.topups.length > 0 ? `
+  const currencySummaryHtml = currencyInfo ? `
+    <div class="pool-settings-currency-list">
+      <div class="pool-settings-currency-row">
+        <span>${escapeHtml(currencyInfo.currency)}</span>
+        <span class="mono">${escapeHtml(formatMoney(currencyInfo.balance, currencyInfo.currency))} / ${escapeHtml(formatMoney(roundCollected, currencyInfo.currency))}</span>
+      </div>
+    </div>
+  ` : '';
+
+  // 「查看明细」原本显示的是充值记录（谁登记了多少），改成消费记录（钱花去哪了）——
+  // 余额告警时想知道的通常是後者，充值记录多半自己心裡有数，PDF 报告那份
+  // pool.report.* 系列的充值明细维持不动，跟这裡是两个独立功能
+  const expenseHtml = poolExpenses.length > 0 ? `
     <div class="pool-detail-section">
-      <p class="pool-detail-section-title">${escapeHtml(t('pool.report.topupTitle'))}</p>
-      ${pool.topups.map((item) => `
+      <p class="pool-detail-section-title">${escapeHtml(t('pool.detail.expenseTitle'))}</p>
+      ${poolExpenses.map((expense) => `
         <div class="pool-detail-row">
           <div class="pool-detail-row-info">
-            <p class="pool-detail-row-title">${escapeHtml(formatMoney(item.perPersonAmount, item.currency))} × ${item.memberCount}</p>
-            <p class="pool-detail-row-sub">${escapeHtml(formatDateDisplay(item.createdAt))}</p>
+            <p class="pool-detail-row-title">${escapeHtml(expense.Description || translateCategory(expense.Category))}</p>
+            <p class="pool-detail-row-sub">${escapeHtml(formatDateDisplay(expense.Date))}</p>
           </div>
-          <p class="pool-detail-row-amount mono">${escapeHtml(formatMoney(item.totalAmount, item.currency))}</p>
+          <p class="pool-detail-row-amount mono">${escapeHtml(formatMoney(expense.Amount, expense.Currency))}</p>
         </div>`).join('')}
     </div>
-  ` : `<div class="pool-detail-section"><p class="pool-detail-section-title">${escapeHtml(t('pool.report.topupTitle'))}</p><p class="report-summary-row">${escapeHtml(t('pool.report.noTopups'))}</p></div>`;
+  ` : `<div class="pool-detail-section"><p class="pool-detail-section-title">${escapeHtml(t('pool.detail.expenseTitle'))}</p><p class="report-summary-row">${escapeHtml(t('pool.detail.noExpenses'))}</p></div>`;
 
-  bodyEl.innerHTML = currencySummaryHtml + topupHtml;
+  bodyEl.innerHTML = currencySummaryHtml + expenseHtml;
   showSecondaryPage_('pool-detail');
 }
 
@@ -9217,7 +9530,7 @@ function handlePoolEnableButtonClick() {
  * @return {string}
  */
 function formatPoolBalanceSummary_(pool) {
-  return (pool.currencies || [])
+  return getActivePoolCurrencies_(pool)
     .map((c) => {
       const roundCollected = c.roundCollected > 0 ? c.roundCollected : c.collected;
       return `${formatMoney(c.balance, c.currency)} / ${formatMoney(roundCollected, c.currency)}`;
@@ -9313,10 +9626,10 @@ function renderPoolSettingsPanel() {
         </div>
       </div>
       <div class="pool-settings-currency-list">
-        ${pool.currencies.map((c) => `
+        ${getActivePoolCurrencies_(pool).map((c) => `
           <div class="pool-settings-currency-row">
             <span>${escapeHtml(c.currency)}</span>
-            <span class="mono">${escapeHtml(formatMoney(c.balance, c.currency))} / ${escapeHtml(formatMoney(c.collected, c.currency))}</span>
+            <span class="mono">${escapeHtml(formatMoney(c.balance, c.currency))} / ${escapeHtml(formatMoney(c.roundCollected > 0 ? c.roundCollected : c.collected, c.currency))}</span>
           </div>`).join('')}
       </div>
     `;
@@ -9552,9 +9865,23 @@ function syncDashCardHeights() {
 
   // 实际去量測、赋值的动作抽成一个小函式，等一下要连续呼叫两次（见下方说明）
   const measureAndApply = () => {
+    // min-height 现在也有 transition（配合金库卡片展开/收合的动画，见
+    // style.css），但这裡「清空 min-height 後量真实内容高度」这一步需要
+    // 瞬间生效——如果 transition 还开着，清空的当下量到的其实是转场途中、
+    // 还没真正归零的旧数值，不是真实内容高度，等於量了也是错的（这个
+    // bug 曾经让「展开後收回」变成卡片高度完全不会跟着收回，因为每次
+    // 量到的都还是接近旧高度的数字，几乎等於没量）。量測前先关掉
+    // transition、量完再打开，中间各插一次 offsetHeight 强制重排，
+    // 确保「关闭/重新打开 transition」这两个动作本身都真的生效过、
+    // 不会被浏览器优化成跟前後的赋值合併成同一帧
+    heroEl.style.transition = 'none';
+    poolEl.style.transition = 'none';
     heroEl.style.minHeight = '';
     poolEl.style.minHeight = '';
     const targetHeight = Math.max(poolEl.offsetHeight, heroEl.offsetHeight);
+    heroEl.style.transition = '';
+    poolEl.style.transition = '';
+    void heroEl.offsetHeight;
     heroEl.style.minHeight = `${targetHeight}px`;
     poolEl.style.minHeight = `${targetHeight}px`;
   };
@@ -9644,8 +9971,27 @@ function initDashCardSlider() {
     track.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
   });
 
-  const onScroll = debounce(() => updateDashCardDots_(), 80);
-  track.addEventListener('scroll', onScroll);
+  // 分页点亮起状态不急，防抖动降频更新就好；但金库明细的收合不能等——
+  // 原本两个都放同一个 80ms 防抖动函式裡，防抖动会等「一连串 scroll
+  // 事件完全停下来」才执行，滑动贴齐的减速动画本身跑完往往就快一秒，
+  // 变成使用者早就看到 Hero 卡片了，金库那边隔了一拍才慢半拍收回去。
+  // 这裡改成收合检查跟着每一帧用 requestAnimationFrame 检查滑动位置，
+  // 滑动过程中一旦超过一半（跟原本 Math.round 判断卡在哪张的逻辑一致，
+  // 只是不用等停下来）就立刻收，收合动画会跟卡片滑走的动画同时进行
+  const onDotsScroll = debounce(() => updateDashCardDots_(), 80);
+  let collapseCheckRaf_ = null;
+  track.addEventListener('scroll', () => {
+    onDotsScroll();
+    if (collapseCheckRaf_ !== null) return;
+    collapseCheckRaf_ = requestAnimationFrame(() => {
+      collapseCheckRaf_ = null;
+      const slideWidth = track.clientWidth || 1;
+      const activeIndex = Math.round(track.scrollLeft / slideWidth);
+      if (activeIndex !== 0) {
+        setPoolBreakdownExpanded_(false);
+      }
+    });
+  });
   window.addEventListener('resize', debounce(() => {
     updateDashCardDots_();
     syncDashCardHeights();

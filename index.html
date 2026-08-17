@@ -35,7 +35,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260815k">
+<link rel="stylesheet" href="style.css?v=20260818j">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -481,7 +481,7 @@
 
           <div class="dash-card-slide dash-card-slide-hero">
             <!-- Hero Card：个人净额总览 -->
-            <div class="hero-card glass-card hero-card-slate" id="heroCard">
+            <div class="hero-card glass-card hero-card-verdict" id="heroCard">
               <div class="hero-empty-state" id="heroEmptyState">
                 <!-- 内容由 app.js 的 renderEmptyBlock('heroEmptyState', ...) 动态产生
                      （任务 9-2：跟其他空状态收敛成同一个函式，不再手写死这一份） -->
@@ -513,26 +513,13 @@
                     <p class="hero-mascot-copy" id="heroMascotCopy"></p>
                   </div>
                 </div>
-                <div class="hero-main">
-                  <p class="hero-net-value mono" id="heroNetValue">RM 0.00</p>
-                  <p class="hero-net-label" id="heroNetLabel"></p>
-                </div>
-                <div class="hero-breakdown">
-                  <div class="hero-breakdown-item">
-                    <span class="hero-breakdown-label" data-i18n="hero.frontedLabel">已付金额</span>
-                    <span class="hero-breakdown-value mono" id="heroFrontedValue">RM 0.00</span>
-                  </div>
-                  <div class="hero-breakdown-divider" aria-hidden="true"></div>
-                  <div class="hero-breakdown-item">
-                    <span class="hero-breakdown-label" data-i18n="hero.personalLabel">个人消费</span>
-                    <span class="hero-breakdown-value mono" id="heroPersonalValue">RM 0.00</span>
-                  </div>
-                  <div class="hero-breakdown-divider" aria-hidden="true"></div>
-                  <div class="hero-breakdown-item">
-                    <span class="hero-breakdown-label" data-i18n="hero.receivedLabel">已收金额</span>
-                    <span class="hero-breakdown-value mono" id="heroReceivedValue">RM 0.00</span>
-                  </div>
-                </div>
+                <!-- 一句话总览取代原本「大数字＋小标签」的组合，见 renderHeroCard()
+                     的 buildSentenceWithBoldAmount_() 组句逻辑。下面三项明细改成
+                     跟金库卡片一样「一条线 + 简短列出」的格式，纯展示、不是按钮——
+                     本来就只有这三项、点开也不会多出别的资讯，不需要另外做成
+                     可以展开/收合的互动 -->
+                <p class="hero-sentence" id="heroSentence">这趟旅程，大家还欠你 RM 0.00。</p>
+                <p class="hero-breakdown-summary" id="heroBreakdownSummary">已付金额 RM 0.00 · 个人消费 RM 0.00 · 已收金额 RM 0.00</p>
               </div>
             </div>
           </div>
@@ -1766,7 +1753,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260815j"></script>
+<script src="app.js?v=20260818a"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker
