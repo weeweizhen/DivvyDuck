@@ -16,12 +16,14 @@
 <script>
   // 在第一次绘制之前就同步决定好深色/浅色模式，直接设定在 <html> 上——
   // 放在 <link rel="stylesheet"> 前面、body 还没有任何内容时执行，
-  // 避免先闪一下写死的浅色、等 DOMContentLoaded 里的 initTheme() 跑完才又跳成深色的画面闪烁
+  // 避免先闪一下写死的浅色、等 DOMContentLoaded 里的 initTheme() 跑完才又跳成深色的画面闪烁。
+  // 没有存过偏好设定（第一次造访/清过 localStorage）一律预设浅色，不再跟随
+  // 系统的 prefers-color-scheme——使用者自己在侧栏/抽屉切换过深色模式的话，
+  // 存起来的偏好还是会被尊重，不受这里影响
   (function () {
     try {
       var saved = localStorage.getItem('splitapp-theme');
-      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+      document.documentElement.setAttribute('data-theme', saved || 'light');
     } catch (error) {
       document.documentElement.setAttribute('data-theme', 'light');
     }
@@ -1764,7 +1766,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260815i"></script>
+<script src="app.js?v=20260815j"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

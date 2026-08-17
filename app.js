@@ -11367,9 +11367,11 @@ function formatCategoryType(category) {
    ------------------------------------------------------------ */
 
 function initTheme() {
+  // 没有存过偏好设定就一律预设浅色，不跟随系统的 prefers-color-scheme——
+  // 跟 index.html 里第一次绘制前那段同步预设的逻辑要保持一致，不然会先
+  // 用这裡的规则闪一次、又被那边的规则盖过去
   const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+  applyTheme(savedTheme || 'light');
 
   // 桌面侧栏、手机抽屉都有各自的深色模式切换按钮，靠共用的 [data-theme-toggle-btn]
   // 属性一次全部绑定，之后不管加了几个入口都不用改这支函式
