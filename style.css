@@ -6177,8 +6177,15 @@ body {
   animation: skeletonShimmer 1.4s ease-in-out infinite;
 }
 
+/* !important 是必要的，不是随手加的：加粗金额的颜色平常是靠
+   .hero-card-verdict.is-owed/.is-owing 这两个选择器权重更高的规则上色
+   （绿色/橙色），骨架屏这条不加 !important 的话赢不过它们——即使 JS 那边
+   已经在进骨架屏时把这两个 class 清掉，仍然可能出现「资料回来得比一次
+   重绘还快」之类的情况让旧 class 来不及真的从画面上消失过一次，
+   数字看起来像没被盖住。!important 让骨架屏这个状态不管有没有清乾净都
+   保证赢，才是真正靠得住的做法 */
 .hero-content.is-skeleton .hero-sentence b {
-  color: transparent;
+  color: transparent !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
