@@ -3332,33 +3332,33 @@ function renderTripPillSwitcher() {
   nameEl.textContent = currentTripId ? getTripName(currentTripId) : t('trip.noTripOption');
 }
 
-const TRIP_AVATAR_COLOR_COUNT_ = 6;
+const TRIP_COLOR_COUNT_ = 6;
 
 /**
- * 依旅程 id 分配固定色盘（1~6，见 style.css 的 --trip-avatar-N-bg/-fg）
- * 裡的其中一组颜色——同一个 id 每次算出来都是同一个数字，同一趟旅程头像
- * 颜色才不会每次重新渲染就换一次。纯粹是个简单的字串 hash，不追求密码学
+ * 依旅程 id 分配固定色盘（1~6，见 style.css 的 --trip-avatar-N-fg/-light）
+ * 裡的其中一组颜色——同一个 id 每次算出来都是同一个数字，同一趟旅程颜色
+ * 才不会每次重新渲染就换一次。纯粹是个简单的字串 hash，不追求密码学
  * 强度，只要「同样输入永远同样输出、结果分布看起来够随机」就够用
  * @param {string} tripId
  * @return {string} 'color-1' ~ 'color-6' 其中一个 class 名称
  */
-function getTripAvatarColorClass_(tripId) {
+function getTripColorClass_(tripId) {
   let hash = 0;
   const str = tripId || '';
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 31 + str.charCodeAt(i)) | 0;
   }
-  const index = (Math.abs(hash) % TRIP_AVATAR_COLOR_COUNT_) + 1;
+  const index = (Math.abs(hash) % TRIP_COLOR_COUNT_) + 1;
   return `color-${index}`;
 }
 
 /**
  * 渲染「选择旅程」二级页面里的旅程小方格——每趟旅程一格，点整格直接切换。
- * 前面是名字首字母头像，依旅程 id 固定分配一个颜色（见上面
- * getTripAvatarColorClass_()），不是每趟旅程各自能自订的头像——这个 App
- * 没有存放头像图片的栏位，也没有颜色/图示挑选器，「自订头像」得先加
- * 资料栏位＋一个挑选介面，工程量比这个大得多。副标题显示最後更新的日期
- * （月/日，沿用 formatDateDisplay()）。
+ * 没有头像图示，靠名字本身的颜色区分：依旅程 id 固定分配一个颜色（见上面
+ * getTripColorClass_()）。副标题显示最後更新的日期（月/日，沿用
+ * formatDateDisplay()），颜色再依「多久前更新」分两层——1 个月内有更新
+ * 用同一支旅程色的浅色版本（呼应名字），超过 1 个月则是中性灰，一眼看得
+ * 出哪几趟还在动。
  * 没有改名按钮了：改名字现在只能先切到那趟旅程，再去 Dashboard 点标题
  * 原地改（initDashTripTitleClick_()），不再是「随便哪一格都能直接改」。
  * 「新增旅程」收在页面底部，跟方格放在一起，逻辑上都是「管理我的旅程」这件事
@@ -3382,18 +3382,21 @@ function renderTripPickerList() {
     .filter((trip) => trip.id !== currentTripId)
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   const orderedTrips = currentTrip ? [currentTrip, ...otherTrips] : otherTrips;
+  const now = Date.now();
 
   listEl.innerHTML = orderedTrips.map((trip) => {
     const isActive = trip.id === currentTripId;
     const updatedText = t('tripPicker.updatedAt', { time: formatDateDisplay(trip.updatedAt) });
-    const colorClass = getTripAvatarColorClass_(trip.id);
+    const colorClass = getTripColorClass_(trip.id);
+    // 「1 个月内」用 30 天概算，不特地算实际日曆月份（跨月天数不一样，
+    // 这裡只是给副标题选深浅两层颜色用，不需要精确到那个程度）
+    const daysSinceUpdate = (now - new Date(trip.updatedAt).getTime()) / 86400000;
+    const isRecent = daysSinceUpdate <= 30;
+    const subClass = isRecent ? `trip-picker-tile-sub is-recent ${colorClass}` : 'trip-picker-tile-sub';
     return `
       <button type="button" class="trip-picker-tile ${isActive ? 'is-active' : ''}" data-select-trip-id="${escapeHtml(trip.id)}">
-        <div class="trip-picker-tile-icon ${colorClass}" aria-hidden="true">${escapeHtml(getInitials(trip.name))}</div>
-        <div class="trip-picker-tile-text">
-          <span class="trip-picker-tile-name">${escapeHtml(trip.name)}</span>
-          <span class="trip-picker-tile-sub">${escapeHtml(updatedText)}</span>
-        </div>
+        <span class="trip-picker-tile-name ${colorClass}">${escapeHtml(trip.name)}</span>
+        <span class="${subClass}">${escapeHtml(updatedText)}</span>
       </button>
     `;
   }).join('');

@@ -50,22 +50,25 @@
   --info: #0369a1;
   --info-soft: rgba(3, 105, 161, 0.12);
 
-  /* 旅程头像圆圈的固定色盘——纯装饰用，不带语意（不是 success/danger 那种
-     状态色），依旅程 id 算 hash 分配其中一个，同一趟旅程永远拿到同一个颜色。
-     跟 --accent/--accent-soft 同一种「深色文字配淡色底」搭法，只是换了
-     6 种不同色相，让选择旅程页面每一格看起来不会都长一样 */
-  --trip-avatar-1-bg: rgba(15, 118, 110, 0.10);
+  /* 选择旅程页面裡旅程名字的固定色盘——纯装饰用，不带语意（不是 success/
+     danger 那种状态色），依旅程 id 算 hash 分配其中一组，同一趟旅程永远
+     拿到同一个颜色，让选择旅程页面每一格看起来不会都长一样。-fg 是名字
+     本身的颜色；-light 是同一色相调淡後的版本（原色的 rgba 透明度版，不是
+     另外挑一个色号——同一支色相跟着背景深浅自然变浅，不用为每个颜色分开
+     调），给「1 个月内有更新」的副标题用，跟灰色的「超过 1 个月」拉出深浅
+     两层，一眼看得出哪几趟旅程还在动 */
   --trip-avatar-1-fg: #0f766e;
-  --trip-avatar-2-bg: rgba(29, 78, 216, 0.10);
+  --trip-avatar-1-light: rgba(15, 118, 110, 0.75);
   --trip-avatar-2-fg: #1d4ed8;
-  --trip-avatar-3-bg: rgba(126, 34, 206, 0.10);
+  --trip-avatar-2-light: rgba(29, 78, 216, 0.75);
   --trip-avatar-3-fg: #7e22ce;
-  --trip-avatar-4-bg: rgba(190, 18, 60, 0.10);
+  --trip-avatar-3-light: rgba(126, 34, 206, 0.75);
   --trip-avatar-4-fg: #be123c;
-  --trip-avatar-5-bg: rgba(194, 65, 12, 0.10);
+  --trip-avatar-4-light: rgba(190, 18, 60, 0.75);
   --trip-avatar-5-fg: #c2410c;
-  --trip-avatar-6-bg: rgba(21, 128, 61, 0.10);
+  --trip-avatar-5-light: rgba(194, 65, 12, 0.75);
   --trip-avatar-6-fg: #15803d;
+  --trip-avatar-6-light: rgba(21, 128, 61, 0.75);
 
   /* 阴影（柔和弥散，Apple 式极淡投影） */
   --shadow-xs: 0 1px 2px rgba(20, 20, 30, 0.03);
@@ -199,18 +202,18 @@
   --info: #38bdf8;
   --info-soft: rgba(56, 189, 248, 0.18);
 
-  --trip-avatar-1-bg: rgba(45, 212, 191, 0.18);
   --trip-avatar-1-fg: #2dd4bf;
-  --trip-avatar-2-bg: rgba(96, 165, 250, 0.18);
+  --trip-avatar-1-light: rgba(45, 212, 191, 0.75);
   --trip-avatar-2-fg: #60a5fa;
-  --trip-avatar-3-bg: rgba(192, 132, 252, 0.18);
+  --trip-avatar-2-light: rgba(96, 165, 250, 0.75);
   --trip-avatar-3-fg: #c084fc;
-  --trip-avatar-4-bg: rgba(251, 113, 133, 0.18);
+  --trip-avatar-3-light: rgba(192, 132, 252, 0.75);
   --trip-avatar-4-fg: #fb7185;
-  --trip-avatar-5-bg: rgba(251, 146, 60, 0.18);
+  --trip-avatar-4-light: rgba(251, 113, 133, 0.75);
   --trip-avatar-5-fg: #fb923c;
-  --trip-avatar-6-bg: rgba(74, 222, 128, 0.18);
+  --trip-avatar-5-light: rgba(251, 146, 60, 0.75);
   --trip-avatar-6-fg: #4ade80;
+  --trip-avatar-6-light: rgba(74, 222, 128, 0.75);
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.32);
@@ -2855,41 +2858,20 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 
 /* 选择旅程二级页面裡的旅程清单：改成小方格排成 grid，比原本 Modal 裡的
    窄清单好看，空间也比较够。铅笔改名按钮拿掉了，方格本身整块可以点，
-   目前这趟用强调色边框/底色标示出来。方格裡放旅程名字首字母头像
-   + 名字 + 最後更新日期，左对齐排成一行——一开始纯文字置中的版本内容
-   太单薄，跟 App 其他到处都有头像撑场面的清单比起来显得空；後来试过固定
-   同一个图示当头像，又变成每格都长一样很无聊，改成依旅程 id 分配
-   --trip-avatar-1~6 其中一组颜色（见 app.js 的 getTripAvatarColorClass_()），
-   同一趟旅程颜色永远固定，但整页看起来不会千篇一律 */
+   目前这趟用强调色边框/底色标示出来。方格裡只有名字+最後更新日期两行字，
+   没有头像图示——试过头像圆圈（先文字首字母、後固定图示），使用者
+   回馈都不理想，最後改成直接把名字本身染色区分：依旅程 id 分配
+   --trip-avatar-1~6 其中一组颜色（见 app.js 的 getTripColorClass_()），
+   同一趟旅程颜色永远固定；副标题依「多久前更新」再分两层深浅——1 个月内
+   有更新用同一支颜色的浅色版本，呼应名字；超过 1 个月没更新则退回中性灰，
+   一眼就看得出哪几趟还在动、哪几趟已经沉寂 */
 .trip-picker-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-3);
 }
 
-.trip-picker-tile-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.trip-picker-tile-icon.color-1 { background: var(--trip-avatar-1-bg); color: var(--trip-avatar-1-fg); }
-.trip-picker-tile-icon.color-2 { background: var(--trip-avatar-2-bg); color: var(--trip-avatar-2-fg); }
-.trip-picker-tile-icon.color-3 { background: var(--trip-avatar-3-bg); color: var(--trip-avatar-3-fg); }
-.trip-picker-tile-icon.color-4 { background: var(--trip-avatar-4-bg); color: var(--trip-avatar-4-fg); }
-.trip-picker-tile-icon.color-5 { background: var(--trip-avatar-5-bg); color: var(--trip-avatar-5-fg); }
-.trip-picker-tile-icon.color-6 { background: var(--trip-avatar-6-bg); color: var(--trip-avatar-6-fg); }
-
 .trip-picker-tile {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--border);
@@ -2915,20 +2897,21 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   background: var(--accent-soft);
 }
 
-.trip-picker-tile-text {
-  min-width: 0;
-  flex: 1;
-}
-
 .trip-picker-tile-name {
   display: block;
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.trip-picker-tile-name.color-1 { color: var(--trip-avatar-1-fg); }
+.trip-picker-tile-name.color-2 { color: var(--trip-avatar-2-fg); }
+.trip-picker-tile-name.color-3 { color: var(--trip-avatar-3-fg); }
+.trip-picker-tile-name.color-4 { color: var(--trip-avatar-4-fg); }
+.trip-picker-tile-name.color-5 { color: var(--trip-avatar-5-fg); }
+.trip-picker-tile-name.color-6 { color: var(--trip-avatar-6-fg); }
 
 .trip-picker-tile-sub {
   display: block;
@@ -2940,9 +2923,12 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   white-space: nowrap;
 }
 
-.trip-picker-tile.is-active .trip-picker-tile-name {
-  color: var(--accent);
-}
+.trip-picker-tile-sub.is-recent.color-1 { color: var(--trip-avatar-1-light); }
+.trip-picker-tile-sub.is-recent.color-2 { color: var(--trip-avatar-2-light); }
+.trip-picker-tile-sub.is-recent.color-3 { color: var(--trip-avatar-3-light); }
+.trip-picker-tile-sub.is-recent.color-4 { color: var(--trip-avatar-4-light); }
+.trip-picker-tile-sub.is-recent.color-5 { color: var(--trip-avatar-5-light); }
+.trip-picker-tile-sub.is-recent.color-6 { color: var(--trip-avatar-6-light); }
 
 .settings-actions {
   display: flex;
