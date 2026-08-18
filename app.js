@@ -13641,7 +13641,7 @@ function cleanNumericString(value) {
  * 之后要换报表的品牌视觉，只需要改这一处
  */
 const REPORT_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 450 130">
-  <image x="15" y="15" width="100" height="100" href="assets/report-logo-icon.png" xlink:href="assets/report-logo-icon.png"/>
+  <image x="15" y="15" width="100" height="100" href="/assets/report-logo-icon.png" xlink:href="/assets/report-logo-icon.png"/>
   <text x="138" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif" font-size="46" font-weight="800" letter-spacing="-1px">
     <tspan fill="#0F172A">Divvy</tspan><tspan fill="#6366F1">Duck</tspan>
   </text>
