@@ -719,13 +719,13 @@ const STRINGS = {
     'system.noTripMsg': '请先建立一个旅程，才能开始记录消费。',
     'system.loadFailed': '资料载入失败',
 
-    // 更改旅程名称
-    'renameTripModal.title': '更改旅程名称',
+    // 更改旅程名称（Dashboard 标题原地改名用，见 initDashTripTitleClick_()；
+    // 「更改旅程名称」这个标题/存档按钮本身已经不需要了，只有欄位名称还留着）
     'renameTripModal.nameLabel': '旅程名称',
-    'renameTripModal.save': '储存',
 
     // 选择旅程
     'tripPicker.title': '选择旅程',
+    'tripPicker.updatedAt': '最后更新于{time}',
     'fab.switchTrip': '切换旅程',
     'fab.addExpense': '新增消费',
     'fab.exportReport': '汇出报告',
@@ -848,6 +848,8 @@ const STRINGS = {
     'toast.noRemainingAmountMsg': '目前填写的金额（{filled}）已达到或超过总额。',
     'toast.recordNotFound': '找不到纪录',
     'toast.recordNotFoundMsg': '这笔消费可能已被删除，请重新整理。',
+    'toast.tripLinkNotFound': '连结失效',
+    'toast.tripLinkNotFoundMsg': '这个旅程连结找不到对应的旅程，可能是代码错误，或你还不是这趟旅程的成员。',
     'toast.receiptUploading': '照片上传中',
     'toast.receiptUploadingMsg': '请等收据照片上传完成后再储存。',
     'toast.customSplitMismatch': '自订分账总额不一致',
@@ -1451,13 +1453,12 @@ const STRINGS = {
     'system.noTripMsg': 'Create a trip first to start tracking expenses.',
     'system.loadFailed': 'Failed to load',
 
-    // Rename trip
-    'renameTripModal.title': 'Rename Trip',
+    // Rename trip (used inline on the Dashboard title, see initDashTripTitleClick_())
     'renameTripModal.nameLabel': 'Trip Name',
-    'renameTripModal.save': 'Save',
 
     // Trip picker
     'tripPicker.title': 'Select Trip',
+    'tripPicker.updatedAt': 'Last updated {time}',
     'fab.switchTrip': 'Switch Trip',
     'fab.addExpense': 'Add Expense',
     'fab.exportReport': 'Export Report',
@@ -1575,6 +1576,8 @@ const STRINGS = {
     'toast.noRemainingAmountMsg': 'The amount entered ({filled}) already reaches or exceeds the total.',
     'toast.recordNotFound': 'Record not found',
     'toast.recordNotFoundMsg': 'This expense may have been deleted — refresh and try again.',
+    'toast.tripLinkNotFound': 'Link no longer works',
+    'toast.tripLinkNotFoundMsg': "This trip link doesn't match any trip — the code may be wrong, or you're not a member of that trip yet.",
     'toast.receiptUploading': 'Uploading photo',
     'toast.receiptUploadingMsg': 'Wait for the receipt to finish uploading before saving.',
     'toast.customSplitMismatch': "Custom split doesn't add up",
@@ -2043,6 +2046,7 @@ function unlockBodyScroll() {
 }
 
 let currentMemberDetailName = null; // 成员消费明细 Modal 目前显示的成员姓名，供汇出单人 PDF 使用
+let currentMemberDetailId = null; // 同一个成员的 id 版本——身份识别（重新渲染判断、网址同步）一律用这个，姓名只给 PDF 汇出显示用
 let editingExpenseId = null;
 
 let currentCategoryFilter = 'all';
@@ -2243,6 +2247,11 @@ function startAppAfterAuth() {
 async function bootstrapApp() {
   renderDashboardSkeleton();
 
+  // parseAppUrl_() 是纯函式，这裡先读；appState.trips 还没拉回来，没法比对
+  // 邀请码，真正决定 currentTripId／重演画面要等下面全部跑完才透过
+  // resolveBootTripId_()/enactBootDeepLink_() 处理
+  const bootDeepLink = parseAppUrl_(window.location.pathname);
+
   try {
     let trips;
     try {
@@ -2270,12 +2279,14 @@ async function bootstrapApp() {
       return;
     }
 
-    currentTripId = resolveInitialTripId();
+    currentTripId = resolveBootTripId_(bootDeepLink);
     applyTripMeta_(currentTripId);
     setTripSelectValues(currentTripId);
 
     await loadTripData();
     flushOfflineQueue(); // 如果上次关闭 App 时还留着没送出去的离线纪录、现在又是有网路的，顺便补送掉
+
+    enactBootDeepLink_(bootDeepLink);
   } catch (error) {
     showToast('error', t('toast.loadFailed'), error.message);
     clearHeroCardSkeletonToEmpty_();
@@ -3208,6 +3219,7 @@ async function switchCurrentTrip(newTripId) {
   localStorage.setItem(STORAGE_KEY_CURRENT_TRIP, currentTripId);
   applyTripMeta_(currentTripId);
   setTripSelectValues(currentTripId);
+  syncAppUrlAfterTripChange_();
 
   await fadeOutAppMain_();
   renderDashboardSkeleton();
@@ -3320,13 +3332,36 @@ function renderTripPillSwitcher() {
   nameEl.textContent = currentTripId ? getTripName(currentTripId) : t('trip.noTripOption');
 }
 
+const TRIP_AVATAR_COLOR_COUNT_ = 6;
+
 /**
- * 渲染 tripPickerModal 里的旅程清单——每趟旅程一行，点名字那块直接切换，
- * 每一行都带一颗铅笔小按钮可以改名字（不限「目前这趟」，任何一行都能直接改，
- * 不用先切换过去才能改名），沿用既有的 renameTripModal，靠通用的 data-open-modal
- * 监听器处理，这里不用再重複写开 Modal 的逻辑；按钮上带 data-rename-trip-id
- * 标明「这一行要改的是哪趟」，监听器靠这个属性分辨目标，不是永远预设 currentTripId。
- * 「新增旅程」收在这个 Modal 底部，跟清单放在一起，逻辑上都是「管理我的旅程」这件事
+ * 依旅程 id 分配固定色盘（1~6，见 style.css 的 --trip-avatar-N-bg/-fg）
+ * 裡的其中一组颜色——同一个 id 每次算出来都是同一个数字，同一趟旅程头像
+ * 颜色才不会每次重新渲染就换一次。纯粹是个简单的字串 hash，不追求密码学
+ * 强度，只要「同样输入永远同样输出、结果分布看起来够随机」就够用
+ * @param {string} tripId
+ * @return {string} 'color-1' ~ 'color-6' 其中一个 class 名称
+ */
+function getTripAvatarColorClass_(tripId) {
+  let hash = 0;
+  const str = tripId || '';
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0;
+  }
+  const index = (Math.abs(hash) % TRIP_AVATAR_COLOR_COUNT_) + 1;
+  return `color-${index}`;
+}
+
+/**
+ * 渲染「选择旅程」二级页面里的旅程小方格——每趟旅程一格，点整格直接切换。
+ * 前面是名字首字母头像，依旅程 id 固定分配一个颜色（见上面
+ * getTripAvatarColorClass_()），不是每趟旅程各自能自订的头像——这个 App
+ * 没有存放头像图片的栏位，也没有颜色/图示挑选器，「自订头像」得先加
+ * 资料栏位＋一个挑选介面，工程量比这个大得多。副标题显示最後更新的日期
+ * （月/日，沿用 formatDateDisplay()）。
+ * 没有改名按钮了：改名字现在只能先切到那趟旅程，再去 Dashboard 点标题
+ * 原地改（initDashTripTitleClick_()），不再是「随便哪一格都能直接改」。
+ * 「新增旅程」收在页面底部，跟方格放在一起，逻辑上都是「管理我的旅程」这件事
  */
 function renderTripPickerList() {
   const listEl = document.getElementById('tripPickerList');
@@ -3350,22 +3385,23 @@ function renderTripPickerList() {
 
   listEl.innerHTML = orderedTrips.map((trip) => {
     const isActive = trip.id === currentTripId;
+    const updatedText = t('tripPicker.updatedAt', { time: formatDateDisplay(trip.updatedAt) });
+    const colorClass = getTripAvatarColorClass_(trip.id);
     return `
-      <div class="trip-picker-row ${isActive ? 'is-active' : ''}">
-        <button type="button" class="trip-picker-row-main" data-select-trip-id="${escapeHtml(trip.id)}">
-          <span class="trip-picker-row-name">${escapeHtml(trip.name)}</span>
-        </button>
-        <button type="button" class="icon-btn trip-picker-edit-btn" data-open-modal="renameTripModal" data-rename-trip-id="${escapeHtml(trip.id)}" aria-label="${escapeHtml(t('renameTripModal.title'))}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
+      <button type="button" class="trip-picker-tile ${isActive ? 'is-active' : ''}" data-select-trip-id="${escapeHtml(trip.id)}">
+        <div class="trip-picker-tile-icon ${colorClass}" aria-hidden="true">${escapeHtml(getInitials(trip.name))}</div>
+        <div class="trip-picker-tile-text">
+          <span class="trip-picker-tile-name">${escapeHtml(trip.name)}</span>
+          <span class="trip-picker-tile-sub">${escapeHtml(updatedText)}</span>
+        </div>
+      </button>
     `;
   }).join('');
 }
 
 /**
- * 打开「选择旅程」Modal：先确保清单是最新的再开，不然如果是从旧的快取
- * 画面直接开 Modal，可能会看到切换旅程/改名之前的旧清单
+ * 打开「选择旅程」二级页面：先确保方格是最新的再开，不然如果是从旧的快取
+ * 画面直接切过去，可能会看到切换旅程之前的旧清单
  */
 function openTripPickerModal() {
   renderTripPickerList();
@@ -3373,8 +3409,10 @@ function openTripPickerModal() {
 }
 
 /**
- * tripPickerModal 里的互动：点旅程名字切换、点「新增旅程」开 addTripModal——
- * 这些是清单动态产生的内容，用事件代理绑在容器上，不用每次重新渲染都重绑一次
+ * 「选择旅程」二级页面里的互动：点方格切换旅程、点「新增旅程」钻进
+ * addTripModal（後者也已经转址成二级页面，会自然叠在这层上面，返回键
+ * /返回按钮会先退回这一层，不是直接跳回旅程本身）——这些是清单动态
+ * 产生的内容，用事件代理绑在容器上，不用每次重新渲染都重绑一次
  */
 function initTripPicker() {
   const listEl = document.getElementById('tripPickerList');
@@ -3385,7 +3423,7 @@ function initTripPicker() {
         return;
       }
       const tripId = btn.getAttribute('data-select-trip-id');
-      closeActiveModal();
+      closeSecondaryPage_();
       if (tripId !== currentTripId) {
         switchCurrentTrip(tripId);
       }
@@ -3395,7 +3433,6 @@ function initTripPicker() {
   const addBtn = document.getElementById('tripPickerAddBtn');
   if (addBtn) {
     addBtn.addEventListener('click', () => {
-      closeActiveModal();
       openModal('addTripModal');
     });
   }
@@ -3422,11 +3459,10 @@ function getTripName(tripId) {
  * 「更改旅程名称」的实际存档动作——直接 update trips 那一列（关联都是靠
  * trip.id，改名字不会动到任何其他资料），成功後同步更新 appState 缓存的
  * 那份名字，再重新渲染选单等所有显示旅程名称的地方，不然会看到画面上
- * 还是旧名字，要等下次重新整理才会更新，最後跳成功 toast。renameTripModal
- * 的表单送出（handleRenameTripFormSubmit）跟 Dashboard 标题原地改名
- * （initDashTripTitleClick_）共用这支——呼叫端各自处理自己的 loading 状态跟
- * 失败时的錯誤 toast（catch 住这裡 throw 出去的 error），成功 toast 统一在
- * 这裡处理，两边文案才不会不小心长歪
+ * 还是旧名字，要等下次重新整理才会更新，最後跳成功 toast。目前唯一的呼叫端
+ * 是 Dashboard 标题原地改名（initDashTripTitleClick_）——改名字只能先切去
+ * 那趟旅程再点标题改，独立抽成这支函式主要是让呼叫端能各自处理自己的
+ * loading 状态跟失败时的錯誤 toast（catch 住这裡 throw 出去的 error）
  * @param {string} tripId 要改名的旅程 id
  * @param {string} newName 新名字（呼叫端自己 trim/验证非空）
  */
@@ -3451,39 +3487,6 @@ async function saveTripRename_(tripId, newName) {
   }
 
   showToast('success', t('toast.tripRenamed'), t('toast.tripRenamedMsg', { name: newName }));
-}
-
-/**
- * 「更改旅程名称」表单送出处理（renameTripModal，现为 rename-trip 二级页面）——
- * 只处理这个表单自己的 loading/驗證/錯誤显示，实际存档交给 saveTripRename_()
- * @param {string} [targetTripId] 要改名的旅程 id；不传的话回退成 currentTripId
- *   （对应 tripPickerModal 清单里的铅笔按钮——没有指定特定目标，永远是改「目前这趟」）
- */
-async function handleRenameTripFormSubmit(targetTripId) {
-  const tripId = targetTripId || currentTripId;
-  if (!tripId) {
-    return;
-  }
-
-  const nameInput = document.getElementById('renameTripNameInput');
-  const newName = nameInput.value.trim();
-
-  if (!newName) {
-    showToast('error', t('toast.pleaseEnterTripName'), '');
-    return;
-  }
-
-  const submitBtn = document.getElementById('renameTripSubmitBtn');
-  setButtonLoading(submitBtn, true);
-
-  try {
-    await saveTripRename_(tripId, newName);
-    closeModal_('renameTripModal');
-  } catch (error) {
-    showToast('error', t('toast.actionFailed'), error.message);
-  } finally {
-    setButtonLoading(submitBtn, false);
-  }
 }
 
 /**
@@ -3544,6 +3547,7 @@ async function handleTripFormSubmit() {
       applyTripMeta_(currentTripId);
       localStorage.setItem(STORAGE_KEY_CURRENT_TRIP, currentTripId);
       setTripSelectValues(currentTripId);
+      syncAppUrlAfterTripChange_();
 
       await loadTripData();
 
@@ -3680,6 +3684,7 @@ async function handleJoinTripFormSubmit() {
       applyTripMeta_(currentTripId);
       localStorage.setItem(STORAGE_KEY_CURRENT_TRIP, currentTripId);
       setTripSelectValues(currentTripId);
+      syncAppUrlAfterTripChange_();
 
       await loadTripData();
     } catch (reloadError) {
@@ -5686,24 +5691,10 @@ function initModals() {
       }
 
       if (modalId === 'tripPickerModal') {
-        // 开之前先重新渲染一次清单，不然如果是从旧的快取画面直接开 Modal，
-        // 可能会看到切换旅程/改名之前的旧清单（跟 openTripPickerModal() 是同一个考量，
+        // 开之前先重新渲染一次方格，不然如果是从旧的快取画面直接切过去，
+        // 可能会看到切换旅程之前的旧清单（跟 openTripPickerModal() 是同一个考量，
         // 这里额外处理是因为这颗按钮走的是通用委派监听器，不是那支函式）
         renderTripPickerList();
-      }
-
-      if (modalId === 'renameTripModal') {
-        // 铅笔按钮可能来自旅程标题旁边（没带 data-rename-trip-id，代表改目前这趟）
-        // 或 tripPickerModal 清单里的任一行（带了 data-rename-trip-id，代表改那一行）——
-        // 两种来源共用同一个 Modal，靠这个 data 属性分辨要改的到底是哪一趟旅程，
-        // 存进 Modal 自己的 dataset 里，送出表单时才能拿到目标旅程 id
-        const targetTripId = opener.getAttribute('data-rename-trip-id') || currentTripId;
-        if (!targetTripId) {
-          showToast('error', t('toast.pleaseSelectTrip'), '');
-          return;
-        }
-        document.getElementById('page-rename-trip').dataset.targetTripId = targetTripId;
-        document.getElementById('renameTripNameInput').value = getTripName(targetTripId);
       }
 
       openModal(modalId);
@@ -5759,13 +5750,6 @@ function initModals() {
     event.preventDefault();
     handleMemberFormSubmit();
   });
-
-  document.getElementById('renameTripForm').addEventListener('submit', (event) => {
-    event.preventDefault();
-    // 目标旅程 id 是开 Modal 当下存进 dataset 的（见上面 [data-open-modal] 的
-    // 'renameTripModal' 特判），送出时读出来，不能直接假设改的是 currentTripId
-    handleRenameTripFormSubmit(document.getElementById('page-rename-trip').dataset.targetTripId);
-  });
 }
 
 /* ------------------------------------------------------------
@@ -5794,17 +5778,138 @@ let isPopStateInProgress = false;
 let pendingProgrammaticPops = 0;
 
 /**
+ * 网址路由：只给「5 个主分页 + 2 个实体详情页」这 7 个 view 真正的网址，
+ * 其余二级页面（新增/编辑表单、金库明细、分类消费清单等）刻意不列进来——
+ * 查不到 key 时 buildAppUrl_() 会回传 null，呼叫端看到 null 就不动网址列，
+ * 维持它们原本「网址不变」的行为，之後要扩大范围只要在这裡加一笔
+ */
+const ROUTABLE_VIEW_SEGMENTS_ = {
+  dashboard: { slug: 'dashboard', hasEntity: false },
+  expenses: { slug: 'expenses', hasEntity: false },
+  summary: { slug: 'summary', hasEntity: false },
+  members: { slug: 'members', hasEntity: false },
+  settings: { slug: 'settings', hasEntity: false },
+  'member-detail': { slug: 'members', hasEntity: true },
+  'expense-detail': { slug: 'expenses', hasEntity: true },
+};
+
+/**
+ * 反查网址裡的 slug（例如 'members'）对应哪个分页 view／哪个详情页 view——
+ * 从 ROUTABLE_VIEW_SEGMENTS_ 单一来源反推，不手动维护第二张容易漏改其中
+ * 一边的对照表
+ * @param {string} slug
+ * @return {{tabView: ?string, entityView: ?string}}
+ */
+function findViewsForUrlSegment_(slug) {
+  let tabView = null;
+  let entityView = null;
+  Object.keys(ROUTABLE_VIEW_SEGMENTS_).forEach((view) => {
+    const meta = ROUTABLE_VIEW_SEGMENTS_[view];
+    if (meta.slug !== slug) return;
+    if (meta.hasEntity) {
+      entityView = view;
+    } else {
+      tabView = view;
+    }
+  });
+  return { tabView, entityView };
+}
+
+/**
+ * 纯函式：把 currentTripId 目前指向的旅程 + 目标 view/entityId 组成一条
+ * 完整路径（含开头 /）。查不到对应旅程（currentTripId 还是 null）、view
+ * 不在白名单内、或 entity-detail 缺 id，一律回传 null——呼叫端看到 null
+ * 就不动网址
+ * @param {{view: string, entityId?: string}} target
+ * @return {?string}
+ */
+function buildAppUrl_(target) {
+  const trip = appState.trips.find((item) => item.id === currentTripId);
+  if (!trip || !trip.inviteCode) return null;
+
+  const segment = ROUTABLE_VIEW_SEGMENTS_[target.view];
+  if (!segment) return null;
+  if (segment.hasEntity && !target.entityId) return null;
+
+  let path = `/trip/${encodeURIComponent(trip.inviteCode)}/${segment.slug}`;
+  if (segment.hasEntity) {
+    path += `/${encodeURIComponent(target.entityId)}`;
+  }
+  return path;
+}
+
+/**
+ * 纯函式：把 pathname 解析回 {kind, tripCode, view, entityId}。看不懂的
+ * 路径（GH Pages 404 转址剩下的杂讯、旧收藏网址、打错字……）一律回传
+ * null，呼叫端照旧退回 resolveInitialTripId() + 停在 dashboard，不会卡住
+ * @param {string} pathname
+ * @return {?{kind: string, tripCode?: string, view?: string, entityId?: ?string}}
+ */
+function parseAppUrl_(pathname) {
+  const segments = (pathname || '/').split('/').filter(Boolean).map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch (error) {
+      return segment;
+    }
+  });
+
+  if (segments.length === 0) return { kind: 'root' };
+  // /trips 目前刻意跟解析不出来一样处理，等於暂时等同 /——旅程选择页这次
+  // 没给网址（见 §2 说明），真的给了、开机时又立刻被 baseline 覆写掉，
+  // 网址列停留不住也没办法刷新後还原，价值不够，先不做
+  if (segments[0] === 'trips' && segments.length === 1) return { kind: 'trips' };
+
+  if (segments[0] === 'trip' && segments.length >= 2) {
+    const tripCode = segments[1];
+    const viewSlug = segments.length >= 3 ? segments[2] : 'dashboard';
+    const { tabView, entityView } = findViewsForUrlSegment_(viewSlug);
+    if (!tripCode || (!tabView && !entityView)) return null;
+
+    const entityId = segments.length >= 4 ? segments[3] : null;
+    if (entityId && !entityView) return null;
+
+    return { kind: 'trip', tripCode, view: entityId ? entityView : tabView, entityId };
+  }
+
+  return null;
+}
+
+/**
  * 「往前」的导航动作（开 Modal、切主分页、进成员详情页）呼叫这个，推入一份
  * history 状态给返回键退。如果目前正在处理一次真正的返回键 popstate，代表
  * History 已经自己走到这个状态了，不能重複 push（目前的呼叫时机不会真的
  * 触发到这个分支，纯粹是防呆）
  * @param {Object} state 存进 history 的状态物件，至少要有 appNavType 分辨类型
+ * @param {?string} [url] 要同步写入网址列的路径；不传或传 null 就沿用现在
+ *   这条网址不变（现有 15 个没给网址的二级页面走的就是这条路）
  */
-function pushAppHistoryState_(state) {
+function pushAppHistoryState_(state, url) {
   if (isPopStateInProgress) {
     return;
   }
-  history.pushState(state, '');
+  if (url) {
+    history.pushState(state, '', url);
+  } else {
+    history.pushState(state, '');
+  }
+}
+
+/**
+ * pushAppHistoryState_() 的 replaceState 版本——换旅程、开机解析深层连结
+ * 这类「不该多留一笔 history 分录，但网址列需要同步」的情境用这个
+ * @param {Object} state
+ * @param {?string} [url]
+ */
+function replaceAppHistoryState_(state, url) {
+  if (isPopStateInProgress) {
+    return;
+  }
+  if (url) {
+    history.replaceState(state, '', url);
+  } else {
+    history.replaceState(state, '');
+  }
 }
 
 /**
@@ -5897,7 +6002,7 @@ function goToPage_(pageId) {
   const fromPageId = getCurrentMainPageId_();
   secondaryPageStack.length = 0;
   navigateToPage(pageId, fromPageId);
-  pushAppHistoryState_({ appNavType: 'page', pageId });
+  pushAppHistoryState_({ appNavType: 'page', pageId }, buildAppUrl_({ view: pageId }));
 }
 
 /**
@@ -5956,8 +6061,11 @@ function getCurrentMainPageId_() {
  * 重新渲染内容，不是真的「导航过去」），不会重複 push history，也不会把
  * 捲动位置弹回顶端打断使用者——只有画面上真的新叠上一层时才做这两件事
  * @param {string} pageId 对应 <section id="page-${pageId}"> 的那个 id 片段
+ * @param {string} [entityId] 这一层是不是某个特定实体的详情页（目前只有
+ *   'member-detail'／'expense-detail' 会带这个）——给 buildAppUrl_() 组
+ *   网址用，不在白名单内的 pageId 传了也没差，buildAppUrl_() 自己会忽略
  */
-function showSecondaryPage_(pageId) {
+function showSecondaryPage_(pageId, entityId) {
   const alreadyTopmost = secondaryPageStack[secondaryPageStack.length - 1] === pageId;
 
   document.querySelectorAll('.page').forEach((section) => {
@@ -5974,7 +6082,7 @@ function showSecondaryPage_(pageId) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   secondaryPageStack.push(pageId);
-  pushAppHistoryState_({ appNavType: 'secondaryPage', pageId });
+  pushAppHistoryState_({ appNavType: 'secondaryPage', pageId, entityId }, buildAppUrl_({ view: pageId, entityId }));
 }
 
 /**
@@ -6040,7 +6148,7 @@ function initSecondaryPageBackButtons_() {
 // 到 --z-toast(80) 这个区间内爬升：BASE 直接对齐 --z-modal 的值，STEP=5
 // 让每往下钻一层多垫 5，backdrop 比同一层的 Modal 本身低 3。这个专案裡
 // 最深只钻过 2 层（例如「账单统计」→「分类消费清单」，或 tripPickerModal→
-// renameTripModal），照这个算法最深第 6 层才会真的碰到 --z-toast 的上限，
+// addTripModal），照这个算法最深第 6 层才会真的碰到 --z-toast 的上限，
 // 留了很充足的余裕；如果之後真的做出需要叠更多层的功能，记得同步检查
 // 这里跟 --z-toast 还留不留得住这个「Modal 永远压不过 Toast」的关系
 const MODAL_BASE_Z_INDEX = 50;
@@ -6067,25 +6175,28 @@ function getFocusableElements_(container) {
  * @param {string} modalId Modal 的 DOM id
  */
 /**
- * 7 个含文字输入欄位、会叫出键盘的表单型 Modal，2026-08 改成二级页面——
+ * 6 个含文字输入欄位、会叫出键盘的表单型 Modal，2026-08 改成二级页面——
  * 手机 iOS「加到主屏幕」standalone 模式下，Modal 遮罩＋锁背景捲动跟键盘
  * 收起互动時有个排查七轮才確定、无法从网页端修正的 WKWebView 原生渲染
  * bug（键盘收起後渲染范围没收回去，底部露出连 DOM 都选不到的空白）。
  * 二级页面走「整页替换主内容区」，没有遮罩、没有 position:fixed／
  * overflow:hidden 锁背景，天生不会踩到这个坑。
+ * tripPickerModal 是後来加的第 7 个，理由不一样——它没有文字欄位、不会
+ * 叫出键盘，纯粹是想要比 Modal 更大的空间把旅程排成小方格，跟上面 6 个
+ * 共用同一套转址机制，不用另外写一遍
  * 集中在 openModal() 這裡做转址，而不是逐一改调用端——全站十几处
  * openModal('addExpenseModal') 之类的呼叫、以及 HTML 上 data-open-modal
  * 属性（含 getPageAction() 动态设的），全部原样保留不用动，转址表以外的
- * 其余 7 个 Modal（纯清单/确认框/图片检视器，不会叫出键盘）不受影响
+ * 其余 Modal（纯确认框/图片检视器等，不需要整页空间也不会叫出键盘）不受影响
  */
 const MODAL_TO_SECONDARY_PAGE = {
   addExpenseModal: 'add-expense',
   addMemberModal: 'add-member',
-  renameTripModal: 'rename-trip',
   addCategoryModal: 'add-category',
   addTripModal: 'add-trip',
   addRepaymentModal: 'add-repayment',
   editRepaymentModal: 'edit-repayment',
+  tripPickerModal: 'trip-picker',
 };
 
 /**
@@ -6104,9 +6215,9 @@ function closeModal_(modalId) {
 
 function openModal(modalId) {
   if (MODAL_TO_SECONDARY_PAGE[modalId]) {
-    // 有可能是从另一颗已经开着的 Modal 里触发的（例如 tripPickerModal 清单
-    // 每一行的铅笔按钮，点了要开 renameTripModal，後者已经转址成整页的
-    // 二级页面）——这裡直接跳成二级页面，不能让原本那颗 Modal 还留在画面上
+    // 有可能是从另一颗已经开着的 Modal 里触发的（某个 Modal 内的按钮呼叫
+    // openModal() 打开一个已经转址成二级页面的目标，但呼叫端没有先自己
+    // 关掉当下这颗）——这裡直接跳成二级页面，不能让原本那颗 Modal 还留在画面上
     // 把二级页面挡住，使用者得手动打叉才看得到。先把还开着的 Modal 都收掉，
     // 但只做画面清理（shouldPopHistory=false），不呼叫 popAppHistoryState_()
     // 去倒转浏览器历史——history.go()/back() 是非同步的，跟下面
@@ -6260,8 +6371,83 @@ function closeAllModals() {
  * 不用担心重複挂听器
  */
 function initAppHistoryNavigation() {
-  history.replaceState({ appNavType: 'page', pageId: 'dashboard' }, '');
+  replaceAppHistoryState_({ appNavType: 'page', pageId: 'dashboard' });
   window.addEventListener('popstate', handleAppPopState_);
+}
+
+/**
+ * currentTripId 换成别趟旅程後共用的收尾——换旅程（switchCurrentTrip）、
+ * 新增旅程、加入旅程这 3 个赋值点都要呼叫。先清空二级页面堆叠：换旅程的
+ * 入口（旅程下拉选单／选择旅程页）不像 Modal 有遮罩挡住，理论上可以在
+ * 「成员详情页」还开着时换旅程——不清掉的话，画面会留着旧旅程那个成员的
+ * 详情内容，但 currentTripId／网址都已经指向新旅程，两者对不上。用
+ * replaceState 不 push——这 3 处呼叫端原本就没有 push 过 history，只是
+ * 网址列现在需要额外同步成新旅程的代码
+ */
+function syncAppUrlAfterTripChange_() {
+  if (secondaryPageStack.length > 0) {
+    secondaryPageStack.length = 0;
+    navigateToPage(getCurrentMainPageId_());
+  }
+  const pageId = getCurrentMainPageId_();
+  replaceAppHistoryState_({ appNavType: 'page', pageId }, buildAppUrl_({ view: pageId }));
+}
+
+/**
+ * 开机决定 currentTripId 用哪一趟：网址带了看得懂的 /trip/{code}/...、且
+ * 代码对得上使用者自己有加入的其中一趟旅程，就用那一趟；网址没带、是
+ * /trips、或代码对不上（打错字／不是成员／旅程已删除）一律 fallback 回
+ * resolveInitialTripId()，对不上的情况额外跳一次 toast 告诉使用者连结失效了。
+ * 必须在 appState.trips 已经拉回来之後才能呼叫——bootDeepLink 本身在
+ * appState.trips 还没拉回来时就先解析好了（parseAppUrl_() 是纯函式，
+ * 不依赖 appState），这裡才是真正要比对的地方
+ * @param {?{kind: string, tripCode?: string}} parsed
+ * @return {string}
+ */
+function resolveBootTripId_(parsed) {
+  if (parsed && parsed.kind === 'trip' && parsed.tripCode) {
+    const matchedTrip = appState.trips.find(
+      (trip) => (trip.inviteCode || '').toUpperCase() === parsed.tripCode.toUpperCase()
+    );
+    if (matchedTrip) return matchedTrip.id;
+    showToast('error', t('toast.tripLinkNotFound'), t('toast.tripLinkNotFoundMsg'));
+  }
+  return resolveInitialTripId();
+}
+
+/**
+ * loadTripData() 跑完後才能呼叫——把网址目标真的做出来，并修正
+ * initAppHistoryNavigation() 先写死成 dashboard 的 baseline。解不出有效
+ * 目标（没带深层连结、代码对不上、view/entityId 看不懂）一律照旧停在
+ * dashboard，不会卡住或报错
+ * @param {?{kind: string, view?: string, entityId?: ?string}} parsed
+ */
+function enactBootDeepLink_(parsed) {
+  const segment = (parsed && parsed.kind === 'trip') ? ROUTABLE_VIEW_SEGMENTS_[parsed.view] : null;
+  const tabView = segment ? segment.slug : 'dashboard';
+
+  navigateToPage(tabView);
+  replaceAppHistoryState_({ appNavType: 'page', pageId: tabView }, buildAppUrl_({ view: tabView }));
+
+  if (!segment || !segment.hasEntity || !parsed.entityId) {
+    return;
+  }
+
+  if (parsed.view === 'member-detail') {
+    if (appState.memberIndex && appState.memberIndex.byId[parsed.entityId]) {
+      openMemberDetailPage(parsed.entityId);
+    } else {
+      showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
+    }
+  } else if (parsed.view === 'expense-detail') {
+    const exists = appState.expenses.some((item) => item.ID === parsed.entityId) ||
+      (appState.personalExpenses || []).some((item) => item.ID === parsed.entityId);
+    if (exists) {
+      openExpenseDetailModal(parsed.entityId);
+    } else {
+      showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
+    }
+  }
 }
 
 /**
@@ -7698,11 +7884,11 @@ async function isCategoryInUse_(categoryName) {
 }
 
 /**
- * 新增/重命名分类共用的表单送出处理——沿用 renameTripModal 那套「同一个 Modal，
- * 靠 dataset 上有没有存目标 id 分辨是新增还是编辑」的模式（见 handleRenameTripFormSubmit()）。
- * 名称检查会同时挡「跟系统内置分类同名」——不然 translateCategory() 会把这笔自定义
- * 分类誤判成内置分类去查 STRINGS 翻译，两种语言下都会显示翻译後的内置分类文字，
- * 而不是使用者自己输入的原文，违背了当初的设计
+ * 新增/重命名分类共用的表单送出处理——同一个 Modal，靠 dataset 上有没有存
+ * 目标 id 分辨是新增还是编辑。名称检查会同时挡「跟系统内置分类同名」——不然
+ * translateCategory() 会把这笔自定义分类誤判成内置分类去查 STRINGS 翻译，
+ * 两种语言下都会显示翻译後的内置分类文字，而不是使用者自己输入的原文，
+ * 违背了当初的设计
  */
 async function handleCategoryFormSubmit_() {
   const nameInput = document.getElementById('categoryNameInput');
@@ -8580,7 +8766,11 @@ function bindBalanceMatrixRemindRows_() {
     const shareOrCopyReminder = async () => {
       const name = row.getAttribute('data-remind-name');
       const amount = Number(row.getAttribute('data-remind-amount')) || 0;
-      const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(appState.inviteCode || '')}`;
+      // 固定用网站根目录，不是 window.location.pathname——网址路由後
+      // pathname 可能是分享者当下在看的某个深层页面，收连结的人多半还
+      // 不是这趟旅程的成员，那个深层页面对他没有意义，邀请连结只需要
+      // 落在首页走加入流程
+      const inviteLink = `${window.location.origin}/?invite=${encodeURIComponent(appState.inviteCode || '')}`;
       const message = t('dashboard.matrix.reminderText', { name, amount: formatMoney(amount), link: inviteLink });
 
       try {
@@ -10000,10 +10190,10 @@ function initDashCardSlider() {
 
 /**
  * 旅程标题原地改名：点标题（或键盘 Enter/空白键）切换成一个盖在原本位置上的
- * 输入框，打完字按 Enter 或点别处失焦就直接存档，不用跳到 rename-trip
- * 二级页面。Esc 放弃变更，恢复原本的名字。永远改 currentTripId——
- * tripPickerModal 清单里改「其他」旅程名字的铅笔按钮走的是原本
- * renameTripModal → 二级页面那条路，跟这裡是两个独立入口，不受影响。
+ * 输入框，打完字按 Enter 或点别处失焦就直接存档，不用跳到任何弹窗/二级页面。
+ * Esc 放弃变更，恢复原本的名字。永远改 currentTripId——这是目前唯一能改
+ * 旅程名字的入口，选择旅程页面裡原本每一格都有的铅笔按钮已经拿掉了，
+ * 要改名字得先切去那趟旅程，再回来点这裡。
  * 存档送出後不等後端回来才更新画面：直接把新名字乐观地写回标题，Supabase
  * 那次 update 失败才改回原名并跳错误提示——存档本身就是靠 trip.id 更新
  * 单一栏位，失败率低，没必要让使用者对着旧名字多等一次网路来回
@@ -10412,7 +10602,7 @@ function openExpenseDetailModal(expenseId) {
     });
   }
 
-  showSecondaryPage_('expense-detail');
+  showSecondaryPage_('expense-detail', expenseId);
 }
 
 
@@ -10780,10 +10970,11 @@ function renderMembersPage() {
   const expenseCountByMember = computeExpenseCountByMember();
 
   const container = document.getElementById('memberGrid');
+  const nameToId = (appState.memberIndex && appState.memberIndex.byName) || {};
   container.innerHTML = members.map((name) => {
     const status = getMemberStatusBadge(name);
     return `
-    <div class="member-card member-card-clickable" data-member-card="${escapeHtml(name)}" role="button" tabindex="0">
+    <div class="member-card member-card-clickable" data-member-card="${escapeHtml(nameToId[name] || '')}" role="button" tabindex="0">
       <div class="avatar">${escapeHtml(getInitials(name))}</div>
       <div class="member-card-info">
         <p class="member-card-name">${escapeHtml(name)}</p>
@@ -11037,14 +11228,24 @@ function openCategoryStatsPage_() {
  */
 function refreshMemberDetailPageIfOpen_() {
   const page = document.getElementById('page-member-detail');
-  if (page && !page.classList.contains('is-hidden') && currentMemberDetailName) {
-    openMemberDetailPage(currentMemberDetailName);
+  if (page && !page.classList.contains('is-hidden') && currentMemberDetailId) {
+    openMemberDetailPage(currentMemberDetailId);
   }
 }
 
-function openMemberDetailPage(name) {
+/**
+ * @param {string} memberId 要看的成员 id——身份识别一律用 id，不用姓名
+ *   （docs/CALCULATION_LOGIC.md 的既有规范；姓名可能重複/改名，id 才是
+ *   稳定的识别依据，也才能放进网址裡当「记忆点」）
+ */
+function openMemberDetailPage(memberId) {
+  const name = appState.memberIndex && appState.memberIndex.byId[memberId];
+  if (!name) {
+    showToast('error', t('toast.recordNotFound'), t('toast.recordNotFoundMsg'));
+    return;
+  }
   currentMemberDetailName = name;
-  const memberId = appState.memberIndex && appState.memberIndex.byName[name];
+  currentMemberDetailId = memberId;
 
   const relatedExpenses = appState.expenses
     .filter((expense) => expense.PayerId === memberId || (expense.ParticipantIds || []).includes(memberId))
@@ -11102,7 +11303,7 @@ function openMemberDetailPage(name) {
     if (includePersonalRowEmpty) {
       includePersonalRowEmpty.classList.add('is-hidden');
     }
-    showSecondaryPage_('member-detail');
+    showSecondaryPage_('member-detail', memberId);
     return;
   }
 
@@ -11173,7 +11374,7 @@ function openMemberDetailPage(name) {
     includePersonalCheckbox.checked = false;
   }
 
-  showSecondaryPage_('member-detail');
+  showSecondaryPage_('member-detail', memberId);
 }
 
 /**
@@ -11575,9 +11776,8 @@ function openCategoryManagePage_() {
 }
 
 /**
- * 打开新增/编辑分类用的 Modal——不传 category 就是新增，传了就是编辑
- * （沿用 renameTripModal 那套「同一个 Modal，靠 dataset 有没有存目标 id
- * 分辨新增/编辑」的模式，见 handleRenameTripFormSubmit()）
+ * 打开新增/编辑分类用的 Modal——不传 category 就是新增，传了就是编辑，
+ * 同一个 Modal 靠 dataset 有没有存目标 id 分辨这两种情况
  * @param {Object} [category]
  */
 function openCategoryFormModal_(category) {
@@ -12249,7 +12449,8 @@ function initInviteCard() {
     const code = appState.inviteCode || document.getElementById('inviteCodeText').textContent;
     if (!code || code === '—') return;
 
-    const inviteLink = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(code)}`;
+    // 固定用网站根目录，理由同 bindBalanceMatrixRemindRows_() 那处
+    const inviteLink = `${window.location.origin}/?invite=${encodeURIComponent(code)}`;
     const tripName = getTripName(currentTripId) || t('report.untitledTrip');
     const message = t('invite.shareMessage', { tripName, link: inviteLink });
 

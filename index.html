@@ -14,6 +14,22 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DivvyDuck">
 <script>
+  // GitHub Pages 是纯静态托管，找不到 /trip/{code}/... 这类前端自己认得的
+  // 路由路径时会送出 404.html，它把原本要去的路径编码进查询字串导回这裡
+  // （见 404.html 自己的注解）——这段要在任何其他程式码读 window.location
+  // 之前执行（所以放在全文件最前面，比下面的深色模式防闪烁脚本还早），
+  // 把编码过的路径解回真正的 pathname、写回网址列（replaceState，不会
+  // 真的整页导航），app.js 的 bootstrapApp() 才看得到正确的 pathname 可以解析
+  (function (l) {
+    if (l.search[1] === '/') {
+      var decoded = l.search.slice(1).split('&').map(function (s) {
+        return s.replace(/~and~/g, '&');
+      }).join('?');
+      window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+    }
+  }(window.location));
+</script>
+<script>
   // 在第一次绘制之前就同步决定好深色/浅色模式，直接设定在 <html> 上——
   // 放在 <link rel="stylesheet"> 前面、body 还没有任何内容时执行，
   // 避免先闪一下写死的浅色、等 DOMContentLoaded 里的 initTheme() 跑完才又跳成深色的画面闪烁。
@@ -35,7 +51,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20260818j">
+<link rel="stylesheet" href="style.css?v=20260818n">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js?v=20260731a"></script>
 </head>
@@ -833,8 +849,8 @@
            同一种命名习惯的「旅程设置」。「目前旅程」这行只显示目前旅程的
            名字（原本後面还接最多 3 颗代表其他旅程的圆圈，拿掉了，「更改」
            已经能切换，不需要圆圈这个额外提示）；点名字或右边的「更改」都会
-           开 tripPickerModal 选旅程，「新增旅程」的功能也收进那个 Modal 里，
-           不再是独立的「+」图示 -->
+           开 tripPickerModal（现为二级页面）选旅程，「新增旅程」的功能也收进
+           那个页面里，不再是独立的「+」图示 -->
       <div class="panel" id="settingsTripSwitcherPanel">
         <div class="panel-header">
           <h2 data-i18n="settings.tripPanelTitle">旅程设置</h2>
@@ -1317,31 +1333,6 @@
   </div>
 </section>
 
-<section class="page secondary-page is-hidden" id="page-rename-trip" data-page-section="rename-trip">
-  <div class="secondary-page-header">
-    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <div class="secondary-page-header-text">
-      <h1 class="page-title" id="renameTripTitle" data-i18n="renameTripModal.title">更改旅程名称</h1>
-    </div>
-  </div>
-  <form id="renameTripForm">
-    <div class="form-grid">
-      <div class="form-field form-field-full">
-        <label for="renameTripNameInput" data-i18n="renameTripModal.nameLabel">旅程名称</label>
-        <input type="text" id="renameTripNameInput" class="text-input" required autocomplete="off">
-      </div>
-    </div>
-  </form>
-  <div class="secondary-page-footer">
-    <button class="btn btn-primary" type="submit" form="renameTripForm" id="renameTripSubmitBtn">
-      <span class="btn-label" data-i18n="renameTripModal.save">储存</span>
-      <span class="btn-spinner" aria-hidden="true"></span>
-    </button>
-  </div>
-</section>
-
 <section class="page secondary-page is-hidden" id="page-add-category" data-page-section="add-category">
   <div class="secondary-page-header">
     <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
@@ -1557,6 +1548,30 @@
   </div>
 </section>
 
+<!-- 选择旅程二级页面：设置页「目前旅程」pill 或「更改」按钮、同行页头像堆叠的
+     切换按钮点了都会开这个——原本是 Modal，改成二级页面才有足够空间把旅程
+     排成小方格（比小窗里的窄清单好看，也更好点）。铅笔改名按钮拿掉了——
+     改名字现在只能先切到那趟旅程，再去 Dashboard 点标题原地改（见
+     initDashTripTitleClick_()），renameTripModal／page-rename-trip 那整条
+     路径因此跟着拿掉，不再是「随便哪一行都能点铅笔改」 -->
+<section class="page secondary-page is-hidden" id="page-trip-picker" data-page-section="trip-picker">
+  <div class="secondary-page-header">
+    <button class="icon-btn secondary-page-back-btn" type="button" data-i18n-aria-label="common.back" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12L15 19" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="secondary-page-header-text">
+      <h1 class="page-title" data-i18n="tripPicker.title">选择旅程</h1>
+    </div>
+  </div>
+  <div class="secondary-page-body">
+    <div class="trip-picker-grid" id="tripPickerList">
+      <!-- 每趟旅程一个小方格，由 app.js 的 renderTripPickerList() 动态产生 -->
+    </div>
+  </div>
+  <div class="secondary-page-footer">
+    <button class="btn btn-primary" type="button" id="tripPickerAddBtn" data-i18n="tripPicker.addBtn">＋ 新增旅程</button>
+  </div>
+</section>
 
   </main>
 </div>
@@ -1672,26 +1687,6 @@
   </div>
 </div>
 
-<!-- 选择旅程 Modal：设置页「目前旅程」pill 或「更改」按钮点了都会开这个——
-     列出使用者所有旅程，点名字切换；目前这趟旁边多一颗铅笔可以改名字
-     （沿用下面的 renameTripModal）；底部「新增旅程」取代原本独立的「+」图示 -->
-<div class="modal modal-sm" id="tripPickerModal" role="dialog" aria-modal="true" aria-labelledby="tripPickerTitle">
-  <div class="modal-header">
-    <h2 id="tripPickerTitle" data-i18n="tripPicker.title">选择旅程</h2>
-    <button class="icon-btn modal-close" type="button" data-close-modal aria-label="关闭" data-i18n-aria-label="common.close">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-  <div class="modal-body">
-    <div id="tripPickerList">
-      <!-- 每趟旅程一行，由 app.js 动态产生 -->
-    </div>
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-primary btn-sm" type="button" id="tripPickerAddBtn" data-i18n="tripPicker.addBtn">＋ 新增旅程</button>
-  </div>
-</div>
-
 <!-- 还款纪录动作选单：点击清单里任一笔还款纪录会弹出，选「编辑」或「删除」——
      取代原本滑动才看得到圖示的做法，点击整排就跳出来，两个动作都在同一个
      地方选，不用先猜要滑哪个方向 -->
@@ -1753,7 +1748,7 @@
   <!-- 报告内容由 app.js 在汇出时动态产生 -->
 </div>
 
-<script src="app.js?v=20260818a"></script>
+<script src="app.js?v=20260818f"></script>
 <script>
   // 一次性清理：这个专案本身从来没有主动註冊过 Service Worker，但如果这个网址
   // 在更早的某次部署（哪怕是很久以前）曾经不小心註冊过一个，Service Worker

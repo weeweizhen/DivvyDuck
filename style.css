@@ -50,6 +50,23 @@
   --info: #0369a1;
   --info-soft: rgba(3, 105, 161, 0.12);
 
+  /* 旅程头像圆圈的固定色盘——纯装饰用，不带语意（不是 success/danger 那种
+     状态色），依旅程 id 算 hash 分配其中一个，同一趟旅程永远拿到同一个颜色。
+     跟 --accent/--accent-soft 同一种「深色文字配淡色底」搭法，只是换了
+     6 种不同色相，让选择旅程页面每一格看起来不会都长一样 */
+  --trip-avatar-1-bg: rgba(15, 118, 110, 0.10);
+  --trip-avatar-1-fg: #0f766e;
+  --trip-avatar-2-bg: rgba(29, 78, 216, 0.10);
+  --trip-avatar-2-fg: #1d4ed8;
+  --trip-avatar-3-bg: rgba(126, 34, 206, 0.10);
+  --trip-avatar-3-fg: #7e22ce;
+  --trip-avatar-4-bg: rgba(190, 18, 60, 0.10);
+  --trip-avatar-4-fg: #be123c;
+  --trip-avatar-5-bg: rgba(194, 65, 12, 0.10);
+  --trip-avatar-5-fg: #c2410c;
+  --trip-avatar-6-bg: rgba(21, 128, 61, 0.10);
+  --trip-avatar-6-fg: #15803d;
+
   /* 阴影（柔和弥散，Apple 式极淡投影） */
   --shadow-xs: 0 1px 2px rgba(20, 20, 30, 0.03);
   --shadow-sm: 0 2px 8px rgba(20, 20, 30, 0.05);
@@ -181,6 +198,19 @@
   --warning-soft: rgba(255, 159, 10, 0.18);
   --info: #38bdf8;
   --info-soft: rgba(56, 189, 248, 0.18);
+
+  --trip-avatar-1-bg: rgba(45, 212, 191, 0.18);
+  --trip-avatar-1-fg: #2dd4bf;
+  --trip-avatar-2-bg: rgba(96, 165, 250, 0.18);
+  --trip-avatar-2-fg: #60a5fa;
+  --trip-avatar-3-bg: rgba(192, 132, 252, 0.18);
+  --trip-avatar-3-fg: #c084fc;
+  --trip-avatar-4-bg: rgba(251, 113, 133, 0.18);
+  --trip-avatar-4-fg: #fb7185;
+  --trip-avatar-5-bg: rgba(251, 146, 60, 0.18);
+  --trip-avatar-5-fg: #fb923c;
+  --trip-avatar-6-bg: rgba(74, 222, 128, 0.18);
+  --trip-avatar-6-fg: #4ade80;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.32);
@@ -2823,51 +2853,95 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   white-space: nowrap;
 }
 
-/* tripPickerModal 里的旅程清单：每行左边头像+名字（点了切换），目前那趟
-   多一颗铅笔小按钮可以改名字，用底色跟左侧色条标示出「目前选中」 */
-#tripPickerList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* 选择旅程二级页面裡的旅程清单：改成小方格排成 grid，比原本 Modal 裡的
+   窄清单好看，空间也比较够。铅笔改名按钮拿掉了，方格本身整块可以点，
+   目前这趟用强调色边框/底色标示出来。方格裡放旅程名字首字母头像
+   + 名字 + 最後更新日期，左对齐排成一行——一开始纯文字置中的版本内容
+   太单薄，跟 App 其他到处都有头像撑场面的清单比起来显得空；後来试过固定
+   同一个图示当头像，又变成每格都长一样很无聊，改成依旅程 id 分配
+   --trip-avatar-1~6 其中一组颜色（见 app.js 的 getTripAvatarColorClass_()），
+   同一趟旅程颜色永远固定，但整页看起来不会千篇一律 */
+.trip-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
 }
 
-.trip-picker-row {
+.trip-picker-tile-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2);
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.trip-picker-row.is-active {
-  background: var(--accent-soft);
-}
+.trip-picker-tile-icon.color-1 { background: var(--trip-avatar-1-bg); color: var(--trip-avatar-1-fg); }
+.trip-picker-tile-icon.color-2 { background: var(--trip-avatar-2-bg); color: var(--trip-avatar-2-fg); }
+.trip-picker-tile-icon.color-3 { background: var(--trip-avatar-3-bg); color: var(--trip-avatar-3-fg); }
+.trip-picker-tile-icon.color-4 { background: var(--trip-avatar-4-bg); color: var(--trip-avatar-4-fg); }
+.trip-picker-tile-icon.color-5 { background: var(--trip-avatar-5-bg); color: var(--trip-avatar-5-fg); }
+.trip-picker-tile-icon.color-6 { background: var(--trip-avatar-6-bg); color: var(--trip-avatar-6-fg); }
 
-.trip-picker-row-main {
-  flex: 1;
-  min-width: 0;
+.trip-picker-tile {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: none;
-  border: none;
-  padding: 0;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  background: var(--bg-elevated);
   text-align: left;
   cursor: pointer;
+  transition: border-color var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              background var(--duration-tool, 0.25s) var(--ease-tool, ease),
+              transform var(--duration-fast, 140ms) var(--ease-out, ease);
 }
 
-.trip-picker-row-main .avatar {
-  width: 34px;
-  height: 34px;
-  font-size: 13px;
+.trip-picker-tile:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-subtle);
 }
 
-.trip-picker-row-name {
-  font-size: 14px;
+.trip-picker-tile:active {
+  transform: scale(0.97);
+}
+
+.trip-picker-tile.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.trip-picker-tile-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.trip-picker-tile-name {
+  display: block;
+  font-size: 15px;
   font-weight: 600;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.trip-picker-tile-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-picker-tile.is-active .trip-picker-tile-name {
+  color: var(--accent);
 }
 
 .settings-actions {
@@ -6941,15 +7015,15 @@ body {
 
 /* 按钮/分页标签/抽屉项目按下去都有 scale 缩小的 :active 效果，但「整排
    可点」这类清单行（谁欠谁、近期账目、账目列表、分类消费清单、结算建议/
-   还款纪录、成员卡片、金库明细、切换旅程清单）原本完全没有对应的按下
-   回馈——最上面 * 那条规则已经把手机版点击时原生的灰色高亮拿掉了（理由
-   见那条规则自己的注解：视觉回馈改靠各元素自己的 :active 状态），这些
-   行的 :active 状态因此是唯一「有点到」的视觉确认，不能漏掉。
+   还款纪录、成员卡片、金库明细）原本完全没有对应的按下回馈——最上面 *
+   那条规则已经把手机版点击时原生的灰色高亮拿掉了（理由见那条规则自己的
+   注解：视觉回馈改靠各元素自己的 :active 状态），这些行的 :active 状态
+   因此是唯一「有点到」的视觉确认，不能漏掉。
    缩放幅度比照 .qa-pill／.side-drawer 的 .nav-item（都是撑满宽度的列，
    scale(0.98)），不是 .icon-btn／.link-btn 那种窄元素用的 scale(0.92)——
    整排这麼宽的元素缩太多看起来会很奇怪。
-   .activity-row／.pool-detail-row／.trip-picker-row-main 原本连 hover
-   都没有，一併补上；其他几个本来就有 hover，这裡只加 active。
+   .activity-row／.pool-detail-row 原本连 hover 都没有，一併补上；
+   其他几个本来就有 hover，这裡只加 active。
    .expense-row 的「待同步」列（.is-pending-sync）游标本来就是
    cursor:default，代表还不算真的能互动，排除在外。
    分类消费清单那排、金库明细行原本各自用 style="cursor:pointer" 内嵌
@@ -6962,16 +7036,14 @@ body {
 .member-card-clickable,
 .expense-row:not(.is-pending-sync),
 .activity-row,
-.pool-detail-row,
-.trip-picker-row-main {
+.pool-detail-row {
   cursor: pointer;
   transition: transform var(--duration-tool, 0.25s) var(--ease-tool, ease),
               background var(--duration-tool, 0.25s) var(--ease-tool, ease);
 }
 
 .activity-row:hover,
-.pool-detail-row:hover,
-.trip-picker-row-main:hover {
+.pool-detail-row:hover {
   background: var(--bg-subtle);
 }
 
@@ -6980,8 +7052,7 @@ body {
 .member-card-clickable:active,
 .expense-row:not(.is-pending-sync):active,
 .activity-row:active,
-.pool-detail-row:active,
-.trip-picker-row-main:active {
+.pool-detail-row:active {
   transform: scale(0.98);
 }
 

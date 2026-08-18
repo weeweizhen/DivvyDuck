@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DivvyDuck</title>
+<script>
+  // DivvyDuck 是纯前端 SPA，/trip/{code}/... 这类网址只是前端自己认得的路由，
+  // GitHub Pages 上并不存在对应实体档案，直接开启/刷新会落到这份 404.html。
+  // 这裡把原本要去的路径+查询字串编码进查询字串、导回网站根目录；index.html
+  // 最前面的还原脚本会解回来、写回网址列。pathSegmentsToKeep=0：网站挂在
+  // 自订网域根目录，不是带 repo 子路径的 Project Pages 网址
+  // (原理参考 https://github.com/rafgraph/spa-github-pages，MIT License)
+  var pathSegmentsToKeep = 0;
+  var l = window.location;
+  l.replace(
+    l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+    l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+    l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+    (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+    l.hash
+  );
+</script>
+</head>
+<body></body>
+</html>
