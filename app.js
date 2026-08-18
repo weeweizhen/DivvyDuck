@@ -8617,6 +8617,17 @@ function renderHeroCardSkeleton() {
   if (emptyState) emptyState.classList.add('is-hidden');
   content.classList.remove('is-hidden');
   content.classList.add('is-skeleton');
+
+  // is-owed/is-owing 是标在 #heroCard（不是 #heroContent）上的，只有真的
+  // renderHeroCard() 拿到新资料时才会重新 toggle——这里如果不清掉，上一趟
+  // 旅程留下的这个 class 会一路留到新资料回来，而 .is-owed .hero-sentence b
+  // 那条颜色规则（style.css）的选择器权重比骨架屏的 color:transparent 高，
+  // 会赢过骨架屏，变成金额数字骨架屏期间穿帮、没被盖住，看起来像「数字卡住
+  // 不动，直到新资料回来才跳」，其实骨架屏本身有在跑，只是这个数字没被盖住
+  const heroCardEl = document.getElementById('heroCard');
+  if (heroCardEl) {
+    heroCardEl.classList.remove('is-owed', 'is-owing');
+  }
 }
 
 function renderDashboardHeaderSkeleton() {
