@@ -3389,14 +3389,17 @@ function renderTripPickerList() {
     const updatedText = t('tripPicker.updatedAt', { time: formatDateDisplay(trip.updatedAt) });
     const colorClass = getTripColorClass_(trip.id);
     // 「1 个月内」用 30 天概算，不特地算实际日曆月份（跨月天数不一样，
-    // 这裡只是给副标题选深浅两层颜色用，不需要精确到那个程度）
+    // 这裡只是给圆点选「有色/灰色」两种状态用，不需要精确到那个程度）
     const daysSinceUpdate = (now - new Date(trip.updatedAt).getTime()) / 86400000;
     const isRecent = daysSinceUpdate <= 30;
-    const subClass = isRecent ? `trip-picker-tile-sub is-recent ${colorClass}` : 'trip-picker-tile-sub';
+    const dotClass = isRecent ? `trip-picker-tile-dot is-recent ${colorClass}` : 'trip-picker-tile-dot';
     return `
       <button type="button" class="trip-picker-tile ${isActive ? 'is-active' : ''}" data-select-trip-id="${escapeHtml(trip.id)}">
-        <span class="trip-picker-tile-name ${colorClass}">${escapeHtml(trip.name)}</span>
-        <span class="${subClass}">${escapeHtml(updatedText)}</span>
+        <span class="trip-picker-tile-name-row">
+          <span class="${dotClass}"></span>
+          <span class="trip-picker-tile-name">${escapeHtml(trip.name)}</span>
+        </span>
+        <span class="trip-picker-tile-sub">${escapeHtml(updatedText)}</span>
       </button>
     `;
   }).join('');

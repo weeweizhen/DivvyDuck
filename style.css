@@ -2859,12 +2859,14 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 /* 选择旅程二级页面裡的旅程清单：改成小方格排成 grid，比原本 Modal 裡的
    窄清单好看，空间也比较够。铅笔改名按钮拿掉了，方格本身整块可以点，
    目前这趟用强调色边框/底色标示出来。方格裡只有名字+最後更新日期两行字，
-   没有头像图示——试过头像圆圈（先文字首字母、後固定图示），使用者
-   回馈都不理想，最後改成直接把名字本身染色区分：依旅程 id 分配
-   --trip-avatar-1~6 其中一组颜色（见 app.js 的 getTripColorClass_()），
-   同一趟旅程颜色永远固定；副标题依「多久前更新」再分两层深浅——1 个月内
-   有更新用同一支颜色的浅色版本，呼应名字；超过 1 个月没更新则退回中性灰，
-   一眼就看得出哪几趟还在动、哪几趟已经沉寂 */
+   没有头像图示——试过头像圆圈（先文字首字母、後固定图示）、也试过把
+   名字整个染色，使用者回馈都不理想（名字整块染色时，中文旅程名字面积大，
+   两个旅程色相稍微相近就会「撞色」），最後改成用一颗小圆点带出旅程颜色：
+   依旅程 id 分配 --trip-avatar-1~6 其中一组颜色（见 app.js 的
+   getTripColorClass_()），同一趟旅程颜色永远固定；圆点是否「上色」再
+   额外带出「多久前更新」——1 个月内有更新用该旅程自己的颜色实心填满，
+   超过 1 个月没更新则退回中性灰，一眼就看得出哪几趟还在动、哪几趟已经
+   沉寂；名字/副标题文字本身一律用中性色，不再跟着旅程变色 */
 .trip-picker-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2897,21 +2899,38 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   background: var(--accent-soft);
 }
 
+.trip-picker-tile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trip-picker-tile-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.trip-picker-tile-dot.is-recent.color-1 { background: var(--trip-avatar-1-fg); }
+.trip-picker-tile-dot.is-recent.color-2 { background: var(--trip-avatar-2-fg); }
+.trip-picker-tile-dot.is-recent.color-3 { background: var(--trip-avatar-3-fg); }
+.trip-picker-tile-dot.is-recent.color-4 { background: var(--trip-avatar-4-fg); }
+.trip-picker-tile-dot.is-recent.color-5 { background: var(--trip-avatar-5-fg); }
+.trip-picker-tile-dot.is-recent.color-6 { background: var(--trip-avatar-6-fg); }
+
 .trip-picker-tile-name {
   display: block;
   font-size: 15px;
   font-weight: 600;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
-
-.trip-picker-tile-name.color-1 { color: var(--trip-avatar-1-fg); }
-.trip-picker-tile-name.color-2 { color: var(--trip-avatar-2-fg); }
-.trip-picker-tile-name.color-3 { color: var(--trip-avatar-3-fg); }
-.trip-picker-tile-name.color-4 { color: var(--trip-avatar-4-fg); }
-.trip-picker-tile-name.color-5 { color: var(--trip-avatar-5-fg); }
-.trip-picker-tile-name.color-6 { color: var(--trip-avatar-6-fg); }
 
 .trip-picker-tile-sub {
   display: block;
@@ -2922,13 +2941,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.trip-picker-tile-sub.is-recent.color-1 { color: var(--trip-avatar-1-light); }
-.trip-picker-tile-sub.is-recent.color-2 { color: var(--trip-avatar-2-light); }
-.trip-picker-tile-sub.is-recent.color-3 { color: var(--trip-avatar-3-light); }
-.trip-picker-tile-sub.is-recent.color-4 { color: var(--trip-avatar-4-light); }
-.trip-picker-tile-sub.is-recent.color-5 { color: var(--trip-avatar-5-light); }
-.trip-picker-tile-sub.is-recent.color-6 { color: var(--trip-avatar-6-light); }
 
 .settings-actions {
   display: flex;
