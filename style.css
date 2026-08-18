@@ -50,25 +50,17 @@
   --info: #0369a1;
   --info-soft: rgba(3, 105, 161, 0.12);
 
-  /* 选择旅程页面裡旅程名字的固定色盘——纯装饰用，不带语意（不是 success/
-     danger 那种状态色），依旅程 id 算 hash 分配其中一组，同一趟旅程永远
-     拿到同一个颜色，让选择旅程页面每一格看起来不会都长一样。-fg 是名字
-     本身的颜色；-light 是同一色相调淡後的版本（原色的 rgba 透明度版，不是
-     另外挑一个色号——同一支色相跟着背景深浅自然变浅，不用为每个颜色分开
-     调），给「1 个月内有更新」的副标题用，跟灰色的「超过 1 个月」拉出深浅
-     两层，一眼看得出哪几趟旅程还在动 */
+  /* 选择旅程页面裡旅程名字圆点的固定色盘——纯装饰用，不带语意（不是
+     success/danger 那种状态色），依旅程 id 算 hash 分配其中一组，同一趟
+     旅程永远拿到同一个颜色。6 个色相尽量拉开彼此的色环距离，避免小圆点
+     看起来撞色；5(琥珀)/6(青柠) 原本是橙/绿，跟 4(玫红)/1(青绿) 靠太近
+     换掉的，同时也避开跟 --warning/--success 的色相重叠 */
   --trip-avatar-1-fg: #0f766e;
-  --trip-avatar-1-light: rgba(15, 118, 110, 0.75);
   --trip-avatar-2-fg: #1d4ed8;
-  --trip-avatar-2-light: rgba(29, 78, 216, 0.75);
   --trip-avatar-3-fg: #7e22ce;
-  --trip-avatar-3-light: rgba(126, 34, 206, 0.75);
   --trip-avatar-4-fg: #be123c;
-  --trip-avatar-4-light: rgba(190, 18, 60, 0.75);
-  --trip-avatar-5-fg: #c2410c;
-  --trip-avatar-5-light: rgba(194, 65, 12, 0.75);
-  --trip-avatar-6-fg: #15803d;
-  --trip-avatar-6-light: rgba(21, 128, 61, 0.75);
+  --trip-avatar-5-fg: #d97706;
+  --trip-avatar-6-fg: #4d7c0f;
 
   /* 阴影（柔和弥散，Apple 式极淡投影） */
   --shadow-xs: 0 1px 2px rgba(20, 20, 30, 0.03);
@@ -203,17 +195,11 @@
   --info-soft: rgba(56, 189, 248, 0.18);
 
   --trip-avatar-1-fg: #2dd4bf;
-  --trip-avatar-1-light: rgba(45, 212, 191, 0.75);
   --trip-avatar-2-fg: #60a5fa;
-  --trip-avatar-2-light: rgba(96, 165, 250, 0.75);
   --trip-avatar-3-fg: #c084fc;
-  --trip-avatar-3-light: rgba(192, 132, 252, 0.75);
   --trip-avatar-4-fg: #fb7185;
-  --trip-avatar-4-light: rgba(251, 113, 133, 0.75);
-  --trip-avatar-5-fg: #fb923c;
-  --trip-avatar-5-light: rgba(251, 146, 60, 0.75);
-  --trip-avatar-6-fg: #4ade80;
-  --trip-avatar-6-light: rgba(74, 222, 128, 0.75);
+  --trip-avatar-5-fg: #fcd34d;
+  --trip-avatar-6-fg: #a3e635;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.32);
@@ -2937,6 +2923,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-size: 12px;
   color: var(--text-tertiary);
   margin-top: 2px;
+  margin-left: 14px; /* 圆点(8px) + 圆点与名字间距(6px)，让这行文字跟名字对齐，不是跟圆点对齐 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

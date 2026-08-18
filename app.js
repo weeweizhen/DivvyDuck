@@ -6082,6 +6082,16 @@ function showSecondaryPage_(pageId, entityId) {
     pageEl.classList.remove('is-hidden');
   }
 
+  // 桌面版右下角悬浮的「记一笔」FAB（#headerActionBtn）只在切主分页时
+  // 由 updateHeaderForPage() 决定要不要显示，进二级页面不会经过那个函式，
+  // FAB 会一直浮在原地，盖住二级页面自己的按钮（例如消费明细的编辑/删除）。
+  // 二级页面本身就是聚焦单一任务的画面，不需要这个快速入口，进来就先藏掉；
+  // 退回主分页时 closeSecondaryPage_() 呼叫 navigateToPage() 会自动复原
+  const actionBtn = document.getElementById('headerActionBtn');
+  if (actionBtn) {
+    actionBtn.style.display = 'none';
+  }
+
   if (alreadyTopmost) {
     return;
   }
