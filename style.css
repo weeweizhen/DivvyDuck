@@ -2860,6 +2860,9 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .trip-picker-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: var(--space-4);
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--border);
@@ -2885,10 +2888,7 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   background: var(--accent-soft);
 }
 
-.trip-picker-tile-name-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.trip-picker-tile-text {
   min-width: 0;
 }
 
@@ -2923,7 +2923,6 @@ input[type="date"].text-input::-webkit-calendar-picker-indicator:hover {
   font-size: 12px;
   color: var(--text-tertiary);
   margin-top: 2px;
-  margin-left: 14px; /* 圆点(8px) + 圆点与名字间距(6px)，让这行文字跟名字对齐，不是跟圆点对齐 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

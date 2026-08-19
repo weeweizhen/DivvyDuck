@@ -3395,11 +3395,11 @@ function renderTripPickerList() {
     const dotClass = isRecent ? `trip-picker-tile-dot is-recent ${colorClass}` : 'trip-picker-tile-dot';
     return `
       <button type="button" class="trip-picker-tile ${isActive ? 'is-active' : ''}" data-select-trip-id="${escapeHtml(trip.id)}">
-        <span class="trip-picker-tile-name-row">
-          <span class="${dotClass}"></span>
+        <span class="${dotClass}"></span>
+        <span class="trip-picker-tile-text">
           <span class="trip-picker-tile-name">${escapeHtml(trip.name)}</span>
+          <span class="trip-picker-tile-sub">${escapeHtml(updatedText)}</span>
         </span>
-        <span class="trip-picker-tile-sub">${escapeHtml(updatedText)}</span>
       </button>
     `;
   }).join('');
